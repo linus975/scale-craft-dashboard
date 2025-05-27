@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, Layers, Plus, Download, User } from 'lucide-react';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
@@ -44,19 +46,23 @@ const DesignsTab: React.FC = () => {
   const renderDialogContent = () => {
     if (selectedDesignType === 'static') {
       return (
-        <StaticDesignForm 
-          onCancel={handleCancel}
-          onSave={handleStaticDesignSave}
-        />
+        <ScrollArea className="max-h-[80vh]">
+          <StaticDesignForm 
+            onCancel={handleCancel}
+            onSave={handleStaticDesignSave}
+          />
+        </ScrollArea>
       );
     }
 
     if (selectedDesignType === 'personalized') {
       return (
-        <PersonalizedDesignForm 
-          onCancel={handleCancel}
-          onSave={handlePersonalizedDesignSave}
-        />
+        <ScrollArea className="max-h-[80vh]">
+          <PersonalizedDesignForm 
+            onCancel={handleCancel}
+            onSave={handlePersonalizedDesignSave}
+          />
+        </ScrollArea>
       );
     }
 
@@ -111,7 +117,7 @@ const DesignsTab: React.FC = () => {
               Add Design
             </Button>
           </DialogTrigger>
-          <DialogContent className={selectedDesignType ? "max-w-3xl" : "sm:max-w-md"}>
+          <DialogContent className={selectedDesignType ? "max-w-4xl max-h-[90vh]" : "sm:max-w-md"}>
             {renderDialogContent()}
           </DialogContent>
         </Dialog>

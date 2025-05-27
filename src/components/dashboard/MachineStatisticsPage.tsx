@@ -1,208 +1,143 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
-  ArrowLeft,
-  Activity,
-  Clock,
+  Activity, 
+  Clock, 
+  TrendingUp, 
+  AlertTriangle, 
   CheckCircle,
-  AlertTriangle,
-  TrendingUp,
-  Thermometer
+  Package,
+  Thermometer,
+  Zap
 } from 'lucide-react';
 
 interface MachineStatisticsPageProps {
-  onBack: () => void;
+  machineName: string;
 }
 
-const MachineStatisticsPage: React.FC<MachineStatisticsPageProps> = ({ onBack }) => {
-  const machineStats = [
-    {
-      id: 1,
-      name: "Bambu X1C-1",
-      status: "Printing",
-      uptime: "94.2%",
-      totalJobs: 342,
-      successRate: "98.5%",
-      avgPrintTime: "4.2h",
-      bedTemp: "60°C",
-      nozzleTemp: "210°C",
-      lastMaintenance: "2 days ago"
-    },
-    {
-      id: 2,
-      name: "Prusa MK3S-2",
-      status: "Idle",
-      uptime: "91.8%",
-      totalJobs: 278,
-      successRate: "96.8%",
-      avgPrintTime: "5.1h",
-      bedTemp: "25°C",
-      nozzleTemp: "25°C",
-      lastMaintenance: "1 week ago"
-    },
-    {
-      id: 3,
-      name: "Bambu A1 Mini-1",
-      status: "Maintenance",
-      uptime: "88.5%",
-      totalJobs: 156,
-      successRate: "97.2%",
-      avgPrintTime: "3.8h",
-      bedTemp: "25°C",
-      nozzleTemp: "25°C",
-      lastMaintenance: "Today"
-    }
-  ];
-
-  const overallStats = {
-    totalPrintTime: "1,247h",
-    totalMaterial: "34.2kg",
-    energyConsumption: "156 kWh",
-    co2Footprint: "78.2 kg CO₂"
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Printing': return <Activity className="h-4 w-4 text-green-500" />;
-      case 'Idle': return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'Maintenance': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
-      default: return <CheckCircle className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Printing': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Idle': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Maintenance': return 'bg-orange-100 text-orange-800 border-orange-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
+const MachineStatisticsPage: React.FC<MachineStatisticsPageProps> = ({ machineName }) => {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurück
-        </Button>
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Machine Statistics</h2>
-          <p className="text-slate-600">Detaillierte Statistiken und Performance-Daten Ihrer 3D-Drucker</p>
-        </div>
-      </div>
-
-      {/* Overall Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-slate-600">Gesamt Druckzeit</p>
-                <p className="text-xl font-bold text-slate-900">{overallStats.totalPrintTime}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-sm text-slate-600">Material verbraucht</p>
-                <p className="text-xl font-bold text-slate-900">{overallStats.totalMaterial}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-purple-600" />
-              <div>
-                <p className="text-sm text-slate-600">Energieverbrauch</p>
-                <p className="text-xl font-bold text-slate-900">{overallStats.energyConsumption}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Thermometer className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm text-slate-600">CO₂ Fußabdruck</p>
-                <p className="text-xl font-bold text-slate-900">{overallStats.co2Footprint}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Individual Machine Statistics */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Uptime */}
       <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
         <CardHeader>
-          <CardTitle>Maschinen-Details</CardTitle>
-          <CardDescription>Performance-Daten und Status einzelner 3D-Drucker</CardDescription>
+          <div className="flex items-center justify-between">
+            <CardTitle>Uptime</CardTitle>
+            <Clock className="h-5 w-5 text-slate-400" />
+          </div>
+          <CardDescription>Total operational time</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            {machineStats.map((machine) => (
-              <div key={machine.id} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(machine.status)}
-                    <div>
-                      <h3 className="font-semibold text-slate-900">{machine.name}</h3>
-                      <Badge className={getStatusColor(machine.status)}>
-                        {machine.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-600">Wartung: {machine.lastMaintenance}</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Uptime</p>
-                    <p className="text-lg font-semibold text-slate-900">{machine.uptime}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Jobs Total</p>
-                    <p className="text-lg font-semibold text-slate-900">{machine.totalJobs}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Erfolgsrate</p>
-                    <p className="text-lg font-semibold text-slate-900">{machine.successRate}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Ø Druckzeit</p>
-                    <p className="text-lg font-semibold text-slate-900">{machine.avgPrintTime}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <Thermometer className="h-4 w-4 text-red-500" />
-                    <span className="text-sm text-slate-600">Bett: {machine.bedTemp}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Thermometer className="h-4 w-4 text-orange-500" />
-                    <span className="text-sm text-slate-600">Düse: {machine.nozzleTemp}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="text-2xl font-bold text-slate-900">3,458 hours</div>
+          <Progress value={85} className="mt-2" />
+          <p className="text-sm text-slate-500 mt-1">Last maintenance: 2 weeks ago</p>
+        </CardContent>
+      </Card>
+
+      {/* Print Success Rate */}
+      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Print Success Rate</CardTitle>
+            <CheckCircle className="h-5 w-5 text-green-500" />
           </div>
+          <CardDescription>Successful prints vs. failed prints</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-slate-900">98.5%</div>
+          <p className="text-sm text-slate-500 mt-1">Out of 1,250 print jobs</p>
+        </CardContent>
+      </Card>
+
+      {/* Material Usage */}
+      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Material Usage</CardTitle>
+            <Package className="h-5 w-5 text-blue-500" />
+          </div>
+          <CardDescription>Total material consumed</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-slate-900">45.2 kg</div>
+          <p className="text-sm text-slate-500 mt-1">Mostly PLA and ABS</p>
+        </CardContent>
+      </Card>
+
+      {/* Active Jobs */}
+      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Active Jobs</CardTitle>
+            <Activity className="h-5 w-5 text-indigo-500" />
+          </div>
+          <CardDescription>Currently running print jobs</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-slate-900">3</div>
+          <p className="text-sm text-slate-500 mt-1">Estimated completion in 2-5 hours</p>
+        </CardContent>
+      </Card>
+
+      {/* Temperature */}
+      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Temperature</CardTitle>
+            <Thermometer className="h-5 w-5 text-orange-500" />
+          </div>
+          <CardDescription>Average nozzle temperature</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-slate-900">210°C</div>
+          <p className="text-sm text-slate-500 mt-1">Stable temperature readings</p>
+        </CardContent>
+      </Card>
+
+      {/* Power Consumption */}
+      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Power Consumption</CardTitle>
+            <Zap className="h-5 w-5 text-yellow-500" />
+          </div>
+          <CardDescription>Average power usage</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-slate-900">120W</div>
+          <p className="text-sm text-slate-500 mt-1">Energy-efficient operations</p>
+        </CardContent>
+      </Card>
+
+      {/* Error Rate */}
+      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Error Rate</CardTitle>
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+          </div>
+          <CardDescription>Frequency of errors and warnings</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-slate-900">0.3%</div>
+          <p className="text-sm text-slate-500 mt-1">Low incidence of errors</p>
+        </CardContent>
+      </Card>
+
+      {/* Print Speed */}
+      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Print Speed</CardTitle>
+            <TrendingUp className="h-5 w-5 text-teal-500" />
+          </div>
+          <CardDescription>Average printing speed</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-slate-900">60 mm/s</div>
+          <p className="text-sm text-slate-500 mt-1">Optimal speed for quality prints</p>
         </CardContent>
       </Card>
     </div>
@@ -210,3 +145,168 @@ const MachineStatisticsPage: React.FC<MachineStatisticsPageProps> = ({ onBack })
 };
 
 export default MachineStatisticsPage;
+```
+
+```typescript
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { FileText, Layers, Plus, Download, User } from 'lucide-react';
+import StaticDesignForm from './StaticDesignForm';
+import PersonalizedDesignForm from './PersonalizedDesignForm';
+
+const DesignsTab: React.FC = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
+  
+  const mockDesigns = [
+    { id: 1, name: "Parametric Gear", lastModified: "2 hours ago", version: "v1.3" },
+    { id: 2, name: "Custom Bracket", lastModified: "1 day ago", version: "v2.1" },
+    { id: 3, name: "Housing Template", lastModified: "3 days ago", version: "v1.0" },
+  ];
+
+  const handleDesignTypeSelection = (type: 'static' | 'personalized') => {
+    console.log(`Selected design type: ${type}`);
+    setSelectedDesignType(type);
+  };
+
+  const handleStaticDesignSave = (designData: any) => {
+    console.log('Saving static design:', designData);
+    // TODO: Implement Firebase save logic
+    setIsDialogOpen(false);
+    setSelectedDesignType(null);
+  };
+
+  const handlePersonalizedDesignSave = (designData: any) => {
+    console.log('Saving personalized design:', designData);
+    // TODO: Implement Firebase save logic
+    setIsDialogOpen(false);
+    setSelectedDesignType(null);
+  };
+
+  const handleCancel = () => {
+    setSelectedDesignType(null);
+    setIsDialogOpen(false);
+  };
+
+  const renderDialogContent = () => {
+    if (selectedDesignType === 'static') {
+      return (
+        <ScrollArea className="max-h-[80vh]">
+          <StaticDesignForm 
+            onCancel={handleCancel}
+            onSave={handleStaticDesignSave}
+          />
+        </ScrollArea>
+      );
+    }
+
+    if (selectedDesignType === 'personalized') {
+      return (
+        <ScrollArea className="max-h-[80vh]">
+          <PersonalizedDesignForm 
+            onCancel={handleCancel}
+            onSave={handlePersonalizedDesignSave}
+          />
+        </ScrollArea>
+      );
+    }
+
+    // Default design type selection
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Choose Design Type</DialogTitle>
+          <DialogDescription>
+            Select whether you want to create a static design or a personalized design with customizable parameters.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-4 py-4">
+          <Button
+            variant="outline"
+            className="h-auto p-6 flex flex-col gap-3"
+            onClick={() => handleDesignTypeSelection('static')}
+          >
+            <FileText className="h-8 w-8 text-blue-600" />
+            <div className="text-center">
+              <div className="font-semibold">Static Design</div>
+              <div className="text-sm text-slate-500">Fixed design file without customization options</div>
+            </div>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto p-6 flex flex-col gap-3"
+            onClick={() => handleDesignTypeSelection('personalized')}
+          >
+            <User className="h-8 w-8 text-indigo-600" />
+            <div className="text-center">
+              <div className="font-semibold">Personalized Design</div>
+              <div className="text-sm text-slate-500">Design with customizable parameters for personalization</div>
+            </div>
+          </Button>
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Design Library</h2>
+          <p className="text-slate-600">Manage your CAD files and templates</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Design
+            </Button>
+          </DialogTrigger>
+          <DialogContent className={selectedDesignType ? "max-w-4xl max-h-[90vh]" : "sm:max-w-md"}>
+            {renderDialogContent()}
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {mockDesigns.map((design) => (
+          <Card key={design.id} className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">{design.name}</CardTitle>
+                <FileText className="h-5 w-5 text-slate-400" />
+              </div>
+              <CardDescription>{design.version} • {design.lastModified}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="flex-1">
+                  <Download className="h-4 w-4 mr-1" />
+                  Download
+                </Button>
+                <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  Edit
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <CardContent className="p-8 text-center">
+          <Layers className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 mb-2">Design Management Coming Soon</h3>
+          <p className="text-slate-600 mb-4">Advanced CAD file personalization and batch processing features will be available here.</p>
+          <Badge variant="outline">Under Development</Badge>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default DesignsTab;
