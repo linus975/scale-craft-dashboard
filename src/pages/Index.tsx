@@ -1,13 +1,38 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState } from 'react';
+import LoginForm from '../components/LoginForm';
+import Dashboard from '../components/Dashboard';
+import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<{ email: string } | null>(null);
+
+  const handleLogin = (email: string, password: string) => {
+    // TODO: Implement actual authentication logic with backend API
+    console.log('Login attempt:', { email, password });
+    
+    // Simulate successful login for now
+    setUser({ email });
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    // TODO: Implement actual logout logic with backend API
+    console.log('User logged out');
+    setUser(null);
+    setIsLoggedIn(false);
+  };
+
+  if (isLoggedIn && user) {
+    return <Dashboard user={user} onLogout={handleLogout} />;
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <>
+      <LoginForm onLogin={handleLogin} />
+      <Toaster />
+    </>
   );
 };
 
