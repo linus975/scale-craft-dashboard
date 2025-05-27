@@ -19,10 +19,12 @@ import {
   ExternalLink
 } from 'lucide-react';
 import MachineStatisticsPage from './MachineStatisticsPage';
+import MachineConfigDialog from './MachineConfigDialog';
 
 const MachinesTab: React.FC = () => {
   const [isAddMachineDialogOpen, setIsAddMachineDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'main' | 'statistics'>('main');
+  const [selectedMachine, setSelectedMachine] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -45,7 +47,11 @@ const MachinesTab: React.FC = () => {
       status: "idle", 
       connection: "OctoPrint", 
       lastSeen: "2 minutes ago",
-      currentJob: null
+      currentJob: null,
+      connectionType: "octoprint",
+      apiUrl: "http://octopi.local",
+      apiKey: "****",
+      username: ""
     },
     { 
       id: 2, 
@@ -54,7 +60,11 @@ const MachinesTab: React.FC = () => {
       status: "printing", 
       connection: "Bambu API", 
       lastSeen: "1 minute ago",
-      currentJob: "Custom Phone Case - 45% complete"
+      currentJob: "Custom Phone Case - 45% complete",
+      connectionType: "bambu",
+      apiUrl: "https://api.bambulab.com",
+      apiKey: "****",
+      username: "user@example.com"
     },
     { 
       id: 3, 
@@ -63,8 +73,24 @@ const MachinesTab: React.FC = () => {
       status: "offline", 
       connection: "OctoPrint", 
       lastSeen: "2 hours ago",
-      currentJob: null
+      currentJob: null,
+      connectionType: "octoprint",
+      apiUrl: "http://192.168.1.100",
+      apiKey: "****",
+      username: ""
     }
+  ];
+
+  const mockDesigns = [
+    { id: 1, name: "Parametric Gear" },
+    { id: 2, name: "Custom Bracket" },
+    { id: 3, name: "Housing Template" }
+  ];
+
+  const mockQueueJobs = [
+    { id: 1, filename: "phone_case_v2.gcode", customer: "John Doe" },
+    { id: 2, filename: "bracket_custom.gcode", customer: "Jane Smith" },
+    { id: 3, filename: "gear_set.gcode", customer: "Mike Johnson" }
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -88,6 +114,11 @@ const MachinesTab: React.FC = () => {
       username: '',
       password: ''
     });
+  };
+
+  const handleMachineConfigSave = (machineData: any) => {
+    console.log('Saving machine configuration:', machineData);
+    // TODO: Implement machine configuration save logic
   };
 
   const getStatusColor = (status: string) => {
@@ -263,7 +294,11 @@ const MachinesTab: React.FC = () => {
       {/* Machine Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {mockMachines.map((machine) => (
-          <Card key={machine.id} className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow">
+          <Card 
+            key={machine.id} 
+            className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => setSelectedMachine(machine)}
+          >
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -289,11 +324,19 @@ const MachinesTab: React.FC = () => {
                 )}
                 <p className="text-sm text-slate-500">Last seen: {machine.lastSeen}</p>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedMachine(machine);
+                    }}
+                  >
                     <Settings className="h-3 w-3 mr-1" />
                     Configure
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" onClick={(e) => e.stopPropagation()}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
@@ -302,6 +345,18 @@ const MachinesTab: React.FC = () => {
           </Card>
         ))}
       </div>
+
+      {/* Machine Configuration Dialog */}
+      {selectedMachine && (
+        <MachineConfigDialog
+          machine={selectedMachine}
+          isOpen={!!selectedMachine}
+          onClose={() => setSelectedMachine(null)}
+          onSave={handleMachineConfigSave}
+          designs={mockDesigns}
+          queueJobs={mockQueueJobs}
+        />
+      )}
     </div>
   );
 };

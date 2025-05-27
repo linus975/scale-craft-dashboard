@@ -1,9 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { 
   ArrowLeft,
   Activity, 
@@ -305,63 +303,6 @@ const ComprehensiveMachineStatisticsPage: React.FC<ComprehensiveMachineStatistic
           </div>
         </CardContent>
       </Card>
-
-      {/* System Resources */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Cpu className="h-5 w-5" />
-              CPU Usage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Server Load</span>
-                <span className="text-sm font-medium">65%</span>
-              </div>
-              <Progress value={65} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HardDrive className="h-5 w-5" />
-              Storage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Disk Usage</span>
-                <span className="text-sm font-medium">78%</span>
-              </div>
-              <Progress value={78} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wifi className="h-5 w-5" />
-              Network
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Connectivity</span>
-                <span className="text-sm font-medium">98%</span>
-              </div>
-              <Progress value={98} />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };

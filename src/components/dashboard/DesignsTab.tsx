@@ -8,15 +8,50 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, Layers, Plus, Download, User } from 'lucide-react';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
+import DesignEditDialog from './DesignEditDialog';
 
 const DesignsTab: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
+  const [selectedDesign, setSelectedDesign] = useState<any>(null);
   
   const mockDesigns = [
-    { id: 1, name: "Parametric Gear", lastModified: "2 hours ago", version: "v1.3" },
-    { id: 2, name: "Custom Bracket", lastModified: "1 day ago", version: "v2.1" },
-    { id: 3, name: "Housing Template", lastModified: "3 days ago", version: "v1.0" },
+    { 
+      id: 1, 
+      name: "Parametric Gear", 
+      lastModified: "2 hours ago", 
+      version: "v1.3",
+      cadSoftware: "fusion360",
+      slicer: "prusaslicer",
+      sketchName: "gear_teeth",
+      replacementValue: "teeth_count"
+    },
+    { 
+      id: 2, 
+      name: "Custom Bracket", 
+      lastModified: "1 day ago", 
+      version: "v2.1",
+      cadSoftware: "solidworks",
+      slicer: "cura",
+      sketchName: "",
+      replacementValue: ""
+    },
+    { 
+      id: 3, 
+      name: "Housing Template", 
+      lastModified: "3 days ago", 
+      version: "v1.0",
+      cadSoftware: "blender",
+      slicer: "orcaslicer",
+      sketchName: "housing_width",
+      replacementValue: "width_param"
+    },
+  ];
+
+  const mockMachines = [
+    { id: 1, name: "Prusa i3 MK3S+", status: "idle" },
+    { id: 2, name: "Bambu Lab X1 Carbon", status: "printing" },
+    { id: 3, name: "Ender 3 V2", status: "offline" }
   ];
 
   const handleDesignTypeSelection = (type: 'static' | 'personalized') => {
@@ -36,6 +71,22 @@ const DesignsTab: React.FC = () => {
     // TODO: Implement Firebase save logic
     setIsDialogOpen(false);
     setSelectedDesignType(null);
+  };
+
+  const handleDesignSave = (designData: any) => {
+    console.log('Saving design changes:', designData);
+    // TODO: Implement save logic
+    setSelectedDesign(null);
+  };
+
+  const handleAddToQueue = (designId: number) => {
+    console.log(`Adding design ${designId} to queue`);
+    // TODO: Implement queue logic
+  };
+
+  const handlePrintOnMachine = (designId: number, machineId: number) => {
+    console.log(`Printing design ${designId} on machine ${machineId}`);
+    // TODO: Implement print logic
   };
 
   const handleCancel = () => {
@@ -139,7 +190,11 @@ const DesignsTab: React.FC = () => {
                   <Download className="h-4 w-4 mr-1" />
                   Download
                 </Button>
-                <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  size="sm" 
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  onClick={() => setSelectedDesign(design)}
+                >
                   Edit
                 </Button>
               </div>
@@ -156,6 +211,19 @@ const DesignsTab: React.FC = () => {
           <Badge variant="outline">Under Development</Badge>
         </CardContent>
       </Card>
+
+      {/* Design Edit Dialog */}
+      {selectedDesign && (
+        <DesignEditDialog
+          design={selectedDesign}
+          isOpen={!!selectedDesign}
+          onClose={() => setSelectedDesign(null)}
+          onSave={handleDesignSave}
+          onAddToQueue={handleAddToQueue}
+          onPrintOnMachine={handlePrintOnMachine}
+          machines={mockMachines}
+        />
+      )}
     </div>
   );
 };
