@@ -10,9 +10,16 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 interface OverviewTabProps {
   onNavigateToBusinessMetrics: () => void;
   onNavigateToSystemLog?: () => void;
+  onNavigateToMachines: () => void;
+  onNavigateToCompletedJobs: () => void;
 }
 
-const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateToBusinessMetrics, onNavigateToSystemLog }) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ 
+  onNavigateToBusinessMetrics, 
+  onNavigateToSystemLog, 
+  onNavigateToMachines,
+  onNavigateToCompletedJobs 
+}) => {
   // Mock data for demonstration
   const mockJobs = [
     { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2" },
@@ -57,7 +64,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateToBusinessMetrics, 
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={onNavigateToMachines}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">Active Jobs</CardTitle>
           </CardHeader>
@@ -67,7 +74,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateToBusinessMetrics, 
           </CardContent>
         </Card>
 
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={onNavigateToCompletedJobs}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">Completed Today</CardTitle>
           </CardHeader>
@@ -152,8 +159,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateToBusinessMetrics, 
                 ))}
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t">
-              <Button variant="outline" className="w-full" onClick={onNavigateToBusinessMetrics}>
+            <div className="mt-4 pt-4 border-t flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={onNavigateToBusinessMetrics}>
                 <TrendingUp className="h-4 w-4 mr-2" />
                 View Business Metrics
               </Button>
@@ -185,8 +192,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateToBusinessMetrics, 
                 </Badge>
               </div>
             ))}
-            <div className="mt-4 pt-4 border-t">
-              <Button variant="outline" className="w-full" onClick={onNavigateToSystemLog}>
+            <div className="mt-4 pt-4 border-t flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={onNavigateToSystemLog}>
                 <FileText className="h-4 w-4 mr-2" />
                 View System Log
               </Button>

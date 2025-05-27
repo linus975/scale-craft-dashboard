@@ -19,7 +19,8 @@ import {
   Minus,
   Download,
   FileCode,
-  ArrowLeft
+  ArrowLeft,
+  Settings
 } from 'lucide-react';
 import JobCreationDialog from './JobCreationDialog';
 import CurrentPrintingJobsPage from './CurrentPrintingJobsPage';
@@ -30,13 +31,13 @@ const JobsTab: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [isJobDetailOpen, setIsJobDetailOpen] = useState(false);
   const [jobs, setJobs] = useState([
-    { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2", priority: "normal", count: 3, estimatedTime: "2h 45m", filePath: "/gcode/gear_set.gcode" },
-    { id: 2, name: "Prototype Housing", status: "queued", progress: 0, material: "ABS", printer: "A1 Mini-1", priority: "high", count: 5, estimatedTime: "4h 20m", filePath: "/gcode/housing.gcode" },
-    { id: 3, name: "Bracket Design", status: "completed", progress: 100, material: "PETG", printer: "X1C-1", priority: "normal", count: 2, estimatedTime: "1h 30m", filePath: "/gcode/bracket.gcode" },
-    { id: 4, name: "Enclosure Part", status: "failed", progress: 45, material: "PLA", printer: "Mk3-2", priority: "normal", count: 1, estimatedTime: "3h 15m", filePath: "/gcode/enclosure.gcode" },
-    { id: 5, name: "Phone Case Custom", status: "queued", progress: 0, material: "TPU", printer: "X1C-1", priority: "normal", count: 4, estimatedTime: "2h 10m", filePath: "/gcode/phone_case.gcode" },
-    { id: 6, name: "Test Print", status: "completed", progress: 100, material: "PLA", printer: "X1C-2", priority: "high", count: 1, estimatedTime: "45m", filePath: "/gcode/test.gcode" },
-    { id: 7, name: "Large Component", status: "failed", progress: 20, material: "ABS", printer: "Mk3-2", priority: "normal", count: 2, estimatedTime: "6h 30m", filePath: "/gcode/large.gcode" },
+    { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2", priority: "normal", count: 3, estimatedTime: "2h 45m", filePath: "/gcode/gear_set.gcode", iniFile: "/settings/gear_set.ini" },
+    { id: 2, name: "Prototype Housing", status: "queued", progress: 0, material: "ABS", printer: "A1 Mini-1", priority: "high", count: 5, estimatedTime: "4h 20m", filePath: "/gcode/housing.gcode", iniFile: "/settings/housing.ini" },
+    { id: 3, name: "Bracket Design", status: "completed", progress: 100, material: "PETG", printer: "X1C-1", priority: "normal", count: 2, estimatedTime: "1h 30m", filePath: "/gcode/bracket.gcode", iniFile: "/settings/bracket.ini" },
+    { id: 4, name: "Enclosure Part", status: "failed", progress: 45, material: "PLA", printer: "Mk3-2", priority: "normal", count: 1, estimatedTime: "3h 15m", filePath: "/gcode/enclosure.gcode", iniFile: "/settings/enclosure.ini" },
+    { id: 5, name: "Phone Case Custom", status: "queued", progress: 0, material: "TPU", printer: "X1C-1", priority: "normal", count: 4, estimatedTime: "2h 10m", filePath: "/gcode/phone_case.gcode", iniFile: "/settings/phone_case.ini" },
+    { id: 6, name: "Test Print", status: "completed", progress: 100, material: "PLA", printer: "X1C-2", priority: "high", count: 1, estimatedTime: "45m", filePath: "/gcode/test.gcode", iniFile: "/settings/test.ini" },
+    { id: 7, name: "Large Component", status: "failed", progress: 20, material: "ABS", printer: "Mk3-2", priority: "normal", count: 2, estimatedTime: "6h 30m", filePath: "/gcode/large.gcode", iniFile: "/settings/large.ini" },
   ]);
 
   if (currentView === 'currentJobs') {
@@ -80,7 +81,8 @@ const JobsTab: React.FC = () => {
       progress: 0,
       count: jobData.count || 1,
       estimatedTime: "2h 30m",
-      filePath: "/gcode/new_job.gcode"
+      filePath: "/gcode/new_job.gcode",
+      iniFile: "/settings/new_job.ini"
     };
 
     setJobs(prev => {
@@ -120,6 +122,11 @@ const JobsTab: React.FC = () => {
     // In a real app, this would trigger a file download
   };
 
+  const handleDownloadIni = (iniPath: string, fileName: string) => {
+    console.log(`Downloading INI file from ${iniPath} as ${fileName}`);
+    // In a real app, this would trigger a file download
+  };
+
   const handlePriorityChange = (jobId: number, newPriority: 'high' | 'normal') => {
     setJobs(prev => prev.map(job => 
       job.id === jobId 
@@ -146,7 +153,10 @@ const JobsTab: React.FC = () => {
     const hasMoreJobs = jobs.length > 3 && currentView === 'main';
 
     return (
-      <Card className="bg-slate-50/50 border border-slate-200">
+      <Card 
+        className={`bg-slate-50/50 border border-slate-200 ${currentView === 'main' && viewType ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+        onClick={currentView === 'main' && viewType ? () => setCurrentView(viewType as any) : undefined}
+      >
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -163,7 +173,10 @@ const JobsTab: React.FC = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setCurrentView(viewType as any)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentView(viewType as any);
+                }}
                 className="flex items-center gap-2"
               >
                 <ExternalLink className="h-4 w-4" />
@@ -183,7 +196,10 @@ const JobsTab: React.FC = () => {
                     <div>
                       <h4 
                         className={`font-medium text-slate-900 ${allowJobClick ? 'cursor-pointer hover:text-blue-600' : ''}`} 
-                        onClick={allowJobClick ? () => handleJobClick(job) : undefined}
+                        onClick={allowJobClick ? (e) => {
+                          e.stopPropagation();
+                          handleJobClick(job);
+                        } : undefined}
                       >
                         {job.name} ({job.count})
                       </h4>
@@ -207,7 +223,10 @@ const JobsTab: React.FC = () => {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => handleQuantityChange(job.id, -1)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuantityChange(job.id, -1);
+                        }}
                         className="h-6 w-6 p-0"
                       >
                         <Minus className="h-3 w-3" />
@@ -216,7 +235,10 @@ const JobsTab: React.FC = () => {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => handleQuantityChange(job.id, 1)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuantityChange(job.id, 1);
+                        }}
                         className="h-6 w-6 p-0"
                       >
                         <Plus className="h-3 w-3" />
@@ -230,7 +252,10 @@ const JobsTab: React.FC = () => {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => handleRetryJob(job.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRetryJob(job.id);
+                      }}
                       className="ml-2"
                     >
                       <RotateCcw className="h-3 w-3 mr-1" />
@@ -345,7 +370,7 @@ const JobsTab: React.FC = () => {
 
       <div className="space-y-4">
         {/* Currently Printing - Pure Link */}
-        <Card className="bg-green-50/50 border border-green-200">
+        <Card className="bg-green-50/50 border border-green-200 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCurrentView('currentJobs')}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -361,7 +386,10 @@ const JobsTab: React.FC = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setCurrentView('currentJobs')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentView('currentJobs');
+                }}
                 className="flex items-center gap-2"
               >
                 <ExternalLink className="h-4 w-4" />
@@ -509,13 +537,21 @@ const JobsTab: React.FC = () => {
                   </div>
                 </div>
               )}
-              <div className="pt-4 border-t">
+              <div className="pt-4 border-t space-y-2">
                 <Button 
                   className="w-full" 
                   onClick={() => handleDownloadGCode(selectedJob.filePath, `${selectedJob.name}.gcode`)}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download G-Code
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="w-full" 
+                  onClick={() => handleDownloadIni(selectedJob.iniFile, `${selectedJob.name}.ini`)}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Download INI File
                 </Button>
               </div>
             </div>

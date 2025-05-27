@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Upload, Save, ListPlus, Printer } from 'lucide-react';
+import { Upload, Save, ListPlus, Printer, FileText, X } from 'lucide-react';
 
 interface DesignEditDialogProps {
   design: any;
@@ -37,6 +38,13 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   });
 
   const [selectedMachine, setSelectedMachine] = useState('');
+  
+  // Mock uploaded files - in real app this would come from the design data
+  const [uploadedFiles, setUploadedFiles] = useState([
+    { id: 1, name: 'design.f3d', type: 'CAD File', size: '2.5 MB', uploadDate: '2024-01-15' },
+    { id: 2, name: 'model.stl', type: 'STL File', size: '1.8 MB', uploadDate: '2024-01-15' },
+    { id: 3, name: 'settings.ini', type: 'Settings File', size: '12 KB', uploadDate: '2024-01-15' }
+  ]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -68,6 +76,31 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
       onPrintOnMachine(design.id, parseInt(selectedMachine));
       console.log(`Printing design ${design.name} on machine ${selectedMachine}`);
     }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      Array.from(files).forEach(file => {
+        const newFile = {
+          id: Date.now() + Math.random(),
+          name: file.name,
+          type: file.type || 'Unknown',
+          size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+          uploadDate: new Date().toISOString().split('T')[0]
+        };
+        setUploadedFiles(prev => [...prev, newFile]);
+      });
+    }
+  };
+
+  const handleFileRemove = (fileId: number) => {
+    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+  };
+
+  const handleFileDownload = (fileName: string) => {
+    console.log(`Downloading file: ${fileName}`);
+    // In real app, this would trigger actual file download
   };
 
   if (!design) return null;
@@ -173,6 +206,66 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                     </div>
                   )}
 
+                  <Separator />
+
+                  {/* File Management */}
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-lg font-medium">Files</h4>
+                      <p className="text-sm text-gray-600">Manage uploaded files for this design</p>
+                    </div>
+
+                    {/* File Upload */}
+                    <div className="space-y-2">
+                      <Label htmlFor="fileUpload">Upload New Files</Label>
+                      <Input
+                        id="fileUpload"
+                        type="file"
+                        multiple
+                        onChange={handleFileUpload}
+                        className="cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Uploaded Files List */}
+                    {uploadedFiles.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Uploaded Files</Label>
+                        <div className="border rounded-lg p-4 max-h-32 overflow-y-auto">
+                          {uploadedFiles.map((file) => (
+                            <div key={file.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-slate-500" />
+                                <div>
+                                  <p className="text-sm font-medium">{file.name}</p>
+                                  <p className="text-xs text-slate-500">{file.type} • {file.size} • {file.uploadDate}</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleFileDownload(file.name)}
+                                  className="h-8 px-2"
+                                >
+                                  Download
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  onClick={() => handleFileRemove(file.id)}
+                                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex gap-3 pt-4">
                     <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                       Cancel
@@ -253,6 +346,10 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                 <div className="flex justify-between">
                   <span className="text-slate-600">Type:</span>
                   <span>{formData.sketchName ? 'Personalized' : 'Static'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Files:</span>
+                  <span>{uploadedFiles.length}</span>
                 </div>
               </CardContent>
             </Card>
