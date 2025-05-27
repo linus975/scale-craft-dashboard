@@ -73,6 +73,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     { value: "knowledge", label: "Knowledge Base", icon: BookOpen },
   ];
 
+  const currentTabItem = tabItems.find(item => item.value === activeTab);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
@@ -134,10 +136,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between">
                     <div className="flex items-center gap-2">
-                      {tabItems.find(item => item.value === activeTab)?.icon && (
-                        <tabItems.find(item => item.value === activeTab)!.icon className="h-4 w-4" />
+                      {currentTabItem && (
+                        <currentTabItem.icon className="h-4 w-4" />
                       )}
-                      {tabItems.find(item => item.value === activeTab)?.label}
+                      {currentTabItem?.label}
                     </div>
                     <Menu className="h-4 w-4" />
                   </Button>
