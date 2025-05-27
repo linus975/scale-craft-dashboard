@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,12 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image } from 'lucide-react';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import DesignEditDialog from './DesignEditDialog';
 
-const DesignsTab: React.FC = () => {
+interface DesignsTabProps {
+  onNavigateToDesignDetail?: (designId: number) => void;
+}
+
+const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
   const [selectedDesign, setSelectedDesign] = useState<any>(null);
@@ -122,6 +126,13 @@ const DesignsTab: React.FC = () => {
     setIsDialogOpen(false);
   };
 
+  const handleDesignClick = (designId: number) => {
+    console.log(`Navigating to design detail for design ${designId}`);
+    if (onNavigateToDesignDetail) {
+      onNavigateToDesignDetail(designId);
+    }
+  };
+
   const renderDialogContent = () => {
     if (selectedDesignType === 'static') {
       return (
@@ -185,7 +196,11 @@ const DesignsTab: React.FC = () => {
   const renderGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {filteredDesigns.map((design) => (
-        <Card key={design.id} className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow">
+        <Card 
+          key={design.id} 
+          className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => handleDesignClick(design.id)}
+        >
           {showImages && (
             <div className="relative h-48 overflow-hidden rounded-t-lg">
               <img 
@@ -209,14 +224,24 @@ const DesignsTab: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="flex-1">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="flex-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
                 <Download className="h-4 w-4 mr-1" />
                 Download
               </Button>
               <Button 
                 size="sm" 
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
-                onClick={() => setSelectedDesign(design)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDesign(design);
+                }}
               >
                 Edit
               </Button>
@@ -230,7 +255,11 @@ const DesignsTab: React.FC = () => {
   const renderListView = () => (
     <div className="space-y-4">
       {filteredDesigns.map((design) => (
-        <Card key={design.id} className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow">
+        <Card 
+          key={design.id} 
+          className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => handleDesignClick(design.id)}
+        >
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               {showImages && (
@@ -252,14 +281,23 @@ const DesignsTab: React.FC = () => {
                 <p className="text-sm text-slate-600">{design.version} • {design.lastModified}</p>
               </div>
               <div className="flex gap-2 flex-shrink-0">
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
                   <Download className="h-4 w-4 mr-1" />
                   Download
                 </Button>
                 <Button 
                   size="sm" 
                   className="bg-blue-600 hover:bg-blue-700"
-                  onClick={() => setSelectedDesign(design)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDesign(design);
+                  }}
                 >
                   Edit
                 </Button>
@@ -331,13 +369,15 @@ const DesignsTab: React.FC = () => {
           >
             <LayoutList className="h-4 w-4" />
           </Button>
-          <Button
-            variant={showImages ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setShowImages(!showImages)}
-          >
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
+            showImages ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-300'
+          }`}>
             <Image className="h-4 w-4" />
-          </Button>
+            <Switch
+              checked={showImages}
+              onCheckedChange={setShowImages}
+            />
+          </div>
         </div>
       </div>
 

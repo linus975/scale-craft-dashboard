@@ -29,6 +29,7 @@ import KnowledgeBaseTab from './KnowledgeBaseTab';
 import ShippingTab from './ShippingTab';
 import BusinessMetricsPage from './BusinessMetricsPage';
 import SystemLogPage from './SystemLogPage';
+import DesignDetailPage from './DesignDetailPage';
 
 interface DashboardProps {
   user: { email: string };
@@ -39,6 +40,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showBusinessMetrics, setShowBusinessMetrics] = useState(false);
   const [showSystemLog, setShowSystemLog] = useState(false);
+  const [showDesignDetail, setShowDesignDetail] = useState<number | null>(null);
 
   const handleBusinessMetricsNavigation = () => {
     setShowBusinessMetrics(true);
@@ -51,6 +53,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const handleBackToOverview = () => {
     setShowBusinessMetrics(false);
     setShowSystemLog(false);
+    setShowDesignDetail(null);
+  };
+
+  const handleDesignDetailNavigation = (designId: number) => {
+    setShowDesignDetail(designId);
   };
 
   const handleMachinesNavigation = () => {
@@ -117,6 +124,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           <BusinessMetricsPage onBack={handleBackToOverview} />
         ) : showSystemLog ? (
           <SystemLogPage onBack={handleBackToOverview} />
+        ) : showDesignDetail ? (
+          <DesignDetailPage designId={showDesignDetail} onBack={handleBackToOverview} />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             {/* Desktop Navigation */}
@@ -172,7 +181,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             </TabsContent>
 
             <TabsContent value="designs">
-              <DesignsTab />
+              <DesignsTab onNavigateToDesignDetail={handleDesignDetailNavigation} />
             </TabsContent>
 
             <TabsContent value="jobs">
