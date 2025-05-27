@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +18,8 @@ import {
   Plus,
   Minus,
   Download,
-  FileCode
+  FileCode,
+  ArrowLeft
 } from 'lucide-react';
 import JobCreationDialog from './JobCreationDialog';
 import CurrentPrintingJobsPage from './CurrentPrintingJobsPage';
@@ -120,6 +120,18 @@ const JobsTab: React.FC = () => {
     // In a real app, this would trigger a file download
   };
 
+  const handlePriorityChange = (jobId: number, newPriority: 'high' | 'normal') => {
+    setJobs(prev => prev.map(job => 
+      job.id === jobId 
+        ? { ...job, priority: newPriority }
+        : job
+    ));
+    
+    // Close the dialog and show a success message
+    setIsJobDetailOpen(false);
+    console.log(`Job priority changed to ${newPriority}`);
+  };
+
   // Separate jobs by priority and status
   const printingJobs = jobs.filter(job => job.status === 'printing');
   const highPriorityQueued = jobs.filter(job => job.status === 'queued' && job.priority === 'high');
@@ -127,7 +139,7 @@ const JobsTab: React.FC = () => {
   const completedJobs = jobs.filter(job => job.status === 'completed');
   const failedJobs = jobs.filter(job => job.status === 'failed');
 
-  const renderJobSection = (jobs: any[], title: string, icon: React.ReactNode, description: string, showRetry?: boolean, showQuantity?: boolean, viewType?: string) => {
+  const renderJobSection = (jobs: any[], title: string, icon: React.ReactNode, description: string, showRetry?: boolean, showQuantity?: boolean, viewType?: string, allowJobClick: boolean = true) => {
     if (jobs.length === 0) return null;
 
     const displayJobs = currentView === 'main' ? jobs.slice(0, 3) : jobs;
@@ -169,7 +181,10 @@ const JobsTab: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {job.priority && getPriorityIcon(job.priority)}
                     <div>
-                      <h4 className="font-medium text-slate-900 cursor-pointer hover:text-blue-600" onClick={() => handleJobClick(job)}>
+                      <h4 
+                        className={`font-medium text-slate-900 ${allowJobClick ? 'cursor-pointer hover:text-blue-600' : ''}`} 
+                        onClick={allowJobClick ? () => handleJobClick(job) : undefined}
+                      >
                         {job.name} ({job.count})
                       </h4>
                       <div className="flex items-center gap-4 text-sm text-slate-500">
@@ -245,7 +260,7 @@ const JobsTab: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
-            <ArrowUp className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Back to QueueBoard
           </Button>
           <div>
@@ -253,7 +268,7 @@ const JobsTab: React.FC = () => {
             <p className="text-slate-600">High priority jobs in the queue</p>
           </div>
         </div>
-        {renderJobSection(highPriorityQueued, "Priority Jobs", <ArrowUp className="h-5 w-5 text-red-500" />, "High priority jobs", false, true)}
+        {renderJobSection(highPriorityQueued, "Priority Jobs", <ArrowUp className="h-5 w-5 text-red-500" />, "High priority jobs", false, true, undefined, true)}
       </div>
     );
   }
@@ -263,7 +278,7 @@ const JobsTab: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
-            <ArrowDown className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Back to QueueBoard
           </Button>
           <div>
@@ -271,7 +286,7 @@ const JobsTab: React.FC = () => {
             <p className="text-slate-600">Standard priority jobs in the queue</p>
           </div>
         </div>
-        {renderJobSection(normalPriorityQueued, "Normal Jobs", <ArrowDown className="h-5 w-5 text-blue-500" />, "Standard priority jobs", false, true)}
+        {renderJobSection(normalPriorityQueued, "Normal Jobs", <ArrowDown className="h-5 w-5 text-blue-500" />, "Standard priority jobs", false, true, undefined, true)}
       </div>
     );
   }
@@ -281,7 +296,7 @@ const JobsTab: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Back to QueueBoard
           </Button>
           <div>
@@ -289,7 +304,7 @@ const JobsTab: React.FC = () => {
             <p className="text-slate-600">Successfully completed jobs</p>
           </div>
         </div>
-        {renderJobSection(completedJobs, "Completed Jobs", <CheckCircle className="h-5 w-5 text-blue-500" />, "Successfully completed jobs")}
+        {renderJobSection(completedJobs, "Completed Jobs", <CheckCircle className="h-5 w-5 text-blue-500" />, "Successfully completed jobs", false, false, undefined, true)}
       </div>
     );
   }
@@ -299,7 +314,7 @@ const JobsTab: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Back to QueueBoard
           </Button>
           <div>
@@ -307,7 +322,7 @@ const JobsTab: React.FC = () => {
             <p className="text-slate-600">Jobs that encountered errors</p>
           </div>
         </div>
-        {renderJobSection(failedJobs, "Failed Jobs", <AlertCircle className="h-5 w-5 text-red-500" />, "Jobs that encountered errors", true)}
+        {renderJobSection(failedJobs, "Failed Jobs", <AlertCircle className="h-5 w-5 text-red-500" />, "Jobs that encountered errors", true, false, undefined, true)}
       </div>
     );
   }
@@ -452,6 +467,34 @@ const JobsTab: React.FC = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* Priority Change Section */}
+              {selectedJob.status === 'queued' && (
+                <div className="border-t pt-4">
+                  <label className="text-sm font-medium text-slate-600 block mb-2">Change Priority</label>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant={selectedJob.priority === 'high' ? 'default' : 'outline'}
+                      onClick={() => handlePriorityChange(selectedJob.id, 'high')}
+                      className="flex items-center gap-1"
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                      High Priority
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant={selectedJob.priority === 'normal' ? 'default' : 'outline'}
+                      onClick={() => handlePriorityChange(selectedJob.id, 'normal')}
+                      className="flex items-center gap-1"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                      Normal Priority
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {selectedJob.progress > 0 && (
                 <div>
                   <label className="text-sm font-medium text-slate-600">Progress</label>
