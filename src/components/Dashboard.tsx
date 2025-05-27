@@ -69,6 +69,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               <Monitor className="h-4 w-4" />
               Overview
             </TabsTrigger>
+            <TabsTrigger value="marketplace" className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Marketplace
+            </TabsTrigger>
             <TabsTrigger value="designs" className="flex items-center gap-2">
               <Layers className="h-4 w-4" />
               Designs
@@ -77,14 +81,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               <Settings className="h-4 w-4" />
               Jobs
             </TabsTrigger>
-            <TabsTrigger value="marketplace" className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Marketplace
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
             <OverviewTab />
+          </TabsContent>
+
+          <TabsContent value="marketplace">
+            <MarketplaceTab />
           </TabsContent>
 
           <TabsContent value="designs">
@@ -93,10 +97,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
           <TabsContent value="jobs">
             <JobsTab />
-          </TabsContent>
-
-          <TabsContent value="marketplace">
-            <MarketplaceTab />
           </TabsContent>
         </Tabs>
       </main>
