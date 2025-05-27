@@ -47,6 +47,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setShowSystemLog(false);
   };
 
+  const handleMachinesNavigation = () => {
+    setActiveTab("machines");
+  };
+
+  const handleCompletedJobsNavigation = () => {
+    setActiveTab("jobs");
+    // This will be handled by JobsTab to show completed jobs view
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
@@ -127,6 +136,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               <OverviewTab 
                 onNavigateToBusinessMetrics={handleBusinessMetricsNavigation}
                 onNavigateToSystemLog={handleSystemLogNavigation}
+                onNavigateToMachines={handleMachinesNavigation}
+                onNavigateToCompletedJobs={handleCompletedJobsNavigation}
               />
             </TabsContent>
 
