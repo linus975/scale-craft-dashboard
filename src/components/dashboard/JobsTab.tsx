@@ -376,7 +376,7 @@ const JobsTab: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Play className="h-5 w-5 text-green-500" />
                 <div>
-                  <CardTitle className="text-lg">Currently Printing</CardTitle>
+                  <CardTitle className="text-lg">Active Jobs</CardTitle>
                   <CardDescription className="text-sm">Jobs currently being printed</CardDescription>
                 </div>
                 <Badge variant="outline" className="bg-white">
@@ -393,7 +393,7 @@ const JobsTab: React.FC = () => {
                 className="flex items-center gap-2"
               >
                 <ExternalLink className="h-4 w-4" />
-                View Current Jobs
+                View Active Jobs
               </Button>
             </div>
           </CardHeader>

@@ -30,6 +30,7 @@ import ShippingTab from './ShippingTab';
 import BusinessMetricsPage from './BusinessMetricsPage';
 import SystemLogPage from './SystemLogPage';
 import DesignDetailPage from './DesignDetailPage';
+import WhitelabelCatalogPage from './WhitelabelCatalogPage';
 
 interface DashboardProps {
   user: { email: string };
@@ -41,6 +42,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [showBusinessMetrics, setShowBusinessMetrics] = useState(false);
   const [showSystemLog, setShowSystemLog] = useState(false);
   const [showDesignDetail, setShowDesignDetail] = useState<number | null>(null);
+  const [showWhitelabelCatalog, setShowWhitelabelCatalog] = useState(false);
 
   const handleBusinessMetricsNavigation = () => {
     setShowBusinessMetrics(true);
@@ -50,10 +52,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setShowSystemLog(true);
   };
 
+  const handleActiveJobsNavigation = () => {
+    setActiveTab("jobs");
+    // This will be handled by JobsTab to show active jobs view
+  };
+
+  const handleWhitelabelCatalogNavigation = () => {
+    setShowWhitelabelCatalog(true);
+  };
+
   const handleBackToOverview = () => {
     setShowBusinessMetrics(false);
     setShowSystemLog(false);
     setShowDesignDetail(null);
+    setShowWhitelabelCatalog(false);
   };
 
   const handleDesignDetailNavigation = (designId: number) => {
@@ -126,6 +138,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           <SystemLogPage onBack={handleBackToOverview} />
         ) : showDesignDetail ? (
           <DesignDetailPage designId={showDesignDetail} onBack={handleBackToOverview} />
+        ) : showWhitelabelCatalog ? (
+          <WhitelabelCatalogPage onBack={handleBackToOverview} />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             {/* Desktop Navigation */}
@@ -173,6 +187,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                 onNavigateToSystemLog={handleSystemLogNavigation}
                 onNavigateToMachines={handleMachinesNavigation}
                 onNavigateToCompletedJobs={handleCompletedJobsNavigation}
+                onNavigateToActiveJobs={handleActiveJobsNavigation}
               />
             </TabsContent>
 
@@ -181,7 +196,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             </TabsContent>
 
             <TabsContent value="designs">
-              <DesignsTab onNavigateToDesignDetail={handleDesignDetailNavigation} />
+              <DesignsTab 
+                onNavigateToDesignDetail={handleDesignDetailNavigation}
+                onNavigateToWhitelabelCatalog={handleWhitelabelCatalogNavigation}
+              />
             </TabsContent>
 
             <TabsContent value="jobs">

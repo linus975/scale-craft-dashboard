@@ -12,13 +12,15 @@ interface OverviewTabProps {
   onNavigateToSystemLog?: () => void;
   onNavigateToMachines: () => void;
   onNavigateToCompletedJobs: () => void;
+  onNavigateToActiveJobs: () => void;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ 
   onNavigateToBusinessMetrics, 
   onNavigateToSystemLog, 
   onNavigateToMachines,
-  onNavigateToCompletedJobs 
+  onNavigateToCompletedJobs,
+  onNavigateToActiveJobs
 }) => {
   // Mock data for demonstration
   const mockJobs = [
@@ -64,7 +66,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={onNavigateToMachines}>
+        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={onNavigateToActiveJobs}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">Active Jobs</CardTitle>
           </CardHeader>

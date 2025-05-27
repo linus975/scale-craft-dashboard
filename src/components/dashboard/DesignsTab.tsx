@@ -7,16 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image } from 'lucide-react';
+import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image, Package, Check } from 'lucide-react';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import DesignEditDialog from './DesignEditDialog';
 
 interface DesignsTabProps {
   onNavigateToDesignDetail?: (designId: number) => void;
+  onNavigateToWhitelabelCatalog?: () => void;
 }
 
-const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail }) => {
+const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNavigateToWhitelabelCatalog }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
   const [selectedDesign, setSelectedDesign] = useState<any>(null);
@@ -407,6 +408,53 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail }) => 
           <Badge variant="outline">In Entwicklung</Badge>
         </CardContent>
       </Card>
+
+      {/* Design Library Section */}
+      <div className="mt-12 pt-8 border-t border-slate-200">
+        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onNavigateToWhitelabelCatalog()}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Package className="h-6 w-6 text-purple-600" />
+                  Design Library
+                </CardTitle>
+                <CardDescription className="text-base mt-2">
+                  Erweitern Sie Ihr Angebot mit professionellen Whitelabel-Katalogen
+                </CardDescription>
+              </div>
+              <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                Neu
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-slate-600">
+                Mieten Sie komplette Design-Kataloge für nur 30€ pro Monat und bieten Sie Ihren Kunden sofort hunderte von professionellen 3D-Designs an.
+              </p>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span>Über 300 Designs verfügbar</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span>Kommerzielle Nutzungsrechte</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span>Monatlich kündbar</span>
+                </div>
+              </div>
+              <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                <Package className="h-4 w-4 mr-2" />
+                Kataloge durchsuchen
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Design Edit Dialog */}
       {selectedDesign && (
