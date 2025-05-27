@@ -21,6 +21,7 @@ import MarketplaceTab from './dashboard/MarketplaceTab';
 import MachinesTab from './dashboard/MachinesTab';
 import KnowledgeBaseTab from './dashboard/KnowledgeBaseTab';
 import ShippingTab from './dashboard/ShippingTab';
+import BusinessMetricsPage from './dashboard/BusinessMetricsPage';
 
 interface DashboardProps {
   user: { email: string };
@@ -29,6 +30,15 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [showBusinessMetrics, setShowBusinessMetrics] = useState(false);
+
+  const handleBusinessMetricsNavigation = () => {
+    setShowBusinessMetrics(true);
+  };
+
+  const handleBackToOverview = () => {
+    setShowBusinessMetrics(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -69,66 +79,70 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 lg:w-fit lg:grid-cols-7 mb-8">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Monitor className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="marketplace" className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Marketplace
-            </TabsTrigger>
-            <TabsTrigger value="designs" className="flex items-center gap-2">
-              <Layers className="h-4 w-4" />
-              Designs
-            </TabsTrigger>
-            <TabsTrigger value="jobs" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              QueueBoard
-            </TabsTrigger>
-            <TabsTrigger value="machines" className="flex items-center gap-2">
-              <Printer className="h-4 w-4" />
-              Machines
-            </TabsTrigger>
-            <TabsTrigger value="shipping" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Shipping
-            </TabsTrigger>
-            <TabsTrigger value="knowledge" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Knowledge Base
-            </TabsTrigger>
-          </TabsList>
+        {showBusinessMetrics ? (
+          <BusinessMetricsPage onBack={handleBackToOverview} />
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-7 lg:w-fit lg:grid-cols-7 mb-8">
+              <TabsTrigger value="overview" className="flex items-center gap-2">
+                <Monitor className="h-4 w-4" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="marketplace" className="flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                Marketplace
+              </TabsTrigger>
+              <TabsTrigger value="designs" className="flex items-center gap-2">
+                <Layers className="h-4 w-4" />
+                Designs
+              </TabsTrigger>
+              <TabsTrigger value="jobs" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                QueueBoard
+              </TabsTrigger>
+              <TabsTrigger value="machines" className="flex items-center gap-2">
+                <Printer className="h-4 w-4" />
+                Machines
+              </TabsTrigger>
+              <TabsTrigger value="shipping" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Shipping
+              </TabsTrigger>
+              <TabsTrigger value="knowledge" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Knowledge Base
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview">
-            <OverviewTab />
-          </TabsContent>
+            <TabsContent value="overview">
+              <OverviewTab onNavigateToBusinessMetrics={handleBusinessMetricsNavigation} />
+            </TabsContent>
 
-          <TabsContent value="marketplace">
-            <MarketplaceTab />
-          </TabsContent>
+            <TabsContent value="marketplace">
+              <MarketplaceTab />
+            </TabsContent>
 
-          <TabsContent value="designs">
-            <DesignsTab />
-          </TabsContent>
+            <TabsContent value="designs">
+              <DesignsTab />
+            </TabsContent>
 
-          <TabsContent value="jobs">
-            <JobsTab />
-          </TabsContent>
+            <TabsContent value="jobs">
+              <JobsTab />
+            </TabsContent>
 
-          <TabsContent value="machines">
-            <MachinesTab />
-          </TabsContent>
+            <TabsContent value="machines">
+              <MachinesTab />
+            </TabsContent>
 
-          <TabsContent value="shipping">
-            <ShippingTab />
-          </TabsContent>
+            <TabsContent value="shipping">
+              <ShippingTab />
+            </TabsContent>
 
-          <TabsContent value="knowledge">
-            <KnowledgeBaseTab />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="knowledge">
+              <KnowledgeBaseTab />
+            </TabsContent>
+          </Tabs>
+        )}
       </main>
     </div>
   );

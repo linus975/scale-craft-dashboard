@@ -1,10 +1,16 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Play, Pause, CheckCircle, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Clock, Play, Pause, CheckCircle, AlertCircle, TrendingUp, Euro } from 'lucide-react';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
-const OverviewTab: React.FC = () => {
+interface OverviewTabProps {
+  onNavigateToBusinessMetrics: () => void;
+}
+
+const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateToBusinessMetrics }) => {
   // Mock data for demonstration
   const mockJobs = [
     { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2" },
@@ -12,6 +18,16 @@ const OverviewTab: React.FC = () => {
     { id: 3, name: "Bracket Design", status: "completed", progress: 100, material: "PETG", printer: "X1C-1" },
     { id: 4, name: "Enclosure Part", status: "failed", progress: 45, material: "PLA", printer: "Mk3-2" },
   ];
+
+  // Revenue data for pie chart
+  const revenueData = [
+    { name: 'Marketplace Orders', value: 15420, color: '#3b82f6' },
+    { name: 'Custom Projects', value: 8750, color: '#10b981' },
+    { name: 'Prototyping', value: 4230, color: '#f59e0b' },
+    { name: 'Material Sales', value: 2100, color: '#ef4444' }
+  ];
+
+  const totalRevenue = revenueData.reduce((sum, item) => sum + item.value, 0);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -80,32 +96,96 @@ const OverviewTab: React.FC = () => {
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
-          <CardDescription>Latest updates from your production workflow</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {mockJobs.slice(0, 3).map((job) => (
-            <div key={job.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                {getStatusIcon(job.status)}
-                <div>
-                  <p className="font-medium text-slate-900">{job.name}</p>
-                  <p className="text-sm text-slate-500">{job.printer} • {job.material}</p>
-                </div>
+      {/* Revenue Overview and Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue Pie Chart */}
+        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Euro className="h-5 w-5" />
+              Revenue Overview (Last 30 Days)
+            </CardTitle>
+            <CardDescription>Total revenue: €{totalRevenue.toLocaleString()}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-6">
+              <div className="flex-1">
+                <ChartContainer
+                  config={{
+                    marketplace: { label: "Marketplace Orders", color: "#3b82f6" },
+                    custom: { label: "Custom Projects", color: "#10b981" },
+                    prototyping: { label: "Prototyping", color: "#f59e0b" },
+                    materials: { label: "Material Sales", color: "#ef4444" }
+                  }}
+                  className="h-[200px]"
+                >
+                  <PieChart>
+                    <Pie
+                      data={revenueData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {revenueData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                  </PieChart>
+                </ChartContainer>
               </div>
-              <Badge className={getStatusColor(job.status)}>
-                {job.status}
-              </Badge>
+              <div className="space-y-2">
+                {revenueData.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-slate-600">{item.name}</span>
+                    <span className="font-medium">€{item.value.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
+            <div className="mt-4 pt-4 border-t">
+              <Button variant="outline" className="w-full" onClick={onNavigateToBusinessMetrics}>
+                <TrendingUp className="h-4 w-4 mr-2" />
+                View Business Metrics
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity */}
+        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Recent Activity
+            </CardTitle>
+            <CardDescription>Latest updates from your production workflow</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {mockJobs.slice(0, 3).map((job) => (
+              <div key={job.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  {getStatusIcon(job.status)}
+                  <div>
+                    <p className="font-medium text-slate-900">{job.name}</p>
+                    <p className="text-sm text-slate-500">{job.printer} • {job.material}</p>
+                  </div>
+                </div>
+                <Badge className={getStatusColor(job.status)}>
+                  {job.status}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
