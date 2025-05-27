@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -145,6 +146,7 @@ const MachinesTab: React.FC = () => {
                     <SelectItem value="fdm">FDM</SelectItem>
                     <SelectItem value="sla">SLA/Resin</SelectItem>
                     <SelectItem value="sls">SLS</SelectItem>
+                    <SelectItem value="endless-printing">Endless Printing</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
