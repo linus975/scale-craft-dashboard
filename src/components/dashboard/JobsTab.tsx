@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Play, 
   Pause, 
@@ -14,20 +15,28 @@ import {
   ArrowDown,
   RotateCcw,
   Eye,
-  ExternalLink
+  ExternalLink,
+  Plus,
+  Minus,
+  Download,
+  FileCode
 } from 'lucide-react';
 import JobCreationDialog from './JobCreationDialog';
 import CurrentPrintingJobsPage from './CurrentPrintingJobsPage';
 
 const JobsTab: React.FC = () => {
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'main' | 'currentJobs'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'currentJobs' | 'allHigh' | 'allNormal' | 'allCompleted' | 'allFailed'>('main');
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [isJobDetailOpen, setIsJobDetailOpen] = useState(false);
   const [jobs, setJobs] = useState([
-    { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2", priority: "normal", count: 3 },
-    { id: 2, name: "Prototype Housing", status: "queued", progress: 0, material: "ABS", printer: "A1 Mini-1", priority: "high", count: 5 },
-    { id: 3, name: "Bracket Design", status: "completed", progress: 100, material: "PETG", printer: "X1C-1", priority: "normal", count: 2 },
-    { id: 4, name: "Enclosure Part", status: "failed", progress: 45, material: "PLA", printer: "Mk3-2", priority: "normal", count: 1 },
-    { id: 5, name: "Phone Case Custom", status: "queued", progress: 0, material: "TPU", printer: "X1C-1", priority: "normal", count: 4 },
+    { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2", priority: "normal", count: 3, estimatedTime: "2h 45m", filePath: "/gcode/gear_set.gcode" },
+    { id: 2, name: "Prototype Housing", status: "queued", progress: 0, material: "ABS", printer: "A1 Mini-1", priority: "high", count: 5, estimatedTime: "4h 20m", filePath: "/gcode/housing.gcode" },
+    { id: 3, name: "Bracket Design", status: "completed", progress: 100, material: "PETG", printer: "X1C-1", priority: "normal", count: 2, estimatedTime: "1h 30m", filePath: "/gcode/bracket.gcode" },
+    { id: 4, name: "Enclosure Part", status: "failed", progress: 45, material: "PLA", printer: "Mk3-2", priority: "normal", count: 1, estimatedTime: "3h 15m", filePath: "/gcode/enclosure.gcode" },
+    { id: 5, name: "Phone Case Custom", status: "queued", progress: 0, material: "TPU", printer: "X1C-1", priority: "normal", count: 4, estimatedTime: "2h 10m", filePath: "/gcode/phone_case.gcode" },
+    { id: 6, name: "Test Print", status: "completed", progress: 100, material: "PLA", printer: "X1C-2", priority: "high", count: 1, estimatedTime: "45m", filePath: "/gcode/test.gcode" },
+    { id: 7, name: "Large Component", status: "failed", progress: 20, material: "ABS", printer: "Mk3-2", priority: "normal", count: 2, estimatedTime: "6h 30m", filePath: "/gcode/large.gcode" },
   ]);
 
   if (currentView === 'currentJobs') {
@@ -69,7 +78,9 @@ const JobsTab: React.FC = () => {
       name: jobData.designName,
       status: 'queued',
       progress: 0,
-      count: jobData.count || 1
+      count: jobData.count || 1,
+      estimatedTime: "2h 30m",
+      filePath: "/gcode/new_job.gcode"
     };
 
     setJobs(prev => {
@@ -91,6 +102,24 @@ const JobsTab: React.FC = () => {
     ));
   };
 
+  const handleQuantityChange = (jobId: number, change: number) => {
+    setJobs(prev => prev.map(job => 
+      job.id === jobId 
+        ? { ...job, count: Math.max(1, job.count + change) }
+        : job
+    ));
+  };
+
+  const handleJobClick = (job: any) => {
+    setSelectedJob(job);
+    setIsJobDetailOpen(true);
+  };
+
+  const handleDownloadGCode = (filePath: string, fileName: string) => {
+    console.log(`Downloading GCode from ${filePath} as ${fileName}`);
+    // In a real app, this would trigger a file download
+  };
+
   // Separate jobs by priority and status
   const printingJobs = jobs.filter(job => job.status === 'printing');
   const highPriorityQueued = jobs.filter(job => job.status === 'queued' && job.priority === 'high');
@@ -98,33 +127,49 @@ const JobsTab: React.FC = () => {
   const completedJobs = jobs.filter(job => job.status === 'completed');
   const failedJobs = jobs.filter(job => job.status === 'failed');
 
-  const renderJobSection = (jobs: any[], title: string, icon: React.ReactNode, description: string, showRetry?: boolean) => {
+  const renderJobSection = (jobs: any[], title: string, icon: React.ReactNode, description: string, showRetry?: boolean, showQuantity?: boolean, viewType?: string) => {
     if (jobs.length === 0) return null;
+
+    const displayJobs = currentView === 'main' ? jobs.slice(0, 3) : jobs;
+    const hasMoreJobs = jobs.length > 3 && currentView === 'main';
 
     return (
       <Card className="bg-slate-50/50 border border-slate-200">
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            {icon}
-            <div>
-              <CardTitle className="text-lg">{title}</CardTitle>
-              <CardDescription className="text-sm">{description}</CardDescription>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {icon}
+              <div>
+                <CardTitle className="text-lg">{title}</CardTitle>
+                <CardDescription className="text-sm">{description}</CardDescription>
+              </div>
+              <Badge variant="outline" className="bg-white">
+                {jobs.length}
+              </Badge>
             </div>
-            <Badge variant="outline" className="bg-white">
-              {jobs.length}
-            </Badge>
+            {hasMoreJobs && viewType && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCurrentView(viewType as any)}
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View All
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="space-y-2">
-            {jobs.map((job, index) => (
+            {displayJobs.map((job, index) => (
               <div key={job.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-4">
                   {getStatusIcon(job.status)}
                   <div className="flex items-center gap-2">
                     {job.priority && getPriorityIcon(job.priority)}
                     <div>
-                      <h4 className="font-medium text-slate-900">
+                      <h4 className="font-medium text-slate-900 cursor-pointer hover:text-blue-600" onClick={() => handleJobClick(job)}>
                         {job.name} ({job.count})
                       </h4>
                       <div className="flex items-center gap-4 text-sm text-slate-500">
@@ -142,6 +187,27 @@ const JobsTab: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {showQuantity && (job.status === 'queued') && (
+                    <div className="flex items-center gap-1 mr-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleQuantityChange(job.id, -1)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="text-sm w-8 text-center">{job.count}</span>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleQuantityChange(job.id, 1)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                   <Badge className={getStatusColor(job.status)}>
                     {job.status}
                   </Badge>
@@ -173,11 +239,84 @@ const JobsTab: React.FC = () => {
     );
   };
 
+  // Handle different views
+  if (currentView === 'allHigh') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
+            <ArrowUp className="h-4 w-4" />
+            Back to QueueBoard
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">All Priority Jobs</h2>
+            <p className="text-slate-600">High priority jobs in the queue</p>
+          </div>
+        </div>
+        {renderJobSection(highPriorityQueued, "Priority Jobs", <ArrowUp className="h-5 w-5 text-red-500" />, "High priority jobs", false, true)}
+      </div>
+    );
+  }
+
+  if (currentView === 'allNormal') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
+            <ArrowDown className="h-4 w-4" />
+            Back to QueueBoard
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">All Normal Jobs</h2>
+            <p className="text-slate-600">Standard priority jobs in the queue</p>
+          </div>
+        </div>
+        {renderJobSection(normalPriorityQueued, "Normal Jobs", <ArrowDown className="h-5 w-5 text-blue-500" />, "Standard priority jobs", false, true)}
+      </div>
+    );
+  }
+
+  if (currentView === 'allCompleted') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Back to QueueBoard
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">All Completed Jobs</h2>
+            <p className="text-slate-600">Successfully completed jobs</p>
+          </div>
+        </div>
+        {renderJobSection(completedJobs, "Completed Jobs", <CheckCircle className="h-5 w-5 text-blue-500" />, "Successfully completed jobs")}
+      </div>
+    );
+  }
+
+  if (currentView === 'allFailed') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Back to QueueBoard
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">All Failed Jobs</h2>
+            <p className="text-slate-600">Jobs that encountered errors</p>
+          </div>
+        </div>
+        {renderJobSection(failedJobs, "Failed Jobs", <AlertCircle className="h-5 w-5 text-red-500" />, "Jobs that encountered errors", true)}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Production QueueBoard</h2>
+          <h2 className="text-2xl font-bold text-slate-900">QueueBoard</h2>
           <p className="text-slate-600">Monitor and manage your print queue with priority management</p>
         </div>
         <Button 
@@ -222,7 +361,10 @@ const JobsTab: React.FC = () => {
           highPriorityQueued, 
           "Priority Jobs", 
           <ArrowUp className="h-5 w-5 text-red-500" />,
-          "High priority jobs - will be processed next"
+          "High priority jobs - will be processed next",
+          false,
+          true,
+          'allHigh'
         )}
 
         {/* Normal Priority Queue */}
@@ -230,7 +372,10 @@ const JobsTab: React.FC = () => {
           normalPriorityQueued, 
           "Normal Jobs", 
           <ArrowDown className="h-5 w-5 text-blue-500" />,
-          "Standard priority jobs"
+          "Standard priority jobs",
+          false,
+          true,
+          'allNormal'
         )}
 
         {/* Separator */}
@@ -238,19 +383,24 @@ const JobsTab: React.FC = () => {
 
         {/* Completed Jobs */}
         {renderJobSection(
-          completedJobs.slice(-3),
+          completedJobs,
           "Completed Jobs", 
           <CheckCircle className="h-5 w-5 text-blue-500" />,
-          "Successfully completed jobs (last 3)"
+          "Successfully completed jobs",
+          false,
+          false,
+          'allCompleted'
         )}
 
         {/* Failed Jobs */}
         {renderJobSection(
-          failedJobs.slice(-2),
+          failedJobs,
           "Failed Jobs", 
           <AlertCircle className="h-5 w-5 text-red-500" />,
-          "Jobs that encountered errors (last 2)",
-          true
+          "Jobs that encountered errors",
+          true,
+          false,
+          'allFailed'
         )}
       </div>
 
@@ -259,6 +409,76 @@ const JobsTab: React.FC = () => {
         onClose={() => setIsJobDialogOpen(false)}
         onCreateJob={handleCreateJob}
       />
+
+      {/* Job Detail Dialog */}
+      <Dialog open={isJobDetailOpen} onOpenChange={setIsJobDetailOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Job Details - {selectedJob?.name}</DialogTitle>
+            <DialogDescription>
+              Detailed information about this print job
+            </DialogDescription>
+          </DialogHeader>
+          {selectedJob && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-600">Status</label>
+                  <Badge className={getStatusColor(selectedJob.status)}>
+                    {selectedJob.status}
+                  </Badge>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-600">Quantity</label>
+                  <p className="text-sm">{selectedJob.count} pieces</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-600">Material</label>
+                  <p className="text-sm">{selectedJob.material}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-600">Printer</label>
+                  <p className="text-sm">{selectedJob.printer}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-600">Estimated Time</label>
+                  <p className="text-sm">{selectedJob.estimatedTime}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-600">Priority</label>
+                  <div className="flex items-center gap-1">
+                    {getPriorityIcon(selectedJob.priority)}
+                    <span className="text-sm capitalize">{selectedJob.priority}</span>
+                  </div>
+                </div>
+              </div>
+              {selectedJob.progress > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-slate-600">Progress</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-slate-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${selectedJob.progress}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm">{selectedJob.progress}%</span>
+                  </div>
+                </div>
+              )}
+              <div className="pt-4 border-t">
+                <Button 
+                  className="w-full" 
+                  onClick={() => handleDownloadGCode(selectedJob.filePath, `${selectedJob.name}.gcode`)}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download G-Code
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

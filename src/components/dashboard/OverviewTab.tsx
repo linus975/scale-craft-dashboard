@@ -1,16 +1,18 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, Play, Pause, CheckCircle, AlertCircle, TrendingUp, Euro } from 'lucide-react';
+import { Clock, Play, Pause, CheckCircle, AlertCircle, TrendingUp, Euro, FileText } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface OverviewTabProps {
   onNavigateToBusinessMetrics: () => void;
+  onNavigateToSystemLog?: () => void;
 }
 
-const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateToBusinessMetrics }) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateToBusinessMetrics, onNavigateToSystemLog }) => {
   // Mock data for demonstration
   const mockJobs = [
     { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2" },
@@ -183,6 +185,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateToBusinessMetrics }
                 </Badge>
               </div>
             ))}
+            <div className="mt-4 pt-4 border-t">
+              <Button variant="outline" className="w-full" onClick={onNavigateToSystemLog}>
+                <FileText className="h-4 w-4 mr-2" />
+                View System Log
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

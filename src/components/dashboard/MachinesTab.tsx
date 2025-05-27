@@ -18,9 +18,11 @@ import {
   BarChart3,
   ExternalLink
 } from 'lucide-react';
+import MachineStatisticsPage from './MachineStatisticsPage';
 
 const MachinesTab: React.FC = () => {
   const [isAddMachineDialogOpen, setIsAddMachineDialogOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'main' | 'statistics'>('main');
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -30,6 +32,10 @@ const MachinesTab: React.FC = () => {
     username: '',
     password: ''
   });
+
+  if (currentView === 'statistics') {
+    return <MachineStatisticsPage onBack={() => setCurrentView('main')} />;
+  }
 
   const mockMachines = [
     { 
@@ -107,7 +113,7 @@ const MachinesTab: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">3D Printer Machines</h2>
+          <h2 className="text-2xl font-bold text-slate-900">Machine Parc</h2>
           <p className="text-slate-600">Manage your connected 3D printers and monitor their status</p>
         </div>
         <Dialog open={isAddMachineDialogOpen} onOpenChange={setIsAddMachineDialogOpen}>
@@ -234,7 +240,10 @@ const MachinesTab: React.FC = () => {
       </div>
 
       {/* Machine Statistics Link */}
-      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+      <Card 
+        className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+        onClick={() => setCurrentView('statistics')}
+      >
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

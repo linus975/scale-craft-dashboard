@@ -22,6 +22,7 @@ import MachinesTab from './dashboard/MachinesTab';
 import KnowledgeBaseTab from './dashboard/KnowledgeBaseTab';
 import ShippingTab from './dashboard/ShippingTab';
 import BusinessMetricsPage from './dashboard/BusinessMetricsPage';
+import SystemLogPage from './dashboard/SystemLogPage';
 
 interface DashboardProps {
   user: { email: string };
@@ -31,13 +32,19 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showBusinessMetrics, setShowBusinessMetrics] = useState(false);
+  const [showSystemLog, setShowSystemLog] = useState(false);
 
   const handleBusinessMetricsNavigation = () => {
     setShowBusinessMetrics(true);
   };
 
+  const handleSystemLogNavigation = () => {
+    setShowSystemLog(true);
+  };
+
   const handleBackToOverview = () => {
     setShowBusinessMetrics(false);
+    setShowSystemLog(false);
   };
 
   return (
@@ -81,6 +88,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {showBusinessMetrics ? (
           <BusinessMetricsPage onBack={handleBackToOverview} />
+        ) : showSystemLog ? (
+          <SystemLogPage onBack={handleBackToOverview} />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-7 lg:w-fit lg:grid-cols-7 mb-8">
@@ -115,7 +124,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             </TabsList>
 
             <TabsContent value="overview">
-              <OverviewTab onNavigateToBusinessMetrics={handleBusinessMetricsNavigation} />
+              <OverviewTab 
+                onNavigateToBusinessMetrics={handleBusinessMetricsNavigation}
+                onNavigateToSystemLog={handleSystemLogNavigation}
+              />
             </TabsContent>
 
             <TabsContent value="marketplace">
