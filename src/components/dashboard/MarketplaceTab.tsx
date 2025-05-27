@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   Link,
   RefreshCw,
@@ -15,9 +17,18 @@ import {
   Zap,
   Settings
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const MarketplaceTab: React.FC = () => {
+  const { toast } = useToast();
   const [isIntegrationDialogOpen, setIsIntegrationDialogOpen] = useState(false);
+  const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
+  const [selectedMarketplace, setSelectedMarketplace] = useState<any>(null);
+  const [credentials, setCredentials] = useState({
+    clientId: '',
+    apiKey: '',
+    webhookUrl: ''
+  });
   const [automationSettings, setAutomationSettings] = useState({
     autoCreateJobs: true,
     parameterMapping: true,
@@ -73,9 +84,58 @@ const MarketplaceTab: React.FC = () => {
   };
 
   const handleMarketplaceSelect = (marketplace: any) => {
-    console.log('Selected marketplace:', marketplace);
+    setSelectedMarketplace(marketplace);
     setIsIntegrationDialogOpen(false);
-    // TODO: Implement marketplace integration logic
+    setIsCredentialsDialogOpen(true);
+  };
+
+  const handleCredentialsSubmit = () => {
+    console.log('Marketplace credentials:', {
+      marketplace: selectedMarketplace,
+      credentials
+    });
+    
+    toast({
+      title: "Integration erfolgreich",
+      description: `${selectedMarketplace.name} wurde erfolgreich verbunden.`,
+    });
+    
+    setIsCredentialsDialogOpen(false);
+    setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
+  };
+
+  const handleSyncNow = async (marketplaceName: string) => {
+    console.log('Syncing marketplace:', marketplaceName);
+    
+    // TODO: Replace with actual webhook URL from configuration
+    const webhookUrl = 'https://hooks.zapier.com/hooks/catch/your-webhook-id/';
+    
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors',
+        body: JSON.stringify({
+          marketplace: marketplaceName,
+          action: 'sync',
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      toast({
+        title: "Sync gestartet",
+        description: `${marketplaceName} wird synchronisiert...`,
+      });
+    } catch (error) {
+      console.error('Sync error:', error);
+      toast({
+        title: "Sync-Fehler",
+        description: "Fehler beim Synchronisieren. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -114,6 +174,55 @@ const MarketplaceTab: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* API Credentials Dialog */}
+        <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>API Credentials - {selectedMarketplace?.name}</DialogTitle>
+              <DialogDescription>
+                Geben Sie Ihre API-Zugangsdaten ein um die Integration zu vervollständigen
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="clientId">Client ID</Label>
+                <Input
+                  id="clientId"
+                  placeholder="Ihre Client ID"
+                  value={credentials.clientId}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, clientId: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">API Key / Password</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  placeholder="Ihr API Key"
+                  value={credentials.apiKey}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, apiKey: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="webhookUrl">Webhook URL (Optional)</Label>
+                <Input
+                  id="webhookUrl"
+                  placeholder="https://your-webhook-url.com"
+                  value={credentials.webhookUrl}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                />
+              </div>
+              <Button 
+                onClick={handleCredentialsSubmit} 
+                className="w-full"
+                disabled={!credentials.clientId || !credentials.apiKey}
+              >
+                Integration hinzufügen
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Marketplace Connections */}
@@ -143,7 +252,11 @@ const MarketplaceTab: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">{marketplace.orders} orders synced</span>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleSyncNow(marketplace.name)}
+                  >
                     <RefreshCw className="h-3 w-3 mr-1" />
                     Sync Now
                   </Button>

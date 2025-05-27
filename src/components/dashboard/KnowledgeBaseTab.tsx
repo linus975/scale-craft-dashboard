@@ -1,26 +1,32 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
   ExternalLink, 
-  Download, 
   Calendar, 
   User,
   BookOpen,
   Lightbulb,
-  Newspaper
+  Newspaper,
+  BarChart3,
+  ArrowRight
 } from 'lucide-react';
+import PrintAutomationPage from './PrintAutomationPage';
+import MachineStatisticsPage from './MachineStatisticsPage';
 
 const KnowledgeBaseTab: React.FC = () => {
-  const automationFiles = [
-    { name: "Prusa Connect API Integration", type: "Python Script", size: "12 KB" },
-    { name: "OctoPrint Automation", type: "Shell Script", size: "8 KB" },
-    { name: "Bambu Lab Queue Manager", type: "Node.js", size: "25 KB" },
-    { name: "Universal G-code Processor", type: "Python Script", size: "18 KB" }
-  ];
+  const [currentView, setCurrentView] = useState<'main' | 'automation' | 'statistics'>('main');
+
+  if (currentView === 'automation') {
+    return <PrintAutomationPage onBack={() => setCurrentView('main')} />;
+  }
+
+  if (currentView === 'statistics') {
+    return <MachineStatisticsPage onBack={() => setCurrentView('main')} />;
+  }
 
   const news = [
     {
@@ -68,37 +74,44 @@ const KnowledgeBaseTab: React.FC = () => {
         <p className="text-slate-600">Resources, automation files, and insights for 3D print production</p>
       </div>
 
-      {/* Automation Files Section */}
-      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <FileText className="h-6 w-6 text-blue-600" />
-            <div>
-              <CardTitle>Print Automation Files</CardTitle>
-              <CardDescription>Download ready-to-use automation scripts and integrations</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {automationFiles.map((file, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Download className="h-5 w-5 text-slate-400" />
-                  <div>
-                    <p className="font-medium text-slate-900">{file.name}</p>
-                    <p className="text-sm text-slate-500">{file.type} • {file.size}</p>
-                  </div>
+      {/* Quick Access Links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card 
+          className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setCurrentView('automation')}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText className="h-8 w-8 text-blue-600" />
+                <div>
+                  <h3 className="font-semibold text-slate-900">Print Automation Files</h3>
+                  <p className="text-sm text-slate-600">Scripts und Tools für die Automatisierung</p>
                 </div>
-                <Button size="sm" variant="outline">
-                  <Download className="h-3 w-3 mr-1" />
-                  Download
-                </Button>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <ArrowRight className="h-5 w-5 text-slate-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setCurrentView('statistics')}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <BarChart3 className="h-8 w-8 text-green-600" />
+                <div>
+                  <h3 className="font-semibold text-slate-900">Machine Statistics</h3>
+                  <p className="text-sm text-slate-600">Detaillierte Performance-Daten</p>
+                </div>
+              </div>
+              <ArrowRight className="h-5 w-5 text-slate-400" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* News Section */}
       <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
