@@ -13,7 +13,6 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import DesignEditDialog from './DesignEditDialog';
-import LibraryDesignCatalogPage from './LibraryDesignCatalogPage';
 
 interface DesignsTabProps {
   onNavigateToDesignDetail?: (designId: number) => void;
