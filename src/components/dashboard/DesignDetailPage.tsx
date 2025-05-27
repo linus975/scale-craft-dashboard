@@ -123,7 +123,8 @@ const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack })
       printTime: "45 min",
       material: "PLA",
       infill: "20%",
-      layerHeight: "0.2mm"
+      layerHeight: "0.2mm",
+      isLibrary: false
     },
     { 
       id: 2, 
@@ -142,7 +143,8 @@ const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack })
       printTime: "30 min",
       material: "PETG",
       infill: "25%",
-      layerHeight: "0.15mm"
+      layerHeight: "0.15mm",
+      isLibrary: false
     },
     { 
       id: 3, 
@@ -161,7 +163,8 @@ const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack })
       printTime: "1h 15min",
       material: "ABS",
       infill: "30%",
-      layerHeight: "0.25mm"
+      layerHeight: "0.25mm",
+      isLibrary: false
     },
   ];
 
