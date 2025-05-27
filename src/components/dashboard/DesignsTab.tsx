@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image, Package, Check, Crown, Lock, Printer } from 'lucide-react';
+import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image, Package, Check, Crown, Lock, Printer, ChevronRight, PlayCircle, Clock } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import DesignEditDialog from './DesignEditDialog';
@@ -37,7 +38,13 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       rating: 4.9,
       downloads: 1250,
       imageUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=200&fit=crop",
-      isLibrary: true
+      isLibrary: true,
+      nozzleSize: "0.4mm",
+      layerHeight: "0.2mm",
+      infill: "20%",
+      supportMaterial: "No",
+      description: "Ein ergonomischer Handygriff aus hochwertigem PLA-Kunststoff für bessere Handhabung.",
+      tags: ["phone", "grip", "ergonomic", "accessories"]
     },
     {
       id: 102,
@@ -49,7 +56,13 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       rating: 4.8,
       downloads: 890,
       imageUrl: "https://images.unsplash.com/photo-1487887235947-a955ef187fcc?w=300&h=200&fit=crop",
-      isLibrary: true
+      isLibrary: true,
+      nozzleSize: "0.4mm",
+      layerHeight: "0.25mm",
+      infill: "25%",
+      supportMaterial: "Yes",
+      description: "Ein modulares Organizer-System für den Schreibtisch mit verschiedenen Fächern und Stifthaltern.",
+      tags: ["office", "organizer", "modular", "desk"]
     },
     {
       id: 103,
@@ -61,7 +74,13 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       rating: 4.7,
       downloads: 2100,
       imageUrl: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=300&h=200&fit=crop",
-      isLibrary: true
+      isLibrary: true,
+      nozzleSize: "0.4mm",
+      layerHeight: "0.2mm",
+      infill: "15%",
+      supportMaterial: "No",
+      description: "Ein elegantes Kabelmanagement-System zur Organisation von Kabeln auf dem Schreibtisch.",
+      tags: ["cable", "management", "office", "organization"]
     },
     {
       id: 104,
@@ -73,7 +92,13 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       rating: 4.9,
       downloads: 750,
       imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&h=200&fit=crop",
-      isLibrary: true
+      isLibrary: true,
+      nozzleSize: "0.6mm",
+      layerHeight: "0.3mm",
+      infill: "30%",
+      supportMaterial: "Yes",
+      description: "Ein ergonomischer Laptop-Ständer für bessere Körperhaltung und Arbeitskomfort.",
+      tags: ["laptop", "stand", "ergonomic", "workspace"]
     }
   ];
 
@@ -173,8 +198,12 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
     // TODO: Implement print logic
   };
 
-  const handleLibraryDesignPrint = (designId: number) => {
-    console.log(`Printing library design ${designId}`);
+  const handleLibraryDesignPrint = (designId: number, target: 'queue' | number) => {
+    if (target === 'queue') {
+      console.log(`Adding library design ${designId} to print queue`);
+    } else {
+      console.log(`Printing library design ${designId} on machine ${target}`);
+    }
     // TODO: Implement print logic for library designs
   };
 
@@ -368,7 +397,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
 
   const renderLibraryGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {libraryDesigns.map((design) => (
+      {libraryDesigns.slice(0, 8).map((design) => (
         <Card 
           key={design.id} 
           className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
@@ -429,17 +458,34 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                 <Lock className="h-3 w-3 mr-1" />
                 Geschützt
               </Button>
-              <Button 
-                size="sm" 
-                className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleLibraryDesignPrint(design.id);
-                }}
-              >
-                <Printer className="h-3 w-3 mr-1" />
-                Drucken
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Printer className="h-3 w-3 mr-1" />
+                    Print
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleLibraryDesignPrint(design.id, 'queue')}>
+                    <PlayCircle className="h-4 w-4 mr-2" />
+                    Add to Queue
+                  </DropdownMenuItem>
+                  {mockMachines.map((machine) => (
+                    <DropdownMenuItem 
+                      key={machine.id}
+                      onClick={() => handleLibraryDesignPrint(design.id, machine.id)}
+                      disabled={machine.status === 'offline'}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      {machine.name} ({machine.status})
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </CardContent>
         </Card>
@@ -449,7 +495,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
 
   const renderLibraryListView = () => (
     <div className="space-y-3">
-      {libraryDesigns.map((design) => (
+      {libraryDesigns.slice(0, 8).map((design) => (
         <Card 
           key={design.id} 
           className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer"
@@ -492,17 +538,34 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                   <Lock className="h-3 w-3 mr-1" />
                   Geschützt
                 </Button>
-                <Button 
-                  size="sm" 
-                  className="bg-purple-600 hover:bg-purple-700"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLibraryDesignPrint(design.id);
-                  }}
-                >
-                  <Printer className="h-3 w-3 mr-1" />
-                  Drucken
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      className="bg-purple-600 hover:bg-purple-700"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Printer className="h-3 w-3 mr-1" />
+                      Print
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleLibraryDesignPrint(design.id, 'queue')}>
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      Add to Queue
+                    </DropdownMenuItem>
+                    {mockMachines.map((machine) => (
+                      <DropdownMenuItem 
+                        key={machine.id}
+                        onClick={() => handleLibraryDesignPrint(design.id, machine.id)}
+                        disabled={machine.status === 'offline'}
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        {machine.name} ({machine.status})
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </CardContent>
@@ -585,14 +648,24 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
 
       {/* Library Designs Section */}
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
-            <Crown className="h-5 w-5 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
+              <Crown className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-purple-900">Design Library</h3>
+              <p className="text-sm text-purple-600">Professionelle Designs - nur zum Drucken verfügbar</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-purple-900">Design Library</h3>
-            <p className="text-sm text-purple-600">Professionelle Designs - nur zum Drucken verfügbar</p>
-          </div>
+          <Button 
+            variant="outline" 
+            className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            onClick={() => onNavigateToWhitelabelCatalog()}
+          >
+            Show All
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
         </div>
 
         {libraryDesigns.length > 0 ? (
@@ -638,16 +711,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           </Card>
         )}
       </div>
-
-      {/* Erweiterte Design-Verwaltung */}
-      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-        <CardContent className="p-8 text-center">
-          <Layers className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-slate-900 mb-2">Erweiterte Design-Verwaltung</h3>
-          <p className="text-slate-600 mb-4">Erweiterte CAD-Dateipersonalisierung und Batch-Verarbeitungsfunktionen werden hier verfügbar sein.</p>
-          <Badge variant="outline">In Entwicklung</Badge>
-        </CardContent>
-      </Card>
 
       {/* Design Library Section */}
       <div className="mt-12 pt-8 border-t border-slate-200">
