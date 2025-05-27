@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +13,9 @@ import {
   WifiOff,
   Settings,
   Trash2,
-  Activity
+  Activity,
+  BarChart3,
+  ExternalLink
 } from 'lucide-react';
 
 const MachinesTab: React.FC = () => {
@@ -230,6 +231,24 @@ const MachinesTab: React.FC = () => {
         </Dialog>
       </div>
 
+      {/* Machine Statistics Link */}
+      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <BarChart3 className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Machine Statistics</h3>
+                <p className="text-slate-600">View detailed analytics and performance metrics</p>
+              </div>
+            </div>
+            <ExternalLink className="h-5 w-5 text-slate-400" />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Machine Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {mockMachines.map((machine) => (
@@ -272,34 +291,6 @@ const MachinesTab: React.FC = () => {
           </Card>
         ))}
       </div>
-
-      {/* Machine Statistics */}
-      <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-        <CardHeader>
-          <CardTitle>Machine Statistics</CardTitle>
-          <CardDescription>Overview of your 3D printer fleet performance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">2</div>
-              <div className="text-sm text-green-700">Online</div>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">1</div>
-              <div className="text-sm text-blue-700">Printing</div>
-            </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">24</div>
-              <div className="text-sm text-yellow-700">Jobs This Week</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">96%</div>
-              <div className="text-sm text-purple-700">Success Rate</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

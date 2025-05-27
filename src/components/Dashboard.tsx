@@ -10,13 +10,15 @@ import {
   User,
   Monitor,
   ShoppingCart,
-  Printer
+  Printer,
+  BookOpen
 } from 'lucide-react';
 import OverviewTab from './dashboard/OverviewTab';
 import DesignsTab from './dashboard/DesignsTab';
 import JobsTab from './dashboard/JobsTab';
 import MarketplaceTab from './dashboard/MarketplaceTab';
 import MachinesTab from './dashboard/MachinesTab';
+import KnowledgeBaseTab from './dashboard/KnowledgeBaseTab';
 
 interface DashboardProps {
   user: { email: string };
@@ -66,7 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 lg:w-fit lg:grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 mb-8">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Monitor className="h-4 w-4" />
               Overview
@@ -79,13 +81,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               <Layers className="h-4 w-4" />
               Designs
             </TabsTrigger>
+            <TabsTrigger value="jobs" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Jobs
+            </TabsTrigger>
             <TabsTrigger value="machines" className="flex items-center gap-2">
               <Printer className="h-4 w-4" />
               Machines
             </TabsTrigger>
-            <TabsTrigger value="jobs" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Jobs
+            <TabsTrigger value="knowledge" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Knowledge Base
             </TabsTrigger>
           </TabsList>
 
@@ -101,12 +107,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <DesignsTab />
           </TabsContent>
 
+          <TabsContent value="jobs">
+            <JobsTab />
+          </TabsContent>
+
           <TabsContent value="machines">
             <MachinesTab />
           </TabsContent>
 
-          <TabsContent value="jobs">
-            <JobsTab />
+          <TabsContent value="knowledge">
+            <KnowledgeBaseTab />
           </TabsContent>
         </Tabs>
       </main>

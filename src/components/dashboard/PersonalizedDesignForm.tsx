@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Upload, Save } from 'lucide-react';
 
 interface PersonalizedDesignFormProps {
@@ -17,7 +18,9 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
     cadFile: null as File | null,
     cadSoftware: '',
     slicer: '',
-    iniFile: null as File | null
+    iniFile: null as File | null,
+    sketchName: '',
+    replacementValue: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,6 +37,13 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
   };
 
   const handleSelectChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -134,6 +144,38 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
               >
                 Choose INI File
               </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Parameter Mapping Section */}
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-lg font-medium">Parameter Mapping</h4>
+              <p className="text-sm text-gray-600">Define which sketch parameters can be customized</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sketchName">Sketch Name</Label>
+              <Input
+                id="sketchName"
+                placeholder="Enter the name of the sketch to replace"
+                value={formData.sketchName}
+                onChange={(e) => handleInputChange('sketchName', e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="replacementValue">Replacement Parameter</Label>
+              <Input
+                id="replacementValue"
+                placeholder="Enter what should be replaced in the file"
+                value={formData.replacementValue}
+                onChange={(e) => handleInputChange('replacementValue', e.target.value)}
+                required
+              />
             </div>
           </div>
 
