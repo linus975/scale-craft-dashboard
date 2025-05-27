@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { FileText, Layers, Plus, Download, Settings, User } from 'lucide-react';
+import { FileText, Layers, Plus, Download, User } from 'lucide-react';
+import StaticDesignForm from './StaticDesignForm';
 
 const DesignsTab: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
   
   const mockDesigns = [
     { id: 1, name: "Parametric Gear", lastModified: "2 hours ago", version: "v1.3" },
@@ -17,8 +19,76 @@ const DesignsTab: React.FC = () => {
 
   const handleDesignTypeSelection = (type: 'static' | 'personalized') => {
     console.log(`Selected design type: ${type}`);
+    setSelectedDesignType(type);
+  };
+
+  const handleStaticDesignSave = (designData: any) => {
+    console.log('Saving static design:', designData);
+    // TODO: Implement Firebase save logic
     setIsDialogOpen(false);
-    // TODO: Implement design upload/creation flow based on type
+    setSelectedDesignType(null);
+  };
+
+  const handleCancel = () => {
+    setSelectedDesignType(null);
+    setIsDialogOpen(false);
+  };
+
+  const renderDialogContent = () => {
+    if (selectedDesignType === 'static') {
+      return (
+        <StaticDesignForm 
+          onCancel={handleCancel}
+          onSave={handleStaticDesignSave}
+        />
+      );
+    }
+
+    if (selectedDesignType === 'personalized') {
+      return (
+        <div className="text-center py-8">
+          <h3 className="text-lg font-medium mb-2">Personalized Design Form</h3>
+          <p className="text-slate-600 mb-4">Coming soon...</p>
+          <Button onClick={handleCancel}>Back</Button>
+        </div>
+      );
+    }
+
+    // Default design type selection
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Choose Design Type</DialogTitle>
+          <DialogDescription>
+            Select whether you want to create a static design or a personalized design with customizable parameters.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-4 py-4">
+          <Button
+            variant="outline"
+            className="h-auto p-6 flex flex-col gap-3"
+            onClick={() => handleDesignTypeSelection('static')}
+          >
+            <FileText className="h-8 w-8 text-blue-600" />
+            <div className="text-center">
+              <div className="font-semibold">Static Design</div>
+              <div className="text-sm text-slate-500">Fixed design file without customization options</div>
+            </div>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto p-6 flex flex-col gap-3"
+            onClick={() => handleDesignTypeSelection('personalized')}
+          >
+            <User className="h-8 w-8 text-indigo-600" />
+            <div className="text-center">
+              <div className="font-semibold">Personalized Design</div>
+              <div className="text-sm text-slate-500">Design with customizable parameters for personalization</div>
+            </div>
+          </Button>
+        </div>
+      </>
+    );
   };
 
   return (
@@ -35,37 +105,8 @@ const DesignsTab: React.FC = () => {
               Add Design
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Choose Design Type</DialogTitle>
-              <DialogDescription>
-                Select whether you want to create a static design or a personalized design with customizable parameters.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 gap-4 py-4">
-              <Button
-                variant="outline"
-                className="h-auto p-6 flex flex-col gap-3"
-                onClick={() => handleDesignTypeSelection('static')}
-              >
-                <FileText className="h-8 w-8 text-blue-600" />
-                <div className="text-center">
-                  <div className="font-semibold">Static Design</div>
-                  <div className="text-sm text-slate-500">Fixed design file without customization options</div>
-                </div>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-auto p-6 flex flex-col gap-3"
-                onClick={() => handleDesignTypeSelection('personalized')}
-              >
-                <User className="h-8 w-8 text-indigo-600" />
-                <div className="text-center">
-                  <div className="font-semibold">Personalized Design</div>
-                  <div className="text-sm text-slate-500">Design with customizable parameters for personalization</div>
-                </div>
-              </Button>
-            </div>
+          <DialogContent className={selectedDesignType === 'static' ? "max-w-3xl" : "sm:max-w-md"}>
+            {renderDialogContent()}
           </DialogContent>
         </Dialog>
       </div>
