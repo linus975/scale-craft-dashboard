@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FileText, Layers, Plus, Download, User } from 'lucide-react';
 import StaticDesignForm from './StaticDesignForm';
+import PersonalizedDesignForm from './PersonalizedDesignForm';
 
 const DesignsTab: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -29,6 +29,13 @@ const DesignsTab: React.FC = () => {
     setSelectedDesignType(null);
   };
 
+  const handlePersonalizedDesignSave = (designData: any) => {
+    console.log('Saving personalized design:', designData);
+    // TODO: Implement Firebase save logic
+    setIsDialogOpen(false);
+    setSelectedDesignType(null);
+  };
+
   const handleCancel = () => {
     setSelectedDesignType(null);
     setIsDialogOpen(false);
@@ -46,11 +53,10 @@ const DesignsTab: React.FC = () => {
 
     if (selectedDesignType === 'personalized') {
       return (
-        <div className="text-center py-8">
-          <h3 className="text-lg font-medium mb-2">Personalized Design Form</h3>
-          <p className="text-slate-600 mb-4">Coming soon...</p>
-          <Button onClick={handleCancel}>Back</Button>
-        </div>
+        <PersonalizedDesignForm 
+          onCancel={handleCancel}
+          onSave={handlePersonalizedDesignSave}
+        />
       );
     }
 
@@ -105,7 +111,7 @@ const DesignsTab: React.FC = () => {
               Add Design
             </Button>
           </DialogTrigger>
-          <DialogContent className={selectedDesignType === 'static' ? "max-w-3xl" : "sm:max-w-md"}>
+          <DialogContent className={selectedDesignType ? "max-w-3xl" : "sm:max-w-md"}>
             {renderDialogContent()}
           </DialogContent>
         </Dialog>
@@ -136,7 +142,6 @@ const DesignsTab: React.FC = () => {
         ))}
       </div>
 
-      {/* TODO: Implement design file management features */}
       <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
         <CardContent className="p-8 text-center">
           <Layers className="h-12 w-12 text-slate-400 mx-auto mb-4" />
