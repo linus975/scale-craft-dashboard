@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, Download, Edit, Plus, Printer, Settings, FileText, Calendar, User, Monitor, Crown, Lock, PlayCircle, Clock, Thermometer } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Download, Edit, Plus, Printer, Settings, FileText, Calendar, User, Monitor, Crown, Lock, PlayCircle, Clock, Thermometer, Search } from 'lucide-react';
 
 interface DesignDetailPageProps {
   designId: number;
@@ -12,6 +14,10 @@ interface DesignDetailPageProps {
 }
 
 const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack }) => {
+  const [isPrintSheetOpen, setIsPrintSheetOpen] = useState(false);
+  const [selectedMachine, setSelectedMachine] = useState<string>('');
+  const [queuePriority, setQueuePriority] = useState<string>('normal');
+
   // Library designs with enhanced data
   const libraryDesigns = [
     {
@@ -124,7 +130,16 @@ const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack })
       material: "PLA",
       infill: "20%",
       layerHeight: "0.2mm",
-      isLibrary: false
+      isLibrary: false,
+      // Adding missing library properties as optional/default values for consistency
+      difficulty: "Mittel",
+      rating: 4.5,
+      downloads: 0,
+      nozzleSize: "0.4mm",
+      supportMaterial: "No",
+      printSpeed: "50mm/s",
+      bedTemperature: "60°C",
+      extruderTemperature: "210°C"
     },
     { 
       id: 2, 
@@ -144,7 +159,15 @@ const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack })
       material: "PETG",
       infill: "25%",
       layerHeight: "0.15mm",
-      isLibrary: false
+      isLibrary: false,
+      difficulty: "Einfach",
+      rating: 4.2,
+      downloads: 0,
+      nozzleSize: "0.4mm",
+      supportMaterial: "No",
+      printSpeed: "45mm/s",
+      bedTemperature: "70°C",
+      extruderTemperature: "230°C"
     },
     { 
       id: 3, 
@@ -164,7 +187,15 @@ const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack })
       material: "ABS",
       infill: "30%",
       layerHeight: "0.25mm",
-      isLibrary: false
+      isLibrary: false,
+      difficulty: "Schwer",
+      rating: 4.0,
+      downloads: 0,
+      nozzleSize: "0.4mm",
+      supportMaterial: "Yes",
+      printSpeed: "40mm/s",
+      bedTemperature: "90°C",
+      extruderTemperature: "250°C"
     },
   ];
 
@@ -184,9 +215,18 @@ const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack })
 
   const handleLibraryDesignPrint = (designId: number, target: 'queue' | number) => {
     if (target === 'queue') {
-      console.log(`Adding library design ${designId} to print queue`);
+      console.log(`Adding library design ${designId} to print queue with priority: ${queuePriority}`);
     } else {
       console.log(`Printing library design ${designId} on machine ${target}`);
+    }
+    setIsPrintSheetOpen(false);
+  };
+
+  const handlePrintSelection = () => {
+    if (selectedMachine === 'queue') {
+      handleLibraryDesignPrint(design.id, 'queue');
+    } else if (selectedMachine) {
+      handleLibraryDesignPrint(design.id, parseInt(selectedMachine));
     }
   };
 
@@ -304,30 +344,77 @@ const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack })
                 </>
               ) : (
                 <>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                  <Sheet open={isPrintSheetOpen} onOpenChange={setIsPrintSheetOpen}>
+                    <SheetTrigger asChild>
                       <Button className="w-full bg-purple-600 hover:bg-purple-700">
                         <Printer className="h-4 w-4 mr-2" />
                         Print Design
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full">
-                      <DropdownMenuItem onClick={() => handleLibraryDesignPrint(design.id, 'queue')}>
-                        <PlayCircle className="h-4 w-4 mr-2" />
-                        Add to Queue
-                      </DropdownMenuItem>
-                      {mockMachines.map((machine) => (
-                        <DropdownMenuItem 
-                          key={machine.id}
-                          onClick={() => handleLibraryDesignPrint(design.id, machine.id)}
-                          disabled={machine.status === 'offline'}
-                        >
-                          <Printer className="h-4 w-4 mr-2" />
-                          {machine.name} ({machine.status})
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </SheetTrigger>
+                    <SheetContent>
+                      <SheetHeader>
+                        <SheetTitle>Print Design: {design.name}</SheetTitle>
+                        <SheetDescription>
+                          Wählen Sie Ihre Druckoptionen für dieses Design aus.
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="space-y-6 py-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Drucker/Queue auswählen</label>
+                          <Select value={selectedMachine} onValueChange={setSelectedMachine}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Drucker oder Queue wählen..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="queue">📋 Zur Queue hinzufügen</SelectItem>
+                              {mockMachines.map((machine) => (
+                                <SelectItem 
+                                  key={machine.id.toString()} 
+                                  value={machine.id.toString()}
+                                  disabled={machine.status === 'offline'}
+                                >
+                                  🖨️ {machine.name} ({machine.status})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {selectedMachine === 'queue' && (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Queue-Priorität</label>
+                            <Select value={queuePriority} onValueChange={setQueuePriority}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="high">🔴 Vorrangig (High Priority)</SelectItem>
+                                <SelectItem value="normal">🟡 Normal</SelectItem>
+                                <SelectItem value="low">🟢 Nachrangig (Low Priority)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        <div className="pt-4 space-y-3">
+                          <Button 
+                            className="w-full bg-purple-600 hover:bg-purple-700"
+                            onClick={handlePrintSelection}
+                            disabled={!selectedMachine}
+                          >
+                            {selectedMachine === 'queue' ? 'Zur Queue hinzufügen' : 'Drucken starten'}
+                          </Button>
+                          <Button 
+                            className="w-full" 
+                            variant="outline"
+                            onClick={() => setIsPrintSheetOpen(false)}
+                          >
+                            Abbrechen
+                          </Button>
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                   <Button className="w-full" variant="outline" disabled>
                     <Lock className="h-4 w-4 mr-2" />
                     Download nicht verfügbar

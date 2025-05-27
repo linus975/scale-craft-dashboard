@@ -396,142 +396,63 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
   );
 
   const renderLibraryGridView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {libraryDesigns.slice(0, 8).map((design) => (
-        <Card 
-          key={design.id} 
-          className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
-          onClick={() => handleDesignClick(design.id)}
-        >
-          <div className="absolute top-2 right-2 z-10">
-            <Badge className="bg-purple-600 text-white">
-              <Crown className="h-3 w-3 mr-1" />
-              Library
-            </Badge>
-          </div>
-          
-          {showImages && (
-            <div className="relative h-36 overflow-hidden">
-              <img 
-                src={design.imageUrl} 
-                alt={design.name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-            </div>
-          )}
-          
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-purple-900">{design.name}</CardTitle>
-            <div className="flex items-center gap-2 text-xs text-purple-700">
-              <Badge variant="outline" className="text-xs border-purple-300">
-                {design.difficulty}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {libraryDesigns.slice(0, 8).map((design) => (
+          <Card 
+            key={design.id} 
+            className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
+            onClick={() => handleDesignClick(design.id)}
+          >
+            <div className="absolute top-2 right-2 z-10">
+              <Badge className="bg-purple-600 text-white">
+                <Crown className="h-3 w-3 mr-1" />
+                Library
               </Badge>
-              <span>⭐ {design.rating}</span>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="pt-0 space-y-3">
-            <div className="text-xs text-purple-600 space-y-1">
-              <div className="flex justify-between">
-                <span>Druckzeit:</span>
-                <span className="font-medium">{design.printTime}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Material:</span>
-                <span className="font-medium">{design.material}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Downloads:</span>
-                <span className="font-medium">{design.downloads.toLocaleString()}</span>
-              </div>
             </div>
             
-            <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex-1 text-xs border-purple-300 text-purple-700 hover:bg-purple-50"
-                disabled
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Lock className="h-3 w-3 mr-1" />
-                Geschützt
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    size="sm" 
-                    className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Printer className="h-3 w-3 mr-1" />
-                    Print
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleLibraryDesignPrint(design.id, 'queue')}>
-                    <PlayCircle className="h-4 w-4 mr-2" />
-                    Add to Queue
-                  </DropdownMenuItem>
-                  {mockMachines.map((machine) => (
-                    <DropdownMenuItem 
-                      key={machine.id}
-                      onClick={() => handleLibraryDesignPrint(design.id, machine.id)}
-                      disabled={machine.status === 'offline'}
-                    >
-                      <Printer className="h-4 w-4 mr-2" />
-                      {machine.name} ({machine.status})
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-
-  const renderLibraryListView = () => (
-    <div className="space-y-3">
-      {libraryDesigns.slice(0, 8).map((design) => (
-        <Card 
-          key={design.id} 
-          className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer"
-          onClick={() => handleDesignClick(design.id)}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              {showImages && (
-                <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg">
-                  <img 
-                    src={design.imageUrl} 
-                    alt={design.name}
-                    className="w-full h-full object-cover"
-                  />
+            {showImages && (
+              <div className="relative h-36 overflow-hidden">
+                <img 
+                  src={design.imageUrl} 
+                  alt={design.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+              </div>
+            )}
+            
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-purple-900">{design.name}</CardTitle>
+              <div className="flex items-center gap-2 text-xs text-purple-700">
+                <Badge variant="outline" className="text-xs border-purple-300">
+                  {design.difficulty}
+                </Badge>
+                <span>⭐ {design.rating}</span>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="pt-0 space-y-3">
+              <div className="text-xs text-purple-600 space-y-1">
+                <div className="flex justify-between">
+                  <span>Druckzeit:</span>
+                  <span className="font-medium">{design.printTime}</span>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-semibold text-purple-900 truncate">{design.name}</h3>
-                  <Badge className="bg-purple-600 text-white text-xs">
-                    <Crown className="h-3 w-3 mr-1" />
-                    Library
-                  </Badge>
-                  <Badge variant="outline" className="text-xs border-purple-300">
-                    {design.difficulty}
-                  </Badge>
+                <div className="flex justify-between">
+                  <span>Material:</span>
+                  <span className="font-medium">{design.material}</span>
                 </div>
-                <div className="text-xs text-purple-600">
-                  {design.printTime} • {design.material} • ⭐ {design.rating} • {design.downloads.toLocaleString()} Downloads
+                <div className="flex justify-between">
+                  <span>Downloads:</span>
+                  <span className="font-medium">{design.downloads.toLocaleString()}</span>
                 </div>
               </div>
-              <div className="flex gap-2 flex-shrink-0">
+              
+              <div className="flex gap-2">
                 <Button 
                   size="sm" 
-                  variant="outline"
-                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                  variant="outline" 
+                  className="flex-1 text-xs border-purple-300 text-purple-700 hover:bg-purple-50"
                   disabled
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -542,7 +463,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                   <DropdownMenuTrigger asChild>
                     <Button 
                       size="sm" 
-                      className="bg-purple-600 hover:bg-purple-700"
+                      className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Printer className="h-3 w-3 mr-1" />
@@ -567,10 +488,117 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      {/* Show All Button - Centered below tiles */}
+      <div className="flex justify-center pt-4">
+        <Button 
+          variant="outline" 
+          className="border-purple-300 text-purple-700 hover:bg-purple-50"
+          onClick={() => onNavigateToWhitelabelCatalog()}
+        >
+          Show All
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderLibraryListView = () => (
+    <div className="space-y-6">
+      <div className="space-y-3">
+        {libraryDesigns.slice(0, 8).map((design) => (
+          <Card 
+            key={design.id} 
+            className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+            onClick={() => handleDesignClick(design.id)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                {showImages && (
+                  <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg">
+                    <img 
+                      src={design.imageUrl} 
+                      alt={design.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-sm font-semibold text-purple-900 truncate">{design.name}</h3>
+                    <Badge className="bg-purple-600 text-white text-xs">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Library
+                    </Badge>
+                    <Badge variant="outline" className="text-xs border-purple-300">
+                      {design.difficulty}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-purple-600">
+                    {design.printTime} • {design.material} • ⭐ {design.rating} • {design.downloads.toLocaleString()} Downloads
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                    disabled
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Lock className="h-3 w-3 mr-1" />
+                    Geschützt
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        className="bg-purple-600 hover:bg-purple-700"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Printer className="h-3 w-3 mr-1" />
+                        Print
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleLibraryDesignPrint(design.id, 'queue')}>
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                        Add to Queue
+                      </DropdownMenuItem>
+                      {mockMachines.map((machine) => (
+                        <DropdownMenuItem 
+                          key={machine.id}
+                          onClick={() => handleLibraryDesignPrint(design.id, machine.id)}
+                          disabled={machine.status === 'offline'}
+                        >
+                          <Printer className="h-4 w-4 mr-2" />
+                          {machine.name} ({machine.status})
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      {/* Show All Button - Centered below tiles */}
+      <div className="flex justify-center pt-4">
+        <Button 
+          variant="outline" 
+          className="border-purple-300 text-purple-700 hover:bg-purple-50"
+          onClick={() => onNavigateToWhitelabelCatalog()}
+        >
+          Show All
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
     </div>
   );
 
@@ -648,24 +676,14 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
 
       {/* Library Designs Section */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
-              <Crown className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-purple-900">Design Library</h3>
-              <p className="text-sm text-purple-600">Professionelle Designs - nur zum Drucken verfügbar</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
+            <Crown className="h-5 w-5 text-white" />
           </div>
-          <Button 
-            variant="outline" 
-            className="border-purple-300 text-purple-700 hover:bg-purple-50"
-            onClick={() => onNavigateToWhitelabelCatalog()}
-          >
-            Show All
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
+          <div>
+            <h3 className="text-xl font-bold text-purple-900">Design Library</h3>
+            <p className="text-sm text-purple-600">Professionelle Designs - nur zum Drucken verfügbar</p>
+          </div>
         </div>
 
         {libraryDesigns.length > 0 ? (
