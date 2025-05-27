@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import LoginForm from '../components/LoginForm';
-import Dashboard from '../components/Dashboard';
+import Dashboard from '../components/dashboard/Dashboard';
 import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {

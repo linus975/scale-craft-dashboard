@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,15 +20,15 @@ import {
   Package,
   Menu
 } from 'lucide-react';
-import OverviewTab from './dashboard/OverviewTab';
-import DesignsTab from './dashboard/DesignsTab';
-import JobsTab from './dashboard/JobsTab';
-import MarketplaceTab from './dashboard/MarketplaceTab';
-import MachinesTab from './dashboard/MachinesTab';
-import KnowledgeBaseTab from './dashboard/KnowledgeBaseTab';
-import ShippingTab from './dashboard/ShippingTab';
-import BusinessMetricsPage from './dashboard/BusinessMetricsPage';
-import SystemLogPage from './dashboard/SystemLogPage';
+import OverviewTab from './OverviewTab';
+import DesignsTab from './DesignsTab';
+import JobsTab from './JobsTab';
+import MarketplaceTab from './MarketplaceTab';
+import MachinesTab from './MachinesTab';
+import KnowledgeBaseTab from './KnowledgeBaseTab';
+import ShippingTab from './ShippingTab';
+import BusinessMetricsPage from './BusinessMetricsPage';
+import SystemLogPage from './SystemLogPage';
 
 interface DashboardProps {
   user: { email: string };
