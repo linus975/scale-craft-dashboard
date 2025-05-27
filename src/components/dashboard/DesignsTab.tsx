@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image, Package, Check } from 'lucide-react';
+import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image, Package, Check, Crown, Lock, Printer } from 'lucide-react';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import DesignEditDialog from './DesignEditDialog';
@@ -26,6 +26,57 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showImages, setShowImages] = useState(false);
   
+  const libraryDesigns = [
+    {
+      id: 101,
+      name: "Premium Phone Grip",
+      category: "accessories",
+      difficulty: "Einfach",
+      printTime: "45 min",
+      material: "PLA",
+      rating: 4.9,
+      downloads: 1250,
+      imageUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=200&fit=crop",
+      isLibrary: true
+    },
+    {
+      id: 102,
+      name: "Modular Desktop Organizer",
+      category: "office",
+      difficulty: "Mittel",
+      printTime: "2h 30min",
+      material: "PETG",
+      rating: 4.8,
+      downloads: 890,
+      imageUrl: "https://images.unsplash.com/photo-1487887235947-a955ef187fcc?w=300&h=200&fit=crop",
+      isLibrary: true
+    },
+    {
+      id: 103,
+      name: "Cable Management System",
+      category: "office",
+      difficulty: "Einfach",
+      printTime: "1h 15min",
+      material: "PLA",
+      rating: 4.7,
+      downloads: 2100,
+      imageUrl: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=300&h=200&fit=crop",
+      isLibrary: true
+    },
+    {
+      id: 104,
+      name: "Ergonomic Laptop Stand",
+      category: "accessories",
+      difficulty: "Schwer",
+      printTime: "4h 20min",
+      material: "ABS",
+      rating: 4.9,
+      downloads: 750,
+      imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&h=200&fit=crop",
+      isLibrary: true
+    }
+  ];
+
   const categories = [
     { value: 'all', label: 'Alle Kategorien' },
     { value: 'mechanical', label: 'Mechanische Teile' },
@@ -120,6 +171,11 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
   const handlePrintOnMachine = (designId: number, machineId: number) => {
     console.log(`Printing design ${designId} on machine ${machineId}`);
     // TODO: Implement print logic
+  };
+
+  const handleLibraryDesignPrint = (designId: number) => {
+    console.log(`Printing library design ${designId}`);
+    // TODO: Implement print logic for library designs
   };
 
   const handleCancel = () => {
@@ -310,6 +366,151 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
     </div>
   );
 
+  const renderLibraryGridView = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {libraryDesigns.map((design) => (
+        <Card 
+          key={design.id} 
+          className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
+          onClick={() => handleDesignClick(design.id)}
+        >
+          <div className="absolute top-2 right-2 z-10">
+            <Badge className="bg-purple-600 text-white">
+              <Crown className="h-3 w-3 mr-1" />
+              Library
+            </Badge>
+          </div>
+          
+          {showImages && (
+            <div className="relative h-36 overflow-hidden">
+              <img 
+                src={design.imageUrl} 
+                alt={design.name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            </div>
+          )}
+          
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-purple-900">{design.name}</CardTitle>
+            <div className="flex items-center gap-2 text-xs text-purple-700">
+              <Badge variant="outline" className="text-xs border-purple-300">
+                {design.difficulty}
+              </Badge>
+              <span>⭐ {design.rating}</span>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pt-0 space-y-3">
+            <div className="text-xs text-purple-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Druckzeit:</span>
+                <span className="font-medium">{design.printTime}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Material:</span>
+                <span className="font-medium">{design.material}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Downloads:</span>
+                <span className="font-medium">{design.downloads.toLocaleString()}</span>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="flex-1 text-xs border-purple-300 text-purple-700 hover:bg-purple-50"
+                disabled
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Lock className="h-3 w-3 mr-1" />
+                Geschützt
+              </Button>
+              <Button 
+                size="sm" 
+                className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleLibraryDesignPrint(design.id);
+                }}
+              >
+                <Printer className="h-3 w-3 mr-1" />
+                Drucken
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderLibraryListView = () => (
+    <div className="space-y-3">
+      {libraryDesigns.map((design) => (
+        <Card 
+          key={design.id} 
+          className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+          onClick={() => handleDesignClick(design.id)}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              {showImages && (
+                <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg">
+                  <img 
+                    src={design.imageUrl} 
+                    alt={design.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-semibold text-purple-900 truncate">{design.name}</h3>
+                  <Badge className="bg-purple-600 text-white text-xs">
+                    <Crown className="h-3 w-3 mr-1" />
+                    Library
+                  </Badge>
+                  <Badge variant="outline" className="text-xs border-purple-300">
+                    {design.difficulty}
+                  </Badge>
+                </div>
+                <div className="text-xs text-purple-600">
+                  {design.printTime} • {design.material} • ⭐ {design.rating} • {design.downloads.toLocaleString()} Downloads
+                </div>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                  disabled
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Lock className="h-3 w-3 mr-1" />
+                  Geschützt
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="bg-purple-600 hover:bg-purple-700"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLibraryDesignPrint(design.id);
+                  }}
+                >
+                  <Printer className="h-3 w-3 mr-1" />
+                  Drucken
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -382,24 +583,63 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         </div>
       </div>
 
-      {/* Results count */}
-      <div className="text-sm text-slate-600">
-        {filteredDesigns.length} Design{filteredDesigns.length !== 1 ? 's' : ''} gefunden
+      {/* Library Designs Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
+            <Crown className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-purple-900">Design Library</h3>
+            <p className="text-sm text-purple-600">Professionelle Designs - nur zum Drucken verfügbar</p>
+          </div>
+        </div>
+
+        {libraryDesigns.length > 0 ? (
+          viewMode === 'grid' ? renderLibraryGridView() : renderLibraryListView()
+        ) : (
+          <Card className="bg-purple-50/50 border-2 border-purple-200">
+            <CardContent className="p-6 text-center">
+              <Crown className="h-10 w-10 text-purple-400 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-purple-900 mb-2">Keine Library-Designs verfügbar</h3>
+              <p className="text-purple-600">Mieten Sie Whitelabel-Kataloge, um Zugang zu professionellen Designs zu erhalten.</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Design Display */}
-      {filteredDesigns.length > 0 ? (
-        viewMode === 'grid' ? renderGridView() : renderListView()
-      ) : (
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-          <CardContent className="p-8 text-center">
-            <Search className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">Keine Designs gefunden</h3>
-            <p className="text-slate-600">Versuchen Sie andere Suchbegriffe oder Kategorien.</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Separator */}
+      <div className="border-t border-slate-200 pt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-slate-600 rounded-lg">
+            <FileText className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-slate-900">Ihre Designs</h3>
+            <p className="text-sm text-slate-600">Eigene CAD-Dateien und benutzerdefinierte Vorlagen</p>
+          </div>
+        </div>
 
+        {/* Results count */}
+        <div className="text-sm text-slate-600 mb-4">
+          {filteredDesigns.length} Design{filteredDesigns.length !== 1 ? 's' : ''} gefunden
+        </div>
+
+        {/* Design Display */}
+        {filteredDesigns.length > 0 ? (
+          viewMode === 'grid' ? renderGridView() : renderListView()
+        ) : (
+          <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+            <CardContent className="p-8 text-center">
+              <Search className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 mb-2">Keine Designs gefunden</h3>
+              <p className="text-slate-600">Versuchen Sie andere Suchbegriffe oder Kategorien.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Erweiterte Design-Verwaltung */}
       <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
         <CardContent className="p-8 text-center">
           <Layers className="h-12 w-12 text-slate-400 mx-auto mb-4" />
