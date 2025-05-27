@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Upload, Save, Queue, Printer } from 'lucide-react';
+import { Upload, Save, ListPlus, Printer } from 'lucide-react';
 
 interface DesignEditDialogProps {
   design: any;
@@ -198,7 +197,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
               </CardHeader>
               <CardContent>
                 <Button onClick={handleAddToQueue} className="w-full">
-                  <Queue className="h-4 w-4 mr-2" />
+                  <ListPlus className="h-4 w-4 mr-2" />
                   Add to Queue
                 </Button>
               </CardContent>
