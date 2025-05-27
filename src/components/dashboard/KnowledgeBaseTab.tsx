@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   FileText, 
   ExternalLink, 
@@ -11,21 +12,19 @@ import {
   BookOpen,
   Lightbulb,
   Newspaper,
-  BarChart3,
-  ArrowRight
+  ArrowRight,
+  Mail,
+  CheckCircle
 } from 'lucide-react';
 import PrintAutomationPage from './PrintAutomationPage';
-import MachineStatisticsPage from './MachineStatisticsPage';
 
 const KnowledgeBaseTab: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'main' | 'automation' | 'statistics'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'automation'>('main');
+  const [email, setEmail] = useState('');
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   if (currentView === 'automation') {
     return <PrintAutomationPage onBack={() => setCurrentView('main')} />;
-  }
-
-  if (currentView === 'statistics') {
-    return <MachineStatisticsPage onBack={() => setCurrentView('main')} />;
   }
 
   const news = [
@@ -67,6 +66,16 @@ const KnowledgeBaseTab: React.FC = () => {
     }
   ];
 
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setIsSubscribed(true);
+      setEmail('');
+      // Here you would typically send the email to your backend
+      console.log('Newsletter subscription:', email);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -75,7 +84,7 @@ const KnowledgeBaseTab: React.FC = () => {
       </div>
 
       {/* Quick Access Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
         <Card 
           className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => setCurrentView('automation')}
@@ -85,26 +94,8 @@ const KnowledgeBaseTab: React.FC = () => {
               <div className="flex items-center gap-3">
                 <FileText className="h-8 w-8 text-blue-600" />
                 <div>
-                  <h3 className="font-semibold text-slate-900">Print Automation Files</h3>
-                  <p className="text-sm text-slate-600">Scripts und Tools für die Automatisierung</p>
-                </div>
-              </div>
-              <ArrowRight className="h-5 w-5 text-slate-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => setCurrentView('statistics')}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <BarChart3 className="h-8 w-8 text-green-600" />
-                <div>
-                  <h3 className="font-semibold text-slate-900">Machine Statistics</h3>
-                  <p className="text-sm text-slate-600">Detaillierte Performance-Daten</p>
+                  <h3 className="font-semibold text-slate-900">Print Automation</h3>
+                  <p className="text-sm text-slate-600">Scripts and tools for automation</p>
                 </div>
               </div>
               <ArrowRight className="h-5 w-5 text-slate-400" />
@@ -147,7 +138,7 @@ const KnowledgeBaseTab: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Case Studies Section */}
+      {/* Case Studies Section with Newsletter */}
       <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -158,7 +149,40 @@ const KnowledgeBaseTab: React.FC = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          {/* Newsletter Subscription */}
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
+            <div className="flex items-center gap-3 mb-3">
+              <Mail className="h-5 w-5 text-purple-600" />
+              <h3 className="font-semibold text-slate-900">Stay Updated with New Case Studies</h3>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              Subscribe to receive notifications about new case studies and success stories. No advertisements, just valuable insights.
+            </p>
+            
+            {isSubscribed ? (
+              <div className="flex items-center gap-2 text-green-700">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">Successfully subscribed!</span>
+              </div>
+            ) : (
+              <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1"
+                  required
+                />
+                <Button type="submit" size="sm">
+                  Subscribe
+                </Button>
+              </form>
+            )}
+          </div>
+
+          {/* Case Studies Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {caseStudies.map((study, index) => (
               <div key={index} className="p-4 bg-slate-50 rounded-lg">

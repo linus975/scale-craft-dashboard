@@ -6,7 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
   Download, 
-  ArrowLeft
+  ArrowLeft,
+  Repeat,
+  RefreshCw
 } from 'lucide-react';
 
 interface PrintAutomationPageProps {
@@ -14,71 +16,87 @@ interface PrintAutomationPageProps {
 }
 
 const PrintAutomationPage: React.FC<PrintAutomationPageProps> = ({ onBack }) => {
-  const automationFiles = [
+  const plateChangerSolutions = [
     { 
-      name: "Prusa Connect API Integration", 
+      name: "Bambu Lab AMS Auto Tool Changer", 
+      type: "Hardware Integration", 
+      size: "15 KB",
+      description: "Complete plate changing system for Bambu Lab X1 series with automatic tool switching capabilities",
+      version: "v3.2.1",
+      printers: ["X1C", "X1E", "A1 series"]
+    },
+    { 
+      name: "Prusa MMU3 Continuous Print System", 
       type: "Python Script", 
-      size: "12 KB",
-      description: "Vollständige Integration mit Prusa Connect API für automatisches Job-Management",
-      version: "v2.1.0"
+      size: "22 KB",
+      description: "Automated plate management system for Prusa printers with MMU3 integration",
+      version: "v2.8.0",
+      printers: ["MK3S+", "MK4", "XL"]
     },
     { 
-      name: "OctoPrint Automation", 
-      type: "Shell Script", 
-      size: "8 KB",
-      description: "Automatisierung für OctoPrint-basierte Drucker mit Webcam-Integration",
-      version: "v1.8.3"
-    },
-    { 
-      name: "Bambu Lab Queue Manager", 
-      type: "Node.js", 
-      size: "25 KB",
-      description: "Erweiterte Queue-Verwaltung für Bambu Lab Drucker mit Cloud-Integration",
-      version: "v3.0.1"
-    },
-    { 
-      name: "Universal G-code Processor", 
-      type: "Python Script", 
+      name: "Voron Automatic Plate Ejector", 
+      type: "G-code + Hardware", 
       size: "18 KB",
-      description: "Universal G-Code Prozessor mit automatischer Materialerkennung",
-      version: "v1.5.2"
+      description: "Custom plate ejection system for Voron printers with automatic part removal",
+      version: "v1.9.2",
+      printers: ["Voron 2.4", "Voron Trident"]
     },
     { 
-      name: "Multi-Printer Orchestrator", 
+      name: "Universal Conveyor Belt System", 
+      type: "Arduino + Software", 
+      size: "35 KB",
+      description: "Conveyor belt integration for continuous printing with any FDM printer",
+      version: "v2.1.5",
+      printers: ["Universal FDM"]
+    },
+    { 
+      name: "Ender Belt Printer Modification", 
+      type: "Hardware Kit", 
+      size: "28 KB",
+      description: "Complete belt printer conversion kit for Ender 3 series with continuous printing",
+      version: "v1.7.3",
+      printers: ["Ender 3", "Ender 3 V2", "Ender 3 S1"]
+    },
+    { 
+      name: "Industrial Print Farm Manager", 
       type: "Docker Container", 
-      size: "45 MB",
-      description: "Orchestrierung mehrerer Drucker verschiedener Hersteller",
-      version: "v2.3.0"
-    },
-    { 
-      name: "Quality Control AI", 
-      type: "Python + TensorFlow", 
-      size: "120 MB",
-      description: "KI-basierte Qualitätskontrolle mit Bilderkennung und automatischer Fehlererkennung",
-      version: "v1.2.1"
+      size: "85 MB",
+      description: "Enterprise-grade continuous printing orchestration for large print farms",
+      version: "v4.0.2",
+      printers: ["Multi-brand support"]
     }
   ];
 
-  const integrationGuides = [
+  const implementationGuides = [
     {
-      title: "Schnellstart-Anleitung",
-      description: "Erste Schritte mit der Print-Automatisierung in 10 Minuten",
+      title: "Quick Setup Guide",
+      description: "Get started with plate changing automation in under 30 minutes",
       category: "Setup"
     },
     {
-      title: "API-Konfiguration",
-      description: "Detaillierte Anleitung zur Konfiguration verschiedener Drucker-APIs",
+      title: "Hardware Installation",
+      description: "Step-by-step hardware installation for different printer models",
+      category: "Hardware"
+    },
+    {
+      title: "Software Configuration",
+      description: "Configure your slicer and printer firmware for automated printing",
       category: "Configuration"
     },
     {
-      title: "Troubleshooting Guide",
-      description: "Häufige Probleme und deren Lösungen",
+      title: "Troubleshooting Common Issues",
+      description: "Solutions for typical problems with continuous printing setups",
       category: "Support"
     },
     {
-      title: "Advanced Workflows",
-      description: "Erweiterte Automatisierungs-Workflows für komplexe Produktionsumgebungen",
+      title: "Advanced Optimization",
+      description: "Fine-tuning your system for maximum efficiency and reliability",
       category: "Advanced"
+    },
+    {
+      title: "Safety Considerations",
+      description: "Important safety guidelines for unattended continuous printing",
+      category: "Safety"
     }
   ];
 
@@ -87,54 +105,64 @@ const PrintAutomationPage: React.FC<PrintAutomationPageProps> = ({ onBack }) => 
       <div className="flex items-center gap-4">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurück
+          Back
         </Button>
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Print Automation Files</h2>
-          <p className="text-slate-600">Download und Implementierung von Automatisierungslösungen</p>
+          <h2 className="text-2xl font-bold text-slate-900">Print Automation</h2>
+          <p className="text-slate-600">Plate changers and continuous printing solutions for automated production</p>
         </div>
       </div>
 
-      {/* Automation Scripts */}
+      {/* Plate Changer Solutions */}
       <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <FileText className="h-6 w-6 text-blue-600" />
-            Verfügbare Automatisierungs-Scripts
+            <RefreshCw className="h-6 w-6 text-blue-600" />
+            Plate Changers & Continuous Printing Solutions
           </CardTitle>
           <CardDescription>
-            Professionelle Automatisierungslösungen für verschiedene 3D-Drucker und Workflows
+            Professional automation solutions for unattended printing with automatic plate changing and part removal
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {automationFiles.map((file, index) => (
+            {plateChangerSolutions.map((solution, index) => (
               <div key={index} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <Download className="h-5 w-5 text-slate-400" />
+                    <Repeat className="h-5 w-5 text-slate-400" />
                     <div>
-                      <h3 className="font-semibold text-slate-900">{file.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
+                      <h3 className="font-semibold text-slate-900">{solution.name}</h3>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant="outline" className="text-xs">
-                          {file.type}
+                          {solution.type}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {file.version}
+                          {solution.version}
                         </Badge>
-                        <span className="text-xs text-slate-500">{file.size}</span>
+                        <span className="text-xs text-slate-500">{solution.size}</span>
                       </div>
                     </div>
                   </div>
                 </div>
-                <p className="text-sm text-slate-600 mb-4">{file.description}</p>
+                <p className="text-sm text-slate-600 mb-3">{solution.description}</p>
+                <div className="mb-3">
+                  <p className="text-xs text-slate-500 mb-1">Compatible printers:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {solution.printers.map((printer, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        {printer}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="flex-1">
                     <Download className="h-3 w-3 mr-1" />
                     Download
                   </Button>
                   <Button size="sm" variant="ghost">
-                    Docs
+                    Guide
                   </Button>
                 </div>
               </div>
@@ -143,15 +171,15 @@ const PrintAutomationPage: React.FC<PrintAutomationPageProps> = ({ onBack }) => 
         </CardContent>
       </Card>
 
-      {/* Integration Guides */}
+      {/* Implementation Guides */}
       <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
         <CardHeader>
-          <CardTitle>Integration Guides</CardTitle>
-          <CardDescription>Schritt-für-Schritt Anleitungen für die Implementierung</CardDescription>
+          <CardTitle>Implementation Guides</CardTitle>
+          <CardDescription>Step-by-step guides for setting up continuous printing automation</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {integrationGuides.map((guide, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {implementationGuides.map((guide, index) => (
               <div key={index} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="font-medium text-slate-900">{guide.title}</h4>
@@ -161,7 +189,8 @@ const PrintAutomationPage: React.FC<PrintAutomationPageProps> = ({ onBack }) => 
                 </div>
                 <p className="text-sm text-slate-600 mb-3">{guide.description}</p>
                 <Button size="sm" variant="outline" className="w-full">
-                  Guide öffnen
+                  <FileText className="h-3 w-3 mr-1" />
+                  Open Guide
                 </Button>
               </div>
             ))}
