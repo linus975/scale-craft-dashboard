@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
 import { 
   Play, 
   Pause, 
@@ -14,7 +13,8 @@ import {
   ArrowUp,
   ArrowDown,
   RotateCcw,
-  Eye
+  Eye,
+  ExternalLink
 } from 'lucide-react';
 import JobCreationDialog from './JobCreationDialog';
 import CurrentPrintingJobsPage from './CurrentPrintingJobsPage';
@@ -22,14 +22,12 @@ import CurrentPrintingJobsPage from './CurrentPrintingJobsPage';
 const JobsTab: React.FC = () => {
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'main' | 'currentJobs'>('main');
-  const [highPriorityCount, setHighPriorityCount] = useState(5);
-  const [normalPriorityCount, setNormalPriorityCount] = useState(10);
   const [jobs, setJobs] = useState([
-    { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2", priority: "normal" },
-    { id: 2, name: "Prototype Housing", status: "queued", progress: 0, material: "ABS", printer: "A1 Mini-1", priority: "high" },
-    { id: 3, name: "Bracket Design", status: "completed", progress: 100, material: "PETG", printer: "X1C-1", priority: "normal" },
-    { id: 4, name: "Enclosure Part", status: "failed", progress: 45, material: "PLA", printer: "Mk3-2", priority: "normal" },
-    { id: 5, name: "Phone Case Custom", status: "queued", progress: 0, material: "TPU", printer: "X1C-1", priority: "normal" },
+    { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2", priority: "normal", count: 3 },
+    { id: 2, name: "Prototype Housing", status: "queued", progress: 0, material: "ABS", printer: "A1 Mini-1", priority: "high", count: 5 },
+    { id: 3, name: "Bracket Design", status: "completed", progress: 100, material: "PETG", printer: "X1C-1", priority: "normal", count: 2 },
+    { id: 4, name: "Enclosure Part", status: "failed", progress: 45, material: "PLA", printer: "Mk3-2", priority: "normal", count: 1 },
+    { id: 5, name: "Phone Case Custom", status: "queued", progress: 0, material: "TPU", printer: "X1C-1", priority: "normal", count: 4 },
   ]);
 
   if (currentView === 'currentJobs') {
@@ -70,7 +68,8 @@ const JobsTab: React.FC = () => {
       id: Date.now(),
       name: jobData.designName,
       status: 'queued',
-      progress: 0
+      progress: 0,
+      count: jobData.count || 1
     };
 
     setJobs(prev => {
@@ -99,35 +98,21 @@ const JobsTab: React.FC = () => {
   const completedJobs = jobs.filter(job => job.status === 'completed');
   const failedJobs = jobs.filter(job => job.status === 'failed');
 
-  const renderJobSection = (jobs: any[], title: string, icon: React.ReactNode, description: string, showCount?: boolean, count?: number, onCountChange?: (value: number) => void, showRetry?: boolean) => {
-    if (jobs.length === 0 && !showCount) return null;
+  const renderJobSection = (jobs: any[], title: string, icon: React.ReactNode, description: string, showRetry?: boolean) => {
+    if (jobs.length === 0) return null;
 
     return (
       <Card className="bg-slate-50/50 border border-slate-200">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {icon}
-              <div>
-                <CardTitle className="text-lg">{title}</CardTitle>
-                <CardDescription className="text-sm">{description}</CardDescription>
-              </div>
-              <Badge variant="outline" className="bg-white">
-                {jobs.length}
-              </Badge>
+          <div className="flex items-center gap-3">
+            {icon}
+            <div>
+              <CardTitle className="text-lg">{title}</CardTitle>
+              <CardDescription className="text-sm">{description}</CardDescription>
             </div>
-            {showCount && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600">Max:</span>
-                <Input
-                  type="number"
-                  value={count}
-                  onChange={(e) => onCountChange?.(parseInt(e.target.value) || 0)}
-                  className="w-16 h-8 text-sm"
-                  min="0"
-                />
-              </div>
-            )}
+            <Badge variant="outline" className="bg-white">
+              {jobs.length}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
@@ -139,7 +124,9 @@ const JobsTab: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {job.priority && getPriorityIcon(job.priority)}
                     <div>
-                      <h4 className="font-medium text-slate-900">{job.name}</h4>
+                      <h4 className="font-medium text-slate-900">
+                        {job.name} ({job.count})
+                      </h4>
                       <div className="flex items-center gap-4 text-sm text-slate-500">
                         <span>{job.printer}</span>
                         <span>•</span>
@@ -203,76 +190,39 @@ const JobsTab: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {/* Currently Printing */}
-        {printingJobs.length > 0 ? (
-          <Card className="bg-green-50/50 border border-green-200">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Play className="h-5 w-5 text-green-500" />
-                  <div>
-                    <CardTitle className="text-lg">Currently Printing</CardTitle>
-                    <CardDescription className="text-sm">Jobs currently being printed</CardDescription>
-                  </div>
-                  <Badge variant="outline" className="bg-white">
-                    {printingJobs.length}
-                  </Badge>
+        {/* Currently Printing - Pure Link */}
+        <Card className="bg-green-50/50 border border-green-200">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Play className="h-5 w-5 text-green-500" />
+                <div>
+                  <CardTitle className="text-lg">Currently Printing</CardTitle>
+                  <CardDescription className="text-sm">Jobs currently being printed</CardDescription>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setCurrentView('currentJobs')}
-                  className="flex items-center gap-2"
-                >
-                  <Eye className="h-4 w-4" />
-                  View Details
-                </Button>
+                <Badge variant="outline" className="bg-white">
+                  {printingJobs.length}
+                </Badge>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-2">
-                {printingJobs.map((job) => (
-                  <div key={job.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm">
-                    <div className="flex items-center gap-4">
-                      {getStatusIcon(job.status)}
-                      <div>
-                        <h4 className="font-medium text-slate-900">{job.name}</h4>
-                        <div className="flex items-center gap-4 text-sm text-slate-500">
-                          <span>{job.printer}</span>
-                          <span>•</span>
-                          <span>{job.material}</span>
-                          <span>•</span>
-                          <span>{job.progress}% complete</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={getStatusColor(job.status)}>
-                        {job.status}
-                      </Badge>
-                      <div className="w-16 bg-slate-200 rounded-full h-2 ml-2">
-                        <div 
-                          className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${job.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCurrentView('currentJobs')}
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View Current Jobs
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
 
         {/* High Priority Queue */}
         {renderJobSection(
           highPriorityQueued, 
           "Priority Jobs", 
           <ArrowUp className="h-5 w-5 text-red-500" />,
-          "High priority jobs - will be processed next",
-          true,
-          highPriorityCount,
-          setHighPriorityCount
+          "High priority jobs - will be processed next"
         )}
 
         {/* Normal Priority Queue */}
@@ -280,11 +230,11 @@ const JobsTab: React.FC = () => {
           normalPriorityQueued, 
           "Normal Jobs", 
           <ArrowDown className="h-5 w-5 text-blue-500" />,
-          "Standard priority jobs",
-          true,
-          normalPriorityCount,
-          setNormalPriorityCount
+          "Standard priority jobs"
         )}
+
+        {/* Separator */}
+        <Separator className="my-6" />
 
         {/* Completed Jobs */}
         {renderJobSection(
@@ -300,9 +250,6 @@ const JobsTab: React.FC = () => {
           "Failed Jobs", 
           <AlertCircle className="h-5 w-5 text-red-500" />,
           "Jobs that encountered errors (last 2)",
-          false,
-          undefined,
-          undefined,
           true
         )}
       </div>
