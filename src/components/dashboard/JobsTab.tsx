@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,7 +80,7 @@ const JobsTab: React.FC = () => {
       name: jobData.designName,
       status: 'queued',
       progress: 0,
-      count: jobData.count || 1,
+      count: jobData.quantity || 1,
       estimatedTime: "2h 30m",
       filePath: "/gcode/new_job.gcode",
       iniFile: "/settings/new_job.ini"
@@ -102,6 +103,20 @@ const JobsTab: React.FC = () => {
         ? { ...job, status: 'queued', progress: 0 }
         : job
     ));
+  };
+
+  const handleRepeatJob = (jobId: number) => {
+    const jobToRepeat = jobs.find(job => job.id === jobId);
+    if (jobToRepeat) {
+      const newJob = {
+        ...jobToRepeat,
+        id: Date.now(),
+        status: 'queued',
+        progress: 0,
+        name: `${jobToRepeat.name} (Copy)`
+      };
+      setJobs(prev => [...prev, newJob]);
+    }
   };
 
   const handleQuantityChange = (jobId: number, change: number) => {
@@ -146,8 +161,8 @@ const JobsTab: React.FC = () => {
   const completedJobs = jobs.filter(job => job.status === 'completed');
   const failedJobs = jobs.filter(job => job.status === 'failed');
 
-  const renderJobSection = (jobs: any[], title: string, icon: React.ReactNode, description: string, showRetry?: boolean, showQuantity?: boolean, viewType?: string, allowJobClick: boolean = true) => {
-    if (jobs.length === 0) return null;
+  const renderJobSection = (jobs: any[], title: string, icon: React.ReactNode, description: string, showRetry?: boolean, showQuantity?: boolean, showRepeat?: boolean, viewType?: string, allowJobClick: boolean = true, showAddButton: boolean = false) => {
+    if (jobs.length === 0 && !showAddButton) return null;
 
     const displayJobs = currentView === 'main' ? jobs.slice(0, 3) : jobs;
     const hasMoreJobs = jobs.length > 3 && currentView === 'main';
@@ -169,20 +184,35 @@ const JobsTab: React.FC = () => {
                 {jobs.length}
               </Badge>
             </div>
-            {hasMoreJobs && viewType && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentView(viewType as any);
-                }}
-                className="flex items-center gap-2"
-              >
-                <ExternalLink className="h-4 w-4" />
-                View All
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {showAddButton && currentView !== 'main' && (
+                <Button 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsJobDialogOpen(true);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Job
+                </Button>
+              )}
+              {hasMoreJobs && viewType && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentView(viewType as any);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View All
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
@@ -262,6 +292,20 @@ const JobsTab: React.FC = () => {
                       Retry
                     </Button>
                   )}
+                  {showRepeat && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRepeatJob(job.id);
+                      }}
+                      className="ml-2"
+                    >
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      Repeat
+                    </Button>
+                  )}
                   {job.status === 'printing' && (
                     <div className="w-16 bg-slate-200 rounded-full h-2 ml-2">
                       <div 
@@ -293,7 +337,7 @@ const JobsTab: React.FC = () => {
             <p className="text-slate-600">High priority jobs in the queue</p>
           </div>
         </div>
-        {renderJobSection(highPriorityQueued, "Priority Jobs", <ArrowUp className="h-5 w-5 text-red-500" />, "High priority jobs", false, true, undefined, true)}
+        {renderJobSection(highPriorityQueued, "Priority Jobs", <ArrowUp className="h-5 w-5 text-red-500" />, "High priority jobs", false, true, false, undefined, true, true)}
       </div>
     );
   }
@@ -311,7 +355,7 @@ const JobsTab: React.FC = () => {
             <p className="text-slate-600">Standard priority jobs in the queue</p>
           </div>
         </div>
-        {renderJobSection(normalPriorityQueued, "Normal Jobs", <ArrowDown className="h-5 w-5 text-blue-500" />, "Standard priority jobs", false, true, undefined, true)}
+        {renderJobSection(normalPriorityQueued, "Normal Jobs", <ArrowDown className="h-5 w-5 text-blue-500" />, "Standard priority jobs", false, true, false, undefined, true, true)}
       </div>
     );
   }
@@ -329,7 +373,7 @@ const JobsTab: React.FC = () => {
             <p className="text-slate-600">Successfully completed jobs</p>
           </div>
         </div>
-        {renderJobSection(completedJobs, "Completed Jobs", <CheckCircle className="h-5 w-5 text-blue-500" />, "Successfully completed jobs", false, false, undefined, true)}
+        {renderJobSection(completedJobs, "Completed Jobs", <CheckCircle className="h-5 w-5 text-blue-500" />, "Successfully completed jobs", false, false, true, undefined, true)}
       </div>
     );
   }
@@ -347,7 +391,7 @@ const JobsTab: React.FC = () => {
             <p className="text-slate-600">Jobs that encountered errors</p>
           </div>
         </div>
-        {renderJobSection(failedJobs, "Failed Jobs", <AlertCircle className="h-5 w-5 text-red-500" />, "Jobs that encountered errors", true, false, undefined, true)}
+        {renderJobSection(failedJobs, "Failed Jobs", <AlertCircle className="h-5 w-5 text-red-500" />, "Jobs that encountered errors", true, false, false, undefined, true)}
       </div>
     );
   }
@@ -407,6 +451,7 @@ const JobsTab: React.FC = () => {
           "High priority jobs - will be processed next",
           false,
           true,
+          false,
           'allHigh'
         )}
 
@@ -418,6 +463,7 @@ const JobsTab: React.FC = () => {
           "Standard priority jobs",
           false,
           true,
+          false,
           'allNormal'
         )}
 
@@ -432,6 +478,7 @@ const JobsTab: React.FC = () => {
           "Successfully completed jobs",
           false,
           false,
+          true,
           'allCompleted'
         )}
 
@@ -442,6 +489,7 @@ const JobsTab: React.FC = () => {
           <AlertCircle className="h-5 w-5 text-red-500" />,
           "Jobs that encountered errors",
           true,
+          false,
           false,
           'allFailed'
         )}
@@ -520,6 +568,22 @@ const JobsTab: React.FC = () => {
                       Normal Priority
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {/* Repeat Job Section for Completed Jobs */}
+              {selectedJob.status === 'completed' && (
+                <div className="border-t pt-4">
+                  <Button 
+                    className="w-full mb-2" 
+                    onClick={() => {
+                      handleRepeatJob(selectedJob.id);
+                      setIsJobDetailOpen(false);
+                    }}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Repeat Job
+                  </Button>
                 </div>
               )}
 

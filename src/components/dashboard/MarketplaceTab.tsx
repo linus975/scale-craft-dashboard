@@ -15,7 +15,9 @@ import {
   Package,
   ShoppingCart,
   Zap,
-  Settings
+  Settings,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,7 +25,9 @@ const MarketplaceTab: React.FC = () => {
   const { toast } = useToast();
   const [isIntegrationDialogOpen, setIsIntegrationDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMarketplace, setSelectedMarketplace] = useState<any>(null);
+  const [editingMarketplace, setEditingMarketplace] = useState<any>(null);
   const [credentials, setCredentials] = useState({
     clientId: '',
     apiKey: '',
@@ -36,12 +40,12 @@ const MarketplaceTab: React.FC = () => {
   });
 
   // Mock marketplace data
-  const mockMarketplaces = [
-    { id: 1, name: "eBay", status: "connected", orders: 45, lastSync: "2 minutes ago", icon: "🛒" },
-    { id: 2, name: "Etsy", status: "connected", orders: 23, lastSync: "5 minutes ago", icon: "🎨" },
-    { id: 3, name: "Shopify", status: "disconnected", orders: 0, lastSync: "Never", icon: "🛍️" },
-    { id: 4, name: "Amazon", status: "pending", orders: 0, lastSync: "Never", icon: "📦" },
-  ];
+  const [marketplaces, setMarketplaces] = useState([
+    { id: 1, name: "eBay", status: "connected", orders: 45, lastSync: "2 minutes ago", icon: "🛒", clientId: "ebay_client_123", apiKey: "****" },
+    { id: 2, name: "Etsy", status: "connected", orders: 23, lastSync: "5 minutes ago", icon: "🎨", clientId: "etsy_client_456", apiKey: "****" },
+    { id: 3, name: "Shopify", status: "disconnected", orders: 0, lastSync: "Never", icon: "🛍️", clientId: "", apiKey: "" },
+    { id: 4, name: "Amazon", status: "pending", orders: 0, lastSync: "Never", icon: "📦", clientId: "", apiKey: "" },
+  ]);
 
   const mockRecentOrders = [
     { id: 1, marketplace: "eBay", product: "Custom Phone Case", customer: "john.doe@email.com", status: "processing", amount: "$24.99" },
@@ -102,6 +106,43 @@ const MarketplaceTab: React.FC = () => {
     
     setIsCredentialsDialogOpen(false);
     setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
+  };
+
+  const handleEditMarketplace = (marketplace: any) => {
+    setEditingMarketplace(marketplace);
+    setCredentials({
+      clientId: marketplace.clientId || '',
+      apiKey: marketplace.apiKey || '',
+      webhookUrl: marketplace.webhookUrl || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = () => {
+    setMarketplaces(prev => prev.map(mp => 
+      mp.id === editingMarketplace.id 
+        ? { ...mp, clientId: credentials.clientId, apiKey: credentials.apiKey, webhookUrl: credentials.webhookUrl }
+        : mp
+    ));
+    
+    toast({
+      title: "Integration aktualisiert",
+      description: `${editingMarketplace.name} wurde erfolgreich aktualisiert.`,
+    });
+    
+    setIsEditDialogOpen(false);
+    setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
+    setEditingMarketplace(null);
+  };
+
+  const handleDeleteMarketplace = (marketplaceId: number) => {
+    const marketplace = marketplaces.find(mp => mp.id === marketplaceId);
+    setMarketplaces(prev => prev.filter(mp => mp.id !== marketplaceId));
+    
+    toast({
+      title: "Integration gelöscht",
+      description: `${marketplace?.name} wurde erfolgreich entfernt.`,
+    });
   };
 
   const handleSyncNow = async (marketplaceName: string) => {
@@ -223,6 +264,55 @@ const MarketplaceTab: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Marketplace Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Integration - {editingMarketplace?.name}</DialogTitle>
+              <DialogDescription>
+                Bearbeiten Sie die API-Zugangsdaten für diese Integration
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="editClientId">Client ID</Label>
+                <Input
+                  id="editClientId"
+                  placeholder="Ihre Client ID"
+                  value={credentials.clientId}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, clientId: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editApiKey">API Key / Password</Label>
+                <Input
+                  id="editApiKey"
+                  type="password"
+                  placeholder="Ihr API Key"
+                  value={credentials.apiKey}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, apiKey: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editWebhookUrl">Webhook URL (Optional)</Label>
+                <Input
+                  id="editWebhookUrl"
+                  placeholder="https://your-webhook-url.com"
+                  value={credentials.webhookUrl}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                />
+              </div>
+              <Button 
+                onClick={handleEditSubmit} 
+                className="w-full"
+                disabled={!credentials.clientId || !credentials.apiKey}
+              >
+                Integration aktualisieren
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Marketplace Connections */}
@@ -236,7 +326,7 @@ const MarketplaceTab: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mockMarketplaces.map((marketplace) => (
+            {marketplaces.map((marketplace) => (
               <div key={marketplace.id} className="p-4 bg-slate-50 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -252,14 +342,30 @@ const MarketplaceTab: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">{marketplace.orders} orders synced</span>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleSyncNow(marketplace.name)}
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Sync Now
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleSyncNow(marketplace.name)}
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Sync Now
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleEditMarketplace(marketplace)}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleDeleteMarketplace(marketplace.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
