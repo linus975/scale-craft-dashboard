@@ -43,7 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showBusinessMetrics, setShowBusinessMetrics] = useState(false);
   const [showSystemLog, setShowSystemLog] = useState(false);
-  const [showDesignDetail, setShowDesignDetail] = useState<number | null>(null);
+  const [showDesignDetail, setShowDesignDetail] = useState<string | null>(null);
   const [showWhitelabelCatalog, setShowWhitelabelCatalog] = useState(false);
   const [showRecentOrders, setShowRecentOrders] = useState(false);
   const [showAllOrders, setShowAllOrders] = useState(false);
@@ -82,7 +82,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setShowAllOrders(false);
   };
 
-  const handleDesignDetailNavigation = (designId: number) => {
+  const handleDesignDetailNavigation = (designId: string) => {
     setShowDesignDetail(designId);
   };
 

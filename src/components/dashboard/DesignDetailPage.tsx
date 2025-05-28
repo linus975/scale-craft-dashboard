@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -252,8 +251,8 @@ const DesignDetailPage: React.FC<DesignDetailPageProps> = ({ designId, onBack })
         </div>
       </div>
 
+      {/* Image and Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Image and Actions */}
         <div className="space-y-4">
           <Card className={`${isLibraryDesign ? 'bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200' : 'bg-white/60 backdrop-blur-sm border-0'} shadow-md`}>
             <CardContent className="p-0">
