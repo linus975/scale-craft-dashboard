@@ -13,7 +13,6 @@ interface OverviewTabProps {
   onNavigateToMachines: () => void;
   onNavigateToCompletedJobs: () => void;
   onNavigateToActiveJobs: () => void;
-  onNavigateToRecentOrders: () => void;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ 
@@ -21,8 +20,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   onNavigateToSystemLog, 
   onNavigateToMachines,
   onNavigateToCompletedJobs,
-  onNavigateToActiveJobs,
-  onNavigateToRecentOrders
+  onNavigateToActiveJobs
 }) => {
   // Mock data for demonstration
   const mockJobs = [
@@ -80,7 +78,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
         <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={onNavigateToCompletedJobs}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Manufactured Today</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600">Completed Today</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">12</div>
@@ -90,15 +88,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
         <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Customised Files</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600">Design Files</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">24</div>
-            <p className="text-xs text-slate-500">in the last 30 days</p>
+            <p className="text-xs text-slate-500">3 updated today</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={onNavigateToRecentOrders}>
+        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">Marketplace Orders</CardTitle>
           </CardHeader>

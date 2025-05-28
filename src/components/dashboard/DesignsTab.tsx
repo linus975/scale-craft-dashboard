@@ -1,343 +1,939 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Layers,
-  FileText,
-  Settings,
-  Plus,
-  Download,
-  Eye,
-  Edit,
-  Trash2,
-  ExternalLink,
-  ArrowLeft
-} from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image, Package, Check, Crown, Lock, Printer, ChevronRight, PlayCircle, Clock } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import StaticDesignForm from './StaticDesignForm';
+import PersonalizedDesignForm from './PersonalizedDesignForm';
+import DesignEditDialog from './DesignEditDialog';
 
 interface DesignsTabProps {
-  onNavigateToDesignDetail: (designId: number) => void;
-  onNavigateToWhitelabelCatalog: () => void;
+  onNavigateToDesignDetail?: (designId: number) => void;
+  onNavigateToWhitelabelCatalog?: () => void;
 }
 
 const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNavigateToWhitelabelCatalog }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'detail' | 'staticForm' | 'personalizedForm'>('main');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
   const [selectedDesign, setSelectedDesign] = useState<any>(null);
-  const [isStaticFormOpen, setIsStaticFormOpen] = useState(false);
-  const [isPersonalizedFormOpen, setIsPersonalizedFormOpen] = useState(false);
-  const [designs, setDesigns] = useState([
-    { id: 1, name: "Custom Phone Case", type: "personalized", material: "PLA", createdAt: "2024-01-10", lastModified: "2024-01-15", downloads: 45 },
-    { id: 2, name: "Gear Set v2", type: "static", material: "PETG", createdAt: "2024-01-05", lastModified: "2024-01-12", downloads: 23 },
-    { id: 3, name: "Prototype Housing", type: "personalized", material: "ABS", createdAt: "2023-12-28", lastModified: "2024-01-08", downloads: 12 },
-    { id: 4, name: "Mounting Bracket", type: "static", material: "PLA", createdAt: "2023-12-20", lastModified: "2024-01-02", downloads: 68 },
-  ]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showImages, setShowImages] = useState(false);
+  const [showAllLibraryDesigns, setShowAllLibraryDesigns] = useState(false);
+  const [isPrintSheetOpen, setIsPrintSheetOpen] = useState(false);
+  const [selectedPrintDesign, setSelectedPrintDesign] = useState<any>(null);
+  const [printerSearch, setPrinterSearch] = useState('');
+  const [selectedPrinter, setSelectedPrinter] = useState<number | null>(null);
+  const [queuePriority, setQueuePriority] = useState<'high' | 'normal'>('normal');
+  
+  const libraryDesigns = [
+    {
+      id: 101,
+      name: "Premium Phone Grip",
+      category: "accessories",
+      difficulty: "Einfach",
+      printTime: "45 min",
+      material: "PLA",
+      rating: 4.9,
+      downloads: 1250,
+      imageUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=200&fit=crop",
+      isLibrary: true,
+      nozzleSize: "0.4mm",
+      layerHeight: "0.2mm",
+      infill: "20%",
+      supportMaterial: "No",
+      description: "Ein ergonomischer Handygriff aus hochwertigem PLA-Kunststoff für bessere Handhabung.",
+      tags: ["phone", "grip", "ergonomic", "accessories"]
+    },
+    {
+      id: 102,
+      name: "Modular Desktop Organizer",
+      category: "office",
+      difficulty: "Mittel",
+      printTime: "2h 30min",
+      material: "PETG",
+      rating: 4.8,
+      downloads: 890,
+      imageUrl: "https://images.unsplash.com/photo-1487887235947-a955ef187fcc?w=300&h=200&fit=crop",
+      isLibrary: true,
+      nozzleSize: "0.4mm",
+      layerHeight: "0.25mm",
+      infill: "25%",
+      supportMaterial: "Yes",
+      description: "Ein modulares Organizer-System für den Schreibtisch mit verschiedenen Fächern und Stifthaltern.",
+      tags: ["office", "organizer", "modular", "desk"]
+    },
+    {
+      id: 103,
+      name: "Cable Management System",
+      category: "office",
+      difficulty: "Einfach",
+      printTime: "1h 15min",
+      material: "PLA",
+      rating: 4.7,
+      downloads: 2100,
+      imageUrl: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=300&h=200&fit=crop",
+      isLibrary: true,
+      nozzleSize: "0.4mm",
+      layerHeight: "0.2mm",
+      infill: "15%",
+      supportMaterial: "No",
+      description: "Ein elegantes Kabelmanagement-System zur Organisation von Kabeln auf dem Schreibtisch.",
+      tags: ["cable", "management", "office", "organization"]
+    },
+    {
+      id: 104,
+      name: "Ergonomic Laptop Stand",
+      category: "accessories",
+      difficulty: "Schwer",
+      printTime: "4h 20min",
+      material: "ABS",
+      rating: 4.9,
+      downloads: 750,
+      imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&h=200&fit=crop",
+      isLibrary: true,
+      nozzleSize: "0.6mm",
+      layerHeight: "0.3mm",
+      infill: "30%",
+      supportMaterial: "Yes",
+      description: "Ein ergonomischer Laptop-Ständer für bessere Körperhaltung und Arbeitskomfort.",
+      tags: ["laptop", "stand", "ergonomic", "workspace"]
+    }
+  ];
 
-  const [newStaticDesign, setNewStaticDesign] = useState({
-    name: '',
-    material: '',
-    description: '',
-    file: null
+  const categories = [
+    { value: 'all', label: 'Alle Kategorien' },
+    { value: 'mechanical', label: 'Mechanische Teile' },
+    { value: 'household', label: 'Haushalt' },
+    { value: 'toys', label: 'Spielzeug' },
+    { value: 'tools', label: 'Werkzeuge' },
+    { value: 'decorative', label: 'Dekoration' },
+    { value: 'automotive', label: 'Automotive' },
+  ];
+
+  const mockDesigns = [
+    { 
+      id: 1, 
+      name: "Parametric Gear", 
+      lastModified: "2 hours ago", 
+      version: "v1.3",
+      cadSoftware: "fusion360",
+      slicer: "prusaslicer",
+      sketchName: "gear_teeth",
+      replacementValue: "teeth_count",
+      category: "mechanical",
+      imageUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 2, 
+      name: "Custom Bracket", 
+      lastModified: "1 day ago", 
+      version: "v2.1",
+      cadSoftware: "solidworks",
+      slicer: "cura",
+      sketchName: "",
+      replacementValue: "",
+      category: "mechanical",
+      imageUrl: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 3, 
+      name: "Housing Template", 
+      lastModified: "3 days ago", 
+      version: "v1.0",
+      cadSoftware: "blender",
+      slicer: "orcaslicer",
+      sketchName: "housing_width",
+      replacementValue: "width_param",
+      category: "household",
+      imageUrl: "https://images.unsplash.com/photo-1487887235947-a955ef187fcc?w=300&h=200&fit=crop"
+    },
+  ];
+
+  const mockMachines = [
+    { id: 1, name: "Prusa i3 MK3S+", status: "idle" },
+    { id: 2, name: "Bambu Lab X1 Carbon", status: "printing" },
+    { id: 3, name: "Ender 3 V2", status: "offline" }
+  ];
+
+  // Filter designs based on search and category - now includes library designs
+  const filteredOwnDesigns = mockDesigns.filter(design => {
+    const matchesSearch = design.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || design.category === selectedCategory;
+    return matchesSearch && matchesCategory;
   });
 
-  const [newPersonalizedDesign, setNewPersonalizedDesign] = useState({
-    name: '',
-    material: '',
-    description: '',
-    parameters: '',
-    templateFile: null
+  const filteredLibraryDesigns = libraryDesigns.filter(design => {
+    const matchesSearch = design.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         design.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         design.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesCategory = selectedCategory === 'all' || design.category === selectedCategory;
+    return matchesSearch && matchesCategory;
   });
 
-  const handleDesignClick = (design: any) => {
-    setSelectedDesign(design);
-    setCurrentView('detail');
+  const filteredMachines = mockMachines.filter(machine =>
+    machine.name.toLowerCase().includes(printerSearch.toLowerCase())
+  );
+
+  const handleDesignTypeSelection = (type: 'static' | 'personalized') => {
+    console.log(`Selected design type: ${type}`);
+    setSelectedDesignType(type);
   };
 
-  const handleStaticFormSubmit = () => {
-    const newDesign = {
-      id: Date.now(),
-      name: newStaticDesign.name,
-      type: 'static',
-      material: newStaticDesign.material,
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-      downloads: 0
-    };
-    setDesigns(prev => [...prev, newDesign]);
-    setIsStaticFormOpen(false);
-    setNewStaticDesign({ name: '', material: '', description: '', file: null });
+  const handleStaticDesignSave = (designData: any) => {
+    console.log('Saving static design:', designData);
+    // TODO: Implement Firebase save logic
+    setIsDialogOpen(false);
+    setSelectedDesignType(null);
   };
 
-  const handlePersonalizedFormSubmit = () => {
-    const newDesign = {
-      id: Date.now(),
-      name: newPersonalizedDesign.name,
-      type: 'personalized',
-      material: newPersonalizedDesign.material,
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-      downloads: 0
-    };
-    setDesigns(prev => [...prev, newDesign]);
-    setIsPersonalizedFormOpen(false);
-    setNewPersonalizedDesign({ name: '', material: '', description: '', parameters: '', templateFile: null });
+  const handlePersonalizedDesignSave = (designData: any) => {
+    console.log('Saving personalized design:', designData);
+    // TODO: Implement Firebase save logic
+    setIsDialogOpen(false);
+    setSelectedDesignType(null);
   };
 
-  const handleDeleteDesign = (designId: number) => {
-    setDesigns(prev => prev.filter(design => design.id !== designId));
+  const handleDesignSave = (designData: any) => {
+    console.log('Saving design changes:', designData);
+    // TODO: Implement save logic
+    setSelectedDesign(null);
   };
 
-  if (currentView === 'detail') {
+  const handleAddToQueue = (designId: number) => {
+    console.log(`Adding design ${designId} to queue`);
+    // TODO: Implement queue logic
+  };
+
+  const handlePrintOnMachine = (designId: number, machineId: number) => {
+    console.log(`Printing design ${designId} on machine ${machineId}`);
+    // TODO: Implement print logic
+  };
+
+  const handleLibraryDesignPrint = (designId: number, target: 'queue' | number) => {
+    if (target === 'queue') {
+      console.log(`Adding library design ${designId} to print queue`);
+    } else {
+      console.log(`Printing library design ${designId} on machine ${target}`);
+    }
+    // TODO: Implement print logic for library designs
+  };
+
+  const handlePrintClick = (design: any) => {
+    setSelectedPrintDesign(design);
+    setIsPrintSheetOpen(true);
+  };
+
+  const handlePrintSubmit = () => {
+    if (selectedPrinter) {
+      console.log(`Printing ${selectedPrintDesign.name} on machine ${selectedPrinter} with ${queuePriority} priority`);
+      handleLibraryDesignPrint(selectedPrintDesign.id, selectedPrinter);
+    } else {
+      console.log(`Adding ${selectedPrintDesign.name} to queue with ${queuePriority} priority`);
+      handleLibraryDesignPrint(selectedPrintDesign.id, 'queue');
+    }
+    setIsPrintSheetOpen(false);
+    setSelectedPrintDesign(null);
+    setSelectedPrinter(null);
+    setQueuePriority('normal');
+    setPrinterSearch('');
+  };
+
+  const handleCancel = () => {
+    setSelectedDesignType(null);
+    setIsDialogOpen(false);
+  };
+
+  const handleDesignClick = (designId: number) => {
+    console.log(`Navigating to design detail for design ${designId}`);
+    if (onNavigateToDesignDetail) {
+      onNavigateToDesignDetail(designId);
+    }
+  };
+
+  const renderDialogContent = () => {
+    if (selectedDesignType === 'static') {
+      return (
+        <ScrollArea className="max-h-[80vh]">
+          <StaticDesignForm 
+            onCancel={handleCancel}
+            onSave={handleStaticDesignSave}
+          />
+        </ScrollArea>
+      );
+    }
+
+    if (selectedDesignType === 'personalized') {
+      return (
+        <ScrollArea className="max-h-[80vh]">
+          <PersonalizedDesignForm 
+            onCancel={handleCancel}
+            onSave={handlePersonalizedDesignSave}
+          />
+        </ScrollArea>
+      );
+    }
+
+    // Default design type selection
     return (
-      <div className="space-y-6">
-        <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Designs
-        </Button>
-        {selectedDesign && (
-          <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold">{selectedDesign.name}</CardTitle>
-              <CardDescription>
-                {selectedDesign.type} design • Material: {selectedDesign.material}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Created At</Label>
-                  <p>{new Date(selectedDesign.createdAt).toLocaleDateString()}</p>
+      <>
+        <DialogHeader>
+          <DialogTitle>Choose Design Type</DialogTitle>
+          <DialogDescription>
+            Select whether you want to create a static design or a personalized design with customizable parameters.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-4 py-4">
+          <Button
+            variant="outline"
+            className="h-auto p-6 flex flex-col gap-3"
+            onClick={() => handleDesignTypeSelection('static')}
+          >
+            <FileText className="h-8 w-8 text-blue-600" />
+            <div className="text-center">
+              <div className="font-semibold">Static Design</div>
+              <div className="text-sm text-slate-500">Fixed design file without customization options</div>
+            </div>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto p-6 flex flex-col gap-3"
+            onClick={() => handleDesignTypeSelection('personalized')}
+          >
+            <User className="h-8 w-8 text-indigo-600" />
+            <div className="text-center">
+              <div className="font-semibold">Personalized Design</div>
+              <div className="text-sm text-slate-500">Design with customizable parameters for personalization</div>
+            </div>
+          </Button>
+        </div>
+      </>
+    );
+  };
+
+  const renderGridView = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {filteredOwnDesigns.map((design) => (
+        <Card 
+          key={design.id} 
+          className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => handleDesignClick(design.id)}
+        >
+          {showImages && (
+            <div className="relative h-48 overflow-hidden rounded-t-lg">
+              <img 
+                src={design.imageUrl} 
+                alt={design.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">{design.name}</CardTitle>
+              <FileText className="h-5 w-5 text-slate-400" />
+            </div>
+            <CardDescription>
+              {design.version} • {design.lastModified}
+              <Badge variant="outline" className="ml-2 text-xs">
+                {categories.find(cat => cat.value === design.category)?.label}
+              </Badge>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="flex-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Download
+              </Button>
+              <Button 
+                size="sm" 
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDesign(design);
+                }}
+              >
+                Edit
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderListView = () => (
+    <div className="space-y-4">
+      {filteredOwnDesigns.map((design) => (
+        <Card 
+          key={design.id} 
+          className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => handleDesignClick(design.id)}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              {showImages && (
+                <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded-lg">
+                  <img 
+                    src={design.imageUrl} 
+                    alt={design.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <div>
-                  <Label>Last Modified</Label>
-                  <p>{new Date(selectedDesign.lastModified).toLocaleDateString()}</p>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-semibold truncate">{design.name}</h3>
+                  <Badge variant="outline" className="text-xs">
+                    {categories.find(cat => cat.value === design.category)?.label}
+                  </Badge>
                 </div>
-                <div>
-                  <Label>Downloads</Label>
-                  <p>{selectedDesign.downloads}</p>
-                </div>
+                <p className="text-sm text-slate-600">{design.version} • {design.lastModified}</p>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
+              <div className="flex gap-2 flex-shrink-0">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-1" />
                   Download
                 </Button>
-                <Button variant="secondary" onClick={() => onNavigateToDesignDetail(selectedDesign.id)}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Detail
+                <Button 
+                  size="sm" 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDesign(design);
+                  }}
+                >
+                  Edit
                 </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderLibraryGridView = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {(showAllLibraryDesigns ? filteredLibraryDesigns : filteredLibraryDesigns.slice(0, 8)).map((design) => (
+          <Card 
+            key={design.id} 
+            className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
+            onClick={() => handleDesignClick(design.id)}
+          >
+            <div className="absolute top-2 right-2 z-10">
+              <Badge className="bg-purple-600 text-white">
+                <Crown className="h-3 w-3 mr-1" />
+                Library
+              </Badge>
+            </div>
+            
+            {showImages && (
+              <div className="relative h-36 overflow-hidden">
+                <img 
+                  src={design.imageUrl} 
+                  alt={design.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+              </div>
+            )}
+            
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-purple-900">{design.name}</CardTitle>
+              <div className="flex items-center gap-2 text-xs text-purple-700">
+                <Badge variant="outline" className="text-xs border-purple-300">
+                  {design.difficulty}
+                </Badge>
+                <span>⭐ {design.rating}</span>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="pt-0 space-y-3">
+              <div className="text-xs text-purple-600 space-y-1">
+                <div className="flex justify-between">
+                  <span>Druckzeit:</span>
+                  <span className="font-medium">{design.printTime}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Material:</span>
+                  <span className="font-medium">{design.material}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Downloads:</span>
+                  <span className="font-medium">{design.downloads.toLocaleString()}</span>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 text-xs border-purple-300 text-purple-700 hover:bg-purple-50"
+                  disabled
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Lock className="h-3 w-3 mr-1" />
+                  Geschützt
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePrintClick(design);
+                  }}
+                >
+                  <Printer className="h-3 w-3 mr-1" />
+                  Print
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      {/* Show All Button - Only show if not showing all designs */}
+      {!showAllLibraryDesigns && filteredLibraryDesigns.length > 8 && (
+        <div className="flex justify-center pt-4">
+          <Button 
+            variant="outline" 
+            className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            onClick={() => setShowAllLibraryDesigns(true)}
+          >
+            Show All ({filteredLibraryDesigns.length} Designs)
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
+      
+      {/* Show Less Button - Only show if showing all designs */}
+      {showAllLibraryDesigns && (
+        <div className="flex justify-center pt-4">
+          <Button 
+            variant="outline" 
+            className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            onClick={() => setShowAllLibraryDesigns(false)}
+          >
+            Show Less
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderLibraryListView = () => (
+    <div className="space-y-6">
+      <div className="space-y-3">
+        {(showAllLibraryDesigns ? filteredLibraryDesigns : filteredLibraryDesigns.slice(0, 8)).map((design) => (
+          <Card 
+            key={design.id} 
+            className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+            onClick={() => handleDesignClick(design.id)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                {showImages && (
+                  <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg">
+                    <img 
+                      src={design.imageUrl} 
+                      alt={design.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-sm font-semibold text-purple-900 truncate">{design.name}</h3>
+                    <Badge className="bg-purple-600 text-white text-xs">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Library
+                    </Badge>
+                    <Badge variant="outline" className="text-xs border-purple-300">
+                      {design.difficulty}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-purple-600">
+                    {design.printTime} • {design.material} • ⭐ {design.rating} • {design.downloads.toLocaleString()} Downloads
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                    disabled
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Lock className="h-3 w-3 mr-1" />
+                    Geschützt
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrintClick(design);
+                    }}
+                  >
+                    <Printer className="h-3 w-3 mr-1" />
+                    Print
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      {/* Show All Button - Only show if not showing all designs */}
+      {!showAllLibraryDesigns && filteredLibraryDesigns.length > 8 && (
+        <div className="flex justify-center pt-4">
+          <Button 
+            variant="outline" 
+            className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            onClick={() => setShowAllLibraryDesigns(true)}
+          >
+            Show All ({filteredLibraryDesigns.length} Designs)
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
+      
+      {/* Show Less Button - Only show if showing all designs */}
+      {showAllLibraryDesigns && (
+        <div className="flex justify-center pt-4">
+          <Button 
+            variant="outline" 
+            className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            onClick={() => setShowAllLibraryDesigns(false)}
+          >
+            Show Less
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Design Library</h2>
+          <p className="text-slate-600">Verwalten Sie Ihre CAD-Dateien und Vorlagen</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Design hinzufügen
+            </Button>
+          </DialogTrigger>
+          <DialogContent className={selectedDesignType ? "max-w-4xl max-h-[90vh]" : "sm:max-w-md"}>
+            {renderDialogContent()}
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="In eigenen und Library Designs suchen..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Kategorie wählen" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((category) => (
+              <SelectItem key={category.value} value={category.value}>
+                {category.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <Grid2X2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <LayoutList className="h-4 w-4" />
+          </Button>
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
+            showImages ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-300'
+          }`}>
+            <Image className="h-4 w-4" />
+            <Switch
+              checked={showImages}
+              onCheckedChange={setShowImages}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Library Designs Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
+            <Crown className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-purple-900">Design Library</h3>
+            <p className="text-sm text-purple-600">Professionelle Designs für den jetzigen Abrechnungszeitraum - nur zum Drucken verfügbar</p>
+          </div>
+        </div>
+
+        {filteredLibraryDesigns.length > 0 ? (
+          viewMode === 'grid' ? renderLibraryGridView() : renderLibraryListView()
+        ) : (
+          <Card className="bg-purple-50/50 border-2 border-purple-200">
+            <CardContent className="p-6 text-center">
+              <Crown className="h-10 w-10 text-purple-400 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-purple-900 mb-2">
+                {searchTerm ? 'Keine passenden Library-Designs gefunden' : 'Keine Library-Designs verfügbar'}
+              </h3>
+              <p className="text-purple-600">
+                {searchTerm ? 'Versuchen Sie andere Suchbegriffe.' : 'Mieten Sie Whitelabel-Kataloge, um Zugang zu professionellen Designs zu erhalten.'}
+              </p>
             </CardContent>
           </Card>
         )}
       </div>
-    );
-  }
 
-  return (
-    <div className="space-y-6">
-      {currentView === 'main' && (
-        <>
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Design Management</h2>
-              <p className="text-slate-600">Create and manage your 3D print designs</p>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Design
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border border-slate-200 shadow-md">
-                <DropdownMenuItem onClick={() => setIsStaticFormOpen(true)} className="cursor-pointer">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Static Design
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsPersonalizedFormOpen(true)} className="cursor-pointer">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Personalised Design
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+      {/* Separator */}
+      <div className="border-t border-slate-200 pt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-slate-600 rounded-lg">
+            <FileText className="h-5 w-5 text-white" />
           </div>
+          <div>
+            <h3 className="text-xl font-bold text-slate-900">Personalised Designs</h3>
+            <p className="text-sm text-slate-600">Eigene CAD-Dateien und benutzerdefinierte Vorlagen</p>
+          </div>
+        </div>
 
+        {/* Results count */}
+        <div className="text-sm text-slate-600 mb-4">
+          {filteredOwnDesigns.length} Design{filteredOwnDesigns.length !== 1 ? 's' : ''} gefunden
+        </div>
+
+        {/* Design Display */}
+        {filteredOwnDesigns.length > 0 ? (
+          viewMode === 'grid' ? renderGridView() : renderListView()
+        ) : (
           <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Layers className="h-5 w-5" />
-                Your Designs
-              </CardTitle>
-              <CardDescription>Manage existing designs and create new ones</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {designs.map((design) => (
-                  <div key={design.id} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-4 w-4 text-blue-600" />
-                        <div>
-                          <h4 className="font-medium text-slate-900">{design.name}</h4>
-                          <p className="text-sm text-slate-500">{design.type} design</p>
-                        </div>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-white border border-slate-200 shadow-md">
-                          <DropdownMenuItem onClick={() => handleDesignClick(design)} className="flex items-center gap-2 cursor-pointer">
-                            <Eye className="h-4 w-4" />
-                            View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onNavigateToDesignDetail(design.id)} className="flex items-center gap-2 cursor-pointer">
-                            <ExternalLink className="h-4 w-4" />
-                            View Detail
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                            <Edit className="h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteDesign(design.id)} className="flex items-center gap-2 cursor-pointer text-red-600">
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-slate-600">
-                      <span>Downloads: {design.downloads}</span>
-                      <span>Last Modified: {new Date(design.lastModified).toLocaleDateString()}</span>
+            <CardContent className="p-8 text-center">
+              <Search className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 mb-2">Keine Designs gefunden</h3>
+              <p className="text-slate-600">Versuchen Sie andere Suchbegriffe oder Kategorien.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Design Library Section */}
+      <div className="mt-12 pt-8 border-t border-slate-200">
+        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onNavigateToWhitelabelCatalog()}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Package className="h-6 w-6 text-purple-600" />
+                  Design Library
+                </CardTitle>
+                <CardDescription className="text-base mt-2">
+                  Erweitern Sie Ihr Angebot mit professionellen Whitelabel-Katalogen
+                </CardDescription>
+              </div>
+              <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                Neu
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-slate-600">
+                Mieten Sie komplette Design-Kataloge für nur 30€ pro Monat und bieten Sie Ihren Kunden sofort hunderte von professionellen 3D-Designs an.
+              </p>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span>Über 300 Designs verfügbar</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span>Kommerzielle Nutzungsrechte</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span>Monatlich kündbar</span>
+                </div>
+              </div>
+              <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                <Package className="h-4 w-4 mr-2" />
+                Kataloge durchsuchen
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Print Selection Sheet */}
+      <Sheet open={isPrintSheetOpen} onOpenChange={setIsPrintSheetOpen}>
+        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle>Design drucken</SheetTitle>
+            <SheetDescription>
+              Wählen Sie einen Drucker aus oder fügen Sie zur Warteschlange hinzu
+            </SheetDescription>
+          </SheetHeader>
+          
+          {selectedPrintDesign && (
+            <div className="space-y-6 mt-6">
+              {/* Design Info */}
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <h3 className="font-semibold text-purple-900">{selectedPrintDesign.name}</h3>
+                <p className="text-sm text-purple-600">{selectedPrintDesign.material} • {selectedPrintDesign.printTime}</p>
+              </div>
+
+              {/* Queue Priority */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Warteschlangen-Priorität</label>
+                <Select value={queuePriority} onValueChange={(value: 'high' | 'normal') => setQueuePriority(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">Hoch (Vorrangig)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Printer Search */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Drucker auswählen (optional)</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Drucker suchen..."
+                    value={printerSearch}
+                    onChange={(e) => setPrinterSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Printer List */}
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                <div 
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                    selectedPrinter === null ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'
+                  }`}
+                  onClick={() => setSelectedPrinter(null)}
+                >
+                  <div className="font-medium">Zur Warteschlange hinzufügen</div>
+                  <div className="text-sm text-slate-500">
+                    Mit {queuePriority === 'high' ? 'hoher' : 'normaler'} Priorität
+                  </div>
+                </div>
+                
+                {filteredMachines.map((machine) => (
+                  <div
+                    key={machine.id}
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      selectedPrinter === machine.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'
+                    } ${machine.status === 'offline' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => machine.status !== 'offline' && setSelectedPrinter(machine.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">{machine.name}</div>
+                      <Badge 
+                        className={
+                          machine.status === 'idle' ? 'bg-green-100 text-green-800' :
+                          machine.status === 'printing' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }
+                      >
+                        {machine.status}
+                      </Badge>
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setIsPrintSheetOpen(false)}
+                >
+                  Abbrechen
+                </Button>
+                <Button 
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  onClick={handlePrintSubmit}
+                >
+                  {selectedPrinter ? 'Jetzt drucken' : 'Zur Warteschlange'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Design Edit Dialog */}
+      {selectedDesign && (
+        <DesignEditDialog
+          design={selectedDesign}
+          isOpen={!!selectedDesign}
+          onClose={() => setSelectedDesign(null)}
+          onSave={handleDesignSave}
+          onAddToQueue={handleAddToQueue}
+          onPrintOnMachine={handlePrintOnMachine}
+          machines={mockMachines}
+        />
       )}
-
-      <Dialog open={isStaticFormOpen} onOpenChange={setIsStaticFormOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Static Design</DialogTitle>
-            <DialogDescription>
-              Create a new static design for 3D printing
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="staticName">Design Name</Label>
-              <Input
-                id="staticName"
-                value={newStaticDesign.name}
-                onChange={(e) => setNewStaticDesign(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Gear Set v3"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="staticMaterial">Material</Label>
-              <Input
-                id="staticMaterial"
-                value={newStaticDesign.material}
-                onChange={(e) => setNewStaticDesign(prev => ({ ...prev, material: e.target.value }))}
-                placeholder="e.g., PETG"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="staticDescription">Description</Label>
-              <Textarea
-                id="staticDescription"
-                placeholder="Brief description of the design"
-                value={newStaticDesign.description}
-                onChange={(e) => setNewStaticDesign(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="staticFile">Upload File</Label>
-              <Input
-                type="file"
-                id="staticFile"
-                onChange={(e) => setNewStaticDesign(prev => ({ ...prev, file: e.target.files ? e.target.files[0] : null }))}
-              />
-            </div>
-            <Button onClick={handleStaticFormSubmit} className="w-full">
-              Create Design
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isPersonalizedFormOpen} onOpenChange={setIsPersonalizedFormOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Personalised Design</DialogTitle>
-            <DialogDescription>
-              Create a new personalised design with custom parameters
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="personalizedName">Design Name</Label>
-              <Input
-                id="personalizedName"
-                value={newPersonalizedDesign.name}
-                onChange={(e) => setNewPersonalizedDesign(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Custom Phone Case"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="personalizedMaterial">Material</Label>
-              <Input
-                id="personalizedMaterial"
-                value={newPersonalizedDesign.material}
-                onChange={(e) => setNewPersonalizedDesign(prev => ({ ...prev, material: e.target.value }))}
-                placeholder="e.g., TPU"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="personalizedDescription">Description</Label>
-              <Textarea
-                id="personalizedDescription"
-                placeholder="Brief description of the design"
-                value={newPersonalizedDesign.description}
-                onChange={(e) => setNewPersonalizedDesign(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="personalizedParameters">Parameters</Label>
-              <Textarea
-                id="personalizedParameters"
-                placeholder="e.g., Text, Color, Size"
-                value={newPersonalizedDesign.parameters}
-                onChange={(e) => setNewPersonalizedDesign(prev => ({ ...prev, parameters: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="templateFile">Upload Template File</Label>
-              <Input
-                type="file"
-                id="templateFile"
-                onChange={(e) => setNewPersonalizedDesign(prev => ({ ...prev, templateFile: e.target.files ? e.target.files[0] : null }))}
-              />
-            </div>
-            <Button onClick={handlePersonalizedFormSubmit} className="w-full">
-              Create Design
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

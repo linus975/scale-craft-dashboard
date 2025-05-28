@@ -31,7 +31,6 @@ import BusinessMetricsPage from './BusinessMetricsPage';
 import SystemLogPage from './SystemLogPage';
 import DesignDetailPage from './DesignDetailPage';
 import WhitelabelCatalogPage from './WhitelabelCatalogPage';
-import RecentOrdersPage from './RecentOrdersPage';
 
 interface DashboardProps {
   user: { email: string };
@@ -44,7 +43,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [showSystemLog, setShowSystemLog] = useState(false);
   const [showDesignDetail, setShowDesignDetail] = useState<number | null>(null);
   const [showWhitelabelCatalog, setShowWhitelabelCatalog] = useState(false);
-  const [showRecentOrders, setShowRecentOrders] = useState(false);
 
   const handleBusinessMetricsNavigation = () => {
     setShowBusinessMetrics(true);
@@ -63,16 +61,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setShowWhitelabelCatalog(true);
   };
 
-  const handleRecentOrdersNavigation = () => {
-    setShowRecentOrders(true);
-  };
-
   const handleBackToOverview = () => {
     setShowBusinessMetrics(false);
     setShowSystemLog(false);
     setShowDesignDetail(null);
     setShowWhitelabelCatalog(false);
-    setShowRecentOrders(false);
   };
 
   const handleDesignDetailNavigation = (designId: number) => {
@@ -147,8 +140,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           <DesignDetailPage designId={showDesignDetail} onBack={handleBackToOverview} />
         ) : showWhitelabelCatalog ? (
           <WhitelabelCatalogPage onBack={handleBackToOverview} />
-        ) : showRecentOrders ? (
-          <RecentOrdersPage onBack={handleBackToOverview} />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             {/* Desktop Navigation */}
@@ -197,7 +188,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                 onNavigateToMachines={handleMachinesNavigation}
                 onNavigateToCompletedJobs={handleCompletedJobsNavigation}
                 onNavigateToActiveJobs={handleActiveJobsNavigation}
-                onNavigateToRecentOrders={handleRecentOrdersNavigation}
               />
             </TabsContent>
 
