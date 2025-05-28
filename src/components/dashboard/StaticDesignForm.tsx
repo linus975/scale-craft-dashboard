@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Save, Loader2 } from 'lucide-react';
+import { Upload, Save, Loader2, Image } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { useToast } from '@/hooks/use-toast';
 
 interface StaticDesignFormProps {
@@ -17,8 +18,10 @@ interface StaticDesignFormProps {
 
 const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave }) => {
   const { createDesign } = useDesigns();
+  const { uploadFile, uploading } = useFileUpload();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -44,6 +47,12 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
 
     setLoading(true);
     try {
+      // Upload preview image if provided
+      let previewImagePath = null;
+      if (previewImage) {
+        previewImagePath = await uploadFile(previewImage, 'preview-images');
+      }
+
       await createDesign({
         name: formData.name,
         description: formData.description || null,
@@ -53,7 +62,8 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         nozzle_diameter: formData.nozzle_diameter || null,
         material: formData.material || null,
         colors: formData.colors || null,
-        ean_number: formData.ean_number || null
+        ean_number: formData.ean_number || null,
+        preview_image_path: previewImagePath
       });
 
       onSave(formData);
@@ -69,6 +79,10 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleImageChange = (file: File | null) => {
+    setPreviewImage(file);
   };
 
   return (
@@ -91,6 +105,31 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
               onChange={(e) => handleInputChange('name', e.target.value)}
               required
             />
+          </div>
+
+          {/* Preview Image Upload */}
+          <div className="space-y-2">
+            <Label htmlFor="previewImage">Vorschaubild</Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+              <Image className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600 mb-2">
+                {previewImage ? previewImage.name : 'Klicken Sie hier oder ziehen Sie ein Bild hinein'}
+              </p>
+              <Input
+                id="previewImage"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageChange(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('previewImage')?.click()}
+              >
+                Bild auswählen
+              </Button>
+            </div>
           </div>
 
           {/* Description */}
@@ -200,11 +239,11 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
             <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
               Abbrechen
             </Button>
-            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading}>
-              {loading ? (
+            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || uploading}>
+              {loading || uploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Speichern...
+                  {uploading ? 'Bild hochladen...' : 'Speichern...'}
                 </>
               ) : (
                 <>

@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Upload, Save, Loader2 } from 'lucide-react';
+import { Upload, Save, Loader2, Image } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
   const { uploadFile, uploading } = useFileUpload();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -57,6 +58,12 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
         iniFilePath = await uploadFile(formData.iniFile, 'ini-files');
       }
 
+      // Upload preview image if provided
+      let previewImagePath = null;
+      if (previewImage) {
+        previewImagePath = await uploadFile(previewImage, 'preview-images');
+      }
+
       await createDesign({
         name: formData.name,
         description: formData.description || null,
@@ -67,7 +74,8 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
         sketch_name: formData.sketchName || null,
         replacement_value: formData.replacementValue || null,
         cad_file_path: cadFilePath,
-        ini_file_path: iniFilePath
+        ini_file_path: iniFilePath,
+        preview_image_path: previewImagePath
       });
 
       onSave(formData);
@@ -99,6 +107,10 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
     }));
   };
 
+  const handleImageChange = (file: File | null) => {
+    setPreviewImage(file);
+  };
+
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
@@ -119,6 +131,31 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
               onChange={(e) => handleInputChange('name', e.target.value)}
               required
             />
+          </div>
+
+          {/* Preview Image Upload */}
+          <div className="space-y-2">
+            <Label htmlFor="previewImage">Vorschaubild</Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+              <Image className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600 mb-2">
+                {previewImage ? previewImage.name : 'Klicken Sie hier oder ziehen Sie ein Bild hinein'}
+              </p>
+              <Input
+                id="previewImage"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageChange(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('previewImage')?.click()}
+              >
+                Bild auswählen
+              </Button>
+            </div>
           </div>
 
           {/* Description */}

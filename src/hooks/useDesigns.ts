@@ -34,7 +34,7 @@ export const useDesigns = () => {
     }
   };
 
-  const createDesign = async (designData: DesignInsert) => {
+  const createDesign = async (designData: Omit<DesignInsert, 'user_id'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Benutzer nicht angemeldet');

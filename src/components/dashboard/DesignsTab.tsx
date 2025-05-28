@@ -14,14 +14,16 @@ import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import DesignEditDialog from './DesignEditDialog';
 import { useDesigns } from '@/hooks/useDesigns';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface DesignsTabProps {
-  onNavigateToDesignDetail?: (designId: number) => void;
+  onNavigateToDesignDetail?: (designId: string) => void;
   onNavigateToWhitelabelCatalog?: () => void;
 }
 
 const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNavigateToWhitelabelCatalog }) => {
   const { designs, loading } = useDesigns();
+  const { getFileUrl } = useFileUpload();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
   const [selectedDesign, setSelectedDesign] = useState<any>(null);
@@ -33,7 +35,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
   
   const libraryDesigns = [
     {
-      id: 101,
+      id: "101",
       name: "Premium Phone Grip",
       category: "accessories",
       difficulty: "Einfach",
@@ -51,7 +53,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       tags: ["phone", "grip", "ergonomic", "accessories"]
     },
     {
-      id: 102,
+      id: "102",
       name: "Modular Desktop Organizer",
       category: "office",
       difficulty: "Mittel",
@@ -69,7 +71,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       tags: ["office", "organizer", "modular", "desk"]
     },
     {
-      id: 103,
+      id: "103",
       name: "Cable Management System",
       category: "office",
       difficulty: "Einfach",
@@ -87,7 +89,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       tags: ["cable", "management", "office", "organization"]
     },
     {
-      id: 104,
+      id: "104",
       name: "Ergonomic Laptop Stand",
       category: "accessories",
       difficulty: "Schwer",
@@ -146,7 +148,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
     setIsDialogOpen(false);
   };
 
-  const handleDesignClick = (designId: number) => {
+  const handleDesignClick = (designId: string) => {
     console.log(`Navigating to design detail for design ${designId}`);
     if (onNavigateToDesignDetail) {
       onNavigateToDesignDetail(designId);
@@ -218,12 +220,12 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         <Card 
           key={design.id} 
           className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => handleDesignClick(parseInt(design.id))}
+          onClick={() => handleDesignClick(design.id)}
         >
           {showImages && design.preview_image_path && (
             <div className="relative h-48 overflow-hidden rounded-t-lg">
               <img 
-                src={design.preview_image_path} 
+                src={getFileUrl(design.preview_image_path)} 
                 alt={design.name}
                 className="w-full h-full object-cover"
               />
@@ -282,14 +284,14 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         <Card 
           key={design.id} 
           className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => handleDesignClick(parseInt(design.id))}
+          onClick={() => handleDesignClick(design.id)}
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               {showImages && design.preview_image_path && (
                 <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded-lg">
                   <img 
-                    src={design.preview_image_path} 
+                    src={getFileUrl(design.preview_image_path)} 
                     alt={design.name}
                     className="w-full h-full object-cover"
                   />
@@ -340,7 +342,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           <Card 
             key={design.id} 
             className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
-            onClick={() => handleDesignClick(parseInt(design.id))}
+            onClick={() => handleDesignClick(design.id)}
           >
             <div className="absolute top-2 right-2 z-10">
               <Badge className="bg-purple-600 text-white">
@@ -402,7 +404,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                   className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDesignClick(parseInt(design.id));
+                    handleDesignClick(design.id);
                   }}
                 >
                   <Printer className="h-3 w-3 mr-1" />
@@ -448,7 +450,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           <Card 
             key={design.id} 
             className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer"
-            onClick={() => handleDesignClick(parseInt(design.id))}
+            onClick={() => handleDesignClick(design.id)}
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
@@ -492,7 +494,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                     className="bg-purple-600 hover:bg-purple-700"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDesignClick(parseInt(design.id));
+                      handleDesignClick(design.id);
                     }}
                   >
                     <Printer className="h-3 w-3 mr-1" />
