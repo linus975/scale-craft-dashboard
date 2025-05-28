@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Link,
   RefreshCw,
@@ -19,9 +19,11 @@ import {
   Edit,
   Trash2,
   Eye,
-  Loader2
+  Loader2,
+  Clock
 } from 'lucide-react';
 import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
+import { useToast } from '@/hooks/use-toast';
 
 interface MarketplaceTabProps {
   onNavigateToAllOrders: () => void;
@@ -29,6 +31,7 @@ interface MarketplaceTabProps {
 
 const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }) => {
   const { integrations, loading, createIntegration, updateIntegration, deleteIntegration, syncIntegration } = useMarketplaceIntegrations();
+  const { toast } = useToast();
   const [isIntegrationDialogOpen, setIsIntegrationDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -39,6 +42,8 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
     apiKey: '',
     webhookUrl: ''
   });
+  const [syncFrequencies, setSyncFrequencies] = useState<Record<string, string>>({});
+  const [isSyncing, setIsSyncing] = useState<Record<string, boolean>>({});
   const [automationSettings, setAutomationSettings] = useState({
     autoCreateJobs: true,
     parameterMapping: true,
@@ -58,6 +63,12 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
     { id: 'kaufland', name: 'Kaufland', icon: '🏬' },
     { id: 'shopify', name: 'Shopify', icon: '🛍️' },
     { id: 'custom', name: 'Custom API', icon: '🔌' }
+  ];
+
+  const syncFrequencyOptions = [
+    { value: 'every30min', label: 'Alle 30 Minuten' },
+    { value: 'hourly', label: 'Jede Stunde' },
+    { value: 'every3hours', label: 'Alle 3 Stunden' }
   ];
 
   const getMarketplaceStatusColor = (status: string) => {
@@ -149,6 +160,52 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
       await syncIntegration(integrationId);
     } catch (error) {
       // Error handling is done in the hook
+    }
+  };
+
+  const handleFrequencySync = async (integrationId: string) => {
+    const frequency = syncFrequencies[integrationId];
+    
+    if (!frequency) {
+      toast({
+        title: "Fehler",
+        description: "Bitte wählen Sie eine Sync-Häufigkeit aus.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSyncing(prev => ({ ...prev, [integrationId]: true }));
+
+    try {
+      const response = await fetch('http://localhost:5678/webhook-test/Hood_Sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors',
+        body: JSON.stringify({
+          interval: frequency,
+          marketplace_id: integrationId,
+          timestamp: new Date().toISOString()
+        }),
+      });
+
+      toast({
+        title: "Sync-Häufigkeit konfiguriert",
+        description: `Der automatische Abruf wurde auf "${syncFrequencyOptions.find(opt => opt.value === frequency)?.label}" eingestellt.`,
+      });
+
+      console.log('Frequency sync request sent:', { interval: frequency, marketplace_id: integrationId });
+    } catch (error) {
+      console.error('Error setting sync frequency:', error);
+      toast({
+        title: "Fehler beim Konfigurieren",
+        description: "Die Sync-Häufigkeit konnte nicht eingestellt werden. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(prev => ({ ...prev, [integrationId]: false }));
     }
   };
 
@@ -340,6 +397,43 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
                       {integration.status}
                     </Badge>
                   </div>
+                  
+                  {/* Sync Frequency Section */}
+                  <div className="mb-3 space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Automatischer Abruf konfigurieren:</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={syncFrequencies[integration.id] || ''}
+                        onValueChange={(value) => setSyncFrequencies(prev => ({ ...prev, [integration.id]: value }))}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Häufigkeit wählen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {syncFrequencyOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleFrequencySync(integration.id)}
+                        disabled={!syncFrequencies[integration.id] || isSyncing[integration.id]}
+                        className="min-w-[120px]"
+                      >
+                        {isSyncing[integration.id] ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <Clock className="h-3 w-3 mr-1" />
+                        )}
+                        {isSyncing[integration.id] ? 'Wird gesetzt...' : 'Abruf starten'}
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600">{integration.orders_synced} orders synced</span>
                     <div className="flex gap-2">
