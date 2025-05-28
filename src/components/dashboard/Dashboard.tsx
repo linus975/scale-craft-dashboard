@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,6 +32,7 @@ import SystemLogPage from './SystemLogPage';
 import DesignDetailPage from './DesignDetailPage';
 import WhitelabelCatalogPage from './WhitelabelCatalogPage';
 import RecentOrdersPage from './RecentOrdersPage';
+import AllOrdersPage from './AllOrdersPage';
 
 interface DashboardProps {
   user: { email: string };
@@ -46,6 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [showDesignDetail, setShowDesignDetail] = useState<number | null>(null);
   const [showWhitelabelCatalog, setShowWhitelabelCatalog] = useState(false);
   const [showRecentOrders, setShowRecentOrders] = useState(false);
+  const [showAllOrders, setShowAllOrders] = useState(false);
 
   const handleBusinessMetricsNavigation = () => {
     setShowBusinessMetrics(true);
@@ -68,12 +69,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setShowRecentOrders(true);
   };
 
+  const handleAllOrdersNavigation = () => {
+    setShowAllOrders(true);
+  };
+
   const handleBackToOverview = () => {
     setShowBusinessMetrics(false);
     setShowSystemLog(false);
     setShowDesignDetail(null);
     setShowWhitelabelCatalog(false);
     setShowRecentOrders(false);
+    setShowAllOrders(false);
   };
 
   const handleDesignDetailNavigation = (designId: number) => {
@@ -150,6 +156,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           <WhitelabelCatalogPage onBack={handleBackToOverview} />
         ) : showRecentOrders ? (
           <RecentOrdersPage onBack={handleBackToOverview} />
+        ) : showAllOrders ? (
+          <AllOrdersPage onBack={handleBackToOverview} />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             {/* Desktop Navigation */}
@@ -199,11 +207,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                 onNavigateToCompletedJobs={handleCompletedJobsNavigation}
                 onNavigateToActiveJobs={handleActiveJobsNavigation}
                 onNavigateToRecentOrders={handleRecentOrdersNavigation}
+                onNavigateToAllOrders={handleAllOrdersNavigation}
               />
             </TabsContent>
 
             <TabsContent value="marketplace">
-              <MarketplaceTab />
+              <MarketplaceTab onNavigateToAllOrders={handleAllOrdersNavigation} />
             </TabsContent>
 
             <TabsContent value="designs">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +13,7 @@ interface OverviewTabProps {
   onNavigateToCompletedJobs: () => void;
   onNavigateToActiveJobs: () => void;
   onNavigateToRecentOrders?: () => void;
+  onNavigateToAllOrders?: () => void;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ 
@@ -22,7 +22,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   onNavigateToMachines,
   onNavigateToCompletedJobs,
   onNavigateToActiveJobs,
-  onNavigateToRecentOrders
+  onNavigateToRecentOrders,
+  onNavigateToAllOrders
 }) => {
   // Mock data for demonstration
   const mockJobs = [
@@ -98,7 +99,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={onNavigateToRecentOrders}>
+        <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={onNavigateToAllOrders}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">Marketplace Orders</CardTitle>
           </CardHeader>
