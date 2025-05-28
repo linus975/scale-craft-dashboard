@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,20 +14,32 @@ import {
   Package,
   ShoppingCart,
   Zap,
-  Settings
+  Settings,
+  Trash2,
+  Edit,
+  MoreVertical
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 
 const MarketplaceTab: React.FC = () => {
   const { toast } = useToast();
   const [isIntegrationDialogOpen, setIsIntegrationDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMarketplace, setSelectedMarketplace] = useState<any>(null);
+  const [editingMarketplace, setEditingMarketplace] = useState<any>(null);
   const [credentials, setCredentials] = useState({
     clientId: '',
     apiKey: '',
     webhookUrl: ''
   });
+  const [marketplaces, setMarketplaces] = useState([
+    { id: 1, name: "eBay", status: "connected", orders: 45, lastSync: "2 minutes ago", icon: "🛒", clientId: "eb_123456", apiKey: "****" },
+    { id: 2, name: "Etsy", status: "connected", orders: 23, lastSync: "5 minutes ago", icon: "🎨", clientId: "et_789012", apiKey: "****" },
+    { id: 3, name: "Shopify", status: "disconnected", orders: 0, lastSync: "Never", icon: "🛍️", clientId: "", apiKey: "" },
+    { id: 4, name: "Amazon", status: "pending", orders: 0, lastSync: "Never", icon: "📦", clientId: "am_345678", apiKey: "****" },
+  ]);
   const [automationSettings, setAutomationSettings] = useState({
     autoCreateJobs: true,
     parameterMapping: true,
@@ -138,6 +149,41 @@ const MarketplaceTab: React.FC = () => {
     }
   };
 
+  const handleDeleteMarketplace = (marketplaceId: number) => {
+    setMarketplaces(prev => prev.filter(m => m.id !== marketplaceId));
+    toast({
+      title: "Integration gelöscht",
+      description: "Die Marketplace-Integration wurde erfolgreich entfernt.",
+    });
+  };
+
+  const handleEditMarketplace = (marketplace: any) => {
+    setEditingMarketplace(marketplace);
+    setCredentials({
+      clientId: marketplace.clientId,
+      apiKey: '',
+      webhookUrl: marketplace.webhookUrl || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateCredentials = () => {
+    setMarketplaces(prev => prev.map(m => 
+      m.id === editingMarketplace.id 
+        ? { ...m, clientId: credentials.clientId, webhookUrl: credentials.webhookUrl }
+        : m
+    ));
+    
+    toast({
+      title: "Integration aktualisiert",
+      description: `${editingMarketplace.name} wurde erfolgreich aktualisiert.`,
+    });
+    
+    setIsEditDialogOpen(false);
+    setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
+    setEditingMarketplace(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -223,6 +269,55 @@ const MarketplaceTab: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Marketplace Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Integration - {editingMarketplace?.name}</DialogTitle>
+              <DialogDescription>
+                Update your API credentials for this marketplace
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="editClientId">Client ID</Label>
+                <Input
+                  id="editClientId"
+                  placeholder="Your Client ID"
+                  value={credentials.clientId}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, clientId: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editApiKey">New API Key / Password</Label>
+                <Input
+                  id="editApiKey"
+                  type="password"
+                  placeholder="Enter new API Key (leave empty to keep current)"
+                  value={credentials.apiKey}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, apiKey: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editWebhookUrl">Webhook URL (Optional)</Label>
+                <Input
+                  id="editWebhookUrl"
+                  placeholder="https://your-webhook-url.com"
+                  value={credentials.webhookUrl}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                />
+              </div>
+              <Button 
+                onClick={handleUpdateCredentials} 
+                className="w-full"
+                disabled={!credentials.clientId}
+              >
+                Update Integration
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Marketplace Connections */}
@@ -236,7 +331,7 @@ const MarketplaceTab: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mockMarketplaces.map((marketplace) => (
+            {marketplaces.map((marketplace) => (
               <div key={marketplace.id} className="p-4 bg-slate-50 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -246,9 +341,36 @@ const MarketplaceTab: React.FC = () => {
                       <p className="text-sm text-slate-500">Last sync: {marketplace.lastSync}</p>
                     </div>
                   </div>
-                  <Badge className={getMarketplaceStatusColor(marketplace.status)}>
-                    {marketplace.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className={getMarketplaceStatusColor(marketplace.status)}>
+                      {marketplace.status}
+                    </Badge>
+                    {marketplace.status === 'connected' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-white border border-slate-200 shadow-md">
+                          <DropdownMenuItem 
+                            onClick={() => handleEditMarketplace(marketplace)}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <Edit className="h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteMarketplace(marketplace.id)}
+                            className="flex items-center gap-2 cursor-pointer text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">{marketplace.orders} orders synced</span>
