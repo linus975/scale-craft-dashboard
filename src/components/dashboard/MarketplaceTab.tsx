@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,21 +18,22 @@ import {
   Settings,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
 
 interface MarketplaceTabProps {
   onNavigateToAllOrders: () => void;
 }
 
 const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }) => {
-  const { toast } = useToast();
+  const { integrations, loading, createIntegration, updateIntegration, deleteIntegration, syncIntegration } = useMarketplaceIntegrations();
   const [isIntegrationDialogOpen, setIsIntegrationDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMarketplace, setSelectedMarketplace] = useState<any>(null);
-  const [editingMarketplace, setEditingMarketplace] = useState<any>(null);
+  const [editingIntegration, setEditingIntegration] = useState<any>(null);
   const [credentials, setCredentials] = useState({
     clientId: '',
     apiKey: '',
@@ -42,14 +44,6 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
     parameterMapping: true,
     orderNotifications: false
   });
-
-  // Mock marketplace data
-  const [marketplaces, setMarketplaces] = useState([
-    { id: 1, name: "eBay", status: "connected", orders: 45, lastSync: "2 minutes ago", icon: "🛒", clientId: "ebay_client_123", apiKey: "****" },
-    { id: 2, name: "Etsy", status: "connected", orders: 23, lastSync: "5 minutes ago", icon: "🎨", clientId: "etsy_client_456", apiKey: "****" },
-    { id: 3, name: "Shopify", status: "disconnected", orders: 0, lastSync: "Never", icon: "🛍️", clientId: "", apiKey: "" },
-    { id: 4, name: "Amazon", status: "pending", orders: 0, lastSync: "Never", icon: "📦", clientId: "", apiKey: "" },
-  ]);
 
   const mockRecentOrders = [
     { id: 1, marketplace: "eBay", product: "Custom Phone Case", customer: "john.doe@email.com", status: "processing", amount: "$24.99" },
@@ -97,91 +91,86 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
     setIsCredentialsDialogOpen(true);
   };
 
-  const handleCredentialsSubmit = () => {
-    console.log('Marketplace credentials:', {
-      marketplace: selectedMarketplace,
-      credentials
-    });
-    
-    toast({
-      title: "Integration erfolgreich",
-      description: `${selectedMarketplace.name} wurde erfolgreich verbunden.`,
-    });
-    
-    setIsCredentialsDialogOpen(false);
-    setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
+  const handleCredentialsSubmit = async () => {
+    try {
+      await createIntegration({
+        name: selectedMarketplace.name,
+        marketplace_type: selectedMarketplace.id,
+        client_id: credentials.clientId,
+        api_key: credentials.apiKey,
+        webhook_url: credentials.webhookUrl,
+        icon: selectedMarketplace.icon,
+        status: 'connected'
+      });
+      
+      setIsCredentialsDialogOpen(false);
+      setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
+    } catch (error) {
+      // Error handling is done in the hook
+    }
   };
 
-  const handleEditMarketplace = (marketplace: any) => {
-    setEditingMarketplace(marketplace);
+  const handleEditIntegration = (integration: any) => {
+    setEditingIntegration(integration);
     setCredentials({
-      clientId: marketplace.clientId || '',
-      apiKey: marketplace.apiKey || '',
-      webhookUrl: marketplace.webhookUrl || ''
+      clientId: integration.client_id || '',
+      apiKey: integration.api_key || '',
+      webhookUrl: integration.webhook_url || ''
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleEditSubmit = () => {
-    setMarketplaces(prev => prev.map(mp => 
-      mp.id === editingMarketplace.id 
-        ? { ...mp, clientId: credentials.clientId, apiKey: credentials.apiKey, webhookUrl: credentials.webhookUrl }
-        : mp
-    ));
-    
-    toast({
-      title: "Integration aktualisiert",
-      description: `${editingMarketplace.name} wurde erfolgreich aktualisiert.`,
-    });
-    
-    setIsEditDialogOpen(false);
-    setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
-    setEditingMarketplace(null);
-  };
-
-  const handleDeleteMarketplace = (marketplaceId: number) => {
-    const marketplace = marketplaces.find(mp => mp.id === marketplaceId);
-    setMarketplaces(prev => prev.filter(mp => mp.id !== marketplaceId));
-    
-    toast({
-      title: "Integration gelöscht",
-      description: `${marketplace?.name} wurde erfolgreich entfernt.`,
-    });
-  };
-
-  const handleSyncNow = async (marketplaceName: string) => {
-    console.log('Syncing marketplace:', marketplaceName);
-    
-    // TODO: Replace with actual webhook URL from configuration
-    const webhookUrl = 'https://hooks.zapier.com/hooks/catch/your-webhook-id/';
-    
+  const handleEditSubmit = async () => {
     try {
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'no-cors',
-        body: JSON.stringify({
-          marketplace: marketplaceName,
-          action: 'sync',
-          timestamp: new Date().toISOString(),
-        }),
+      await updateIntegration(editingIntegration.id, {
+        client_id: credentials.clientId,
+        api_key: credentials.apiKey,
+        webhook_url: credentials.webhookUrl
       });
-
-      toast({
-        title: "Sync gestartet",
-        description: `${marketplaceName} wird synchronisiert...`,
-      });
+      
+      setIsEditDialogOpen(false);
+      setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
+      setEditingIntegration(null);
     } catch (error) {
-      console.error('Sync error:', error);
-      toast({
-        title: "Sync-Fehler",
-        description: "Fehler beim Synchronisieren. Bitte versuchen Sie es erneut.",
-        variant: "destructive",
-      });
+      // Error handling is done in the hook
     }
   };
+
+  const handleDeleteIntegration = async (integrationId: string) => {
+    try {
+      await deleteIntegration(integrationId);
+    } catch (error) {
+      // Error handling is done in the hook
+    }
+  };
+
+  const handleSyncNow = async (integrationId: string) => {
+    try {
+      await syncIntegration(integrationId);
+    } catch (error) {
+      // Error handling is done in the hook
+    }
+  };
+
+  const formatLastSync = (lastSync: string | null) => {
+    if (!lastSync) return "Never";
+    const date = new Date(lastSync);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    return `${Math.floor(diffInMinutes / 1440)} days ago`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -273,7 +262,7 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Edit Integration - {editingMarketplace?.name}</DialogTitle>
+              <DialogTitle>Edit Integration - {editingIntegration?.name}</DialogTitle>
               <DialogDescription>
                 Bearbeiten Sie die API-Zugangsdaten für diese Integration
               </DialogDescription>
@@ -329,51 +318,59 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
           <CardDescription>Manage your marketplace connections and sync settings</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {marketplaces.map((marketplace) => (
-              <div key={marketplace.id} className="p-4 bg-slate-50 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{marketplace.icon}</span>
-                    <div>
-                      <h4 className="font-medium text-slate-900">{marketplace.name}</h4>
-                      <p className="text-sm text-slate-500">Last sync: {marketplace.lastSync}</p>
+          {integrations.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Keine Marktplatz-Integrationen vorhanden</p>
+              <p className="text-sm">Fügen Sie Ihre erste Integration hinzu, um zu beginnen</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {integrations.map((integration) => (
+                <div key={integration.id} className="p-4 bg-slate-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{integration.icon}</span>
+                      <div>
+                        <h4 className="font-medium text-slate-900">{integration.name}</h4>
+                        <p className="text-sm text-slate-500">Last sync: {formatLastSync(integration.last_sync)}</p>
+                      </div>
+                    </div>
+                    <Badge className={getMarketplaceStatusColor(integration.status)}>
+                      {integration.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">{integration.orders_synced} orders synced</span>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleSyncNow(integration.id)}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Sync Now
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleEditIntegration(integration)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleDeleteIntegration(integration.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
-                  <Badge className={getMarketplaceStatusColor(marketplace.status)}>
-                    {marketplace.status}
-                  </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">{marketplace.orders} orders synced</span>
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleSyncNow(marketplace.name)}
-                    >
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Sync Now
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleEditMarketplace(marketplace)}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleDeleteMarketplace(marketplace.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

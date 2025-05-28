@@ -81,6 +81,54 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_integrations: {
+        Row: {
+          api_key: string | null
+          client_id: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          last_sync: string | null
+          marketplace_type: string
+          name: string
+          orders_synced: number | null
+          status: string
+          updated_at: string
+          user_id: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          client_id?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          last_sync?: string | null
+          marketplace_type: string
+          name: string
+          orders_synced?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          client_id?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          last_sync?: string | null
+          marketplace_type?: string
+          name?: string
+          orders_synced?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           content: string | null
