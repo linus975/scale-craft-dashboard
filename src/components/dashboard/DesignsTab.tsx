@@ -7,12 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image, Package, Check, Crown, Lock, Printer, ChevronRight, PlayCircle, Clock } from 'lucide-react';
+import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image, Package, Check, Crown, Lock, Printer, ChevronRight, PlayCircle, Clock, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import DesignEditDialog from './DesignEditDialog';
+import { useDesigns } from '@/hooks/useDesigns';
 
 interface DesignsTabProps {
   onNavigateToDesignDetail?: (designId: number) => void;
@@ -20,6 +21,7 @@ interface DesignsTabProps {
 }
 
 const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNavigateToWhitelabelCatalog }) => {
+  const { designs, loading } = useDesigns();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
   const [selectedDesign, setSelectedDesign] = useState<any>(null);
@@ -28,11 +30,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showImages, setShowImages] = useState(false);
   const [showAllLibraryDesigns, setShowAllLibraryDesigns] = useState(false);
-  const [isPrintSheetOpen, setIsPrintSheetOpen] = useState(false);
-  const [selectedPrintDesign, setSelectedPrintDesign] = useState<any>(null);
-  const [printerSearch, setPrinterSearch] = useState('');
-  const [selectedPrinter, setSelectedPrinter] = useState<number | null>(null);
-  const [queuePriority, setQueuePriority] = useState<'high' | 'normal'>('normal');
   
   const libraryDesigns = [
     {
@@ -119,53 +116,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
     { value: 'automotive', label: 'Automotive' },
   ];
 
-  const mockDesigns = [
-    { 
-      id: 1, 
-      name: "Parametric Gear", 
-      lastModified: "2 hours ago", 
-      version: "v1.3",
-      cadSoftware: "fusion360",
-      slicer: "prusaslicer",
-      sketchName: "gear_teeth",
-      replacementValue: "teeth_count",
-      category: "mechanical",
-      imageUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=200&fit=crop"
-    },
-    { 
-      id: 2, 
-      name: "Custom Bracket", 
-      lastModified: "1 day ago", 
-      version: "v2.1",
-      cadSoftware: "solidworks",
-      slicer: "cura",
-      sketchName: "",
-      replacementValue: "",
-      category: "mechanical",
-      imageUrl: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=300&h=200&fit=crop"
-    },
-    { 
-      id: 3, 
-      name: "Housing Template", 
-      lastModified: "3 days ago", 
-      version: "v1.0",
-      cadSoftware: "blender",
-      slicer: "orcaslicer",
-      sketchName: "housing_width",
-      replacementValue: "width_param",
-      category: "household",
-      imageUrl: "https://images.unsplash.com/photo-1487887235947-a955ef187fcc?w=300&h=200&fit=crop"
-    },
-  ];
-
-  const mockMachines = [
-    { id: 1, name: "Prusa i3 MK3S+", status: "idle" },
-    { id: 2, name: "Bambu Lab X1 Carbon", status: "printing" },
-    { id: 3, name: "Ender 3 V2", status: "offline" }
-  ];
-
-  // Filter designs based on search and category - now includes library designs
-  const filteredOwnDesigns = mockDesigns.filter(design => {
+  const filteredOwnDesigns = designs.filter(design => {
     const matchesSearch = design.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || design.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -179,72 +130,15 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
     return matchesSearch && matchesCategory;
   });
 
-  const filteredMachines = mockMachines.filter(machine =>
-    machine.name.toLowerCase().includes(printerSearch.toLowerCase())
-  );
-
   const handleDesignTypeSelection = (type: 'static' | 'personalized') => {
     console.log(`Selected design type: ${type}`);
     setSelectedDesignType(type);
   };
 
-  const handleStaticDesignSave = (designData: any) => {
-    console.log('Saving static design:', designData);
-    // TODO: Implement Firebase save logic
-    setIsDialogOpen(false);
-    setSelectedDesignType(null);
-  };
-
-  const handlePersonalizedDesignSave = (designData: any) => {
-    console.log('Saving personalized design:', designData);
-    // TODO: Implement Firebase save logic
-    setIsDialogOpen(false);
-    setSelectedDesignType(null);
-  };
-
   const handleDesignSave = (designData: any) => {
-    console.log('Saving design changes:', designData);
-    // TODO: Implement save logic
-    setSelectedDesign(null);
-  };
-
-  const handleAddToQueue = (designId: number) => {
-    console.log(`Adding design ${designId} to queue`);
-    // TODO: Implement queue logic
-  };
-
-  const handlePrintOnMachine = (designId: number, machineId: number) => {
-    console.log(`Printing design ${designId} on machine ${machineId}`);
-    // TODO: Implement print logic
-  };
-
-  const handleLibraryDesignPrint = (designId: number, target: 'queue' | number) => {
-    if (target === 'queue') {
-      console.log(`Adding library design ${designId} to print queue`);
-    } else {
-      console.log(`Printing library design ${designId} on machine ${target}`);
-    }
-    // TODO: Implement print logic for library designs
-  };
-
-  const handlePrintClick = (design: any) => {
-    setSelectedPrintDesign(design);
-    setIsPrintSheetOpen(true);
-  };
-
-  const handlePrintSubmit = () => {
-    if (selectedPrinter) {
-      console.log(`Printing ${selectedPrintDesign.name} on machine ${selectedPrinter} with ${queuePriority} priority`);
-      handleLibraryDesignPrint(selectedPrintDesign.id, selectedPrinter);
-    } else {
-      console.log(`Adding ${selectedPrintDesign.name} to queue with ${queuePriority} priority`);
-      handleLibraryDesignPrint(selectedPrintDesign.id, 'queue');
-    }
-    setIsPrintSheetOpen(false);
-    setSelectedPrintDesign(null);
-    setSelectedPrinter(null);
-    setQueuePriority('normal');
-    setPrinterSearch('');
+    console.log('Design saved:', designData);
+    setIsDialogOpen(false);
+    setSelectedDesignType(null);
   };
 
   const handleCancel = () => {
@@ -265,7 +159,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         <ScrollArea className="max-h-[80vh]">
           <StaticDesignForm 
             onCancel={handleCancel}
-            onSave={handleStaticDesignSave}
+            onSave={handleDesignSave}
           />
         </ScrollArea>
       );
@@ -276,19 +170,18 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         <ScrollArea className="max-h-[80vh]">
           <PersonalizedDesignForm 
             onCancel={handleCancel}
-            onSave={handlePersonalizedDesignSave}
+            onSave={handleDesignSave}
           />
         </ScrollArea>
       );
     }
 
-    // Default design type selection
     return (
       <>
         <DialogHeader>
-          <DialogTitle>Choose Design Type</DialogTitle>
+          <DialogTitle>Design-Typ auswählen</DialogTitle>
           <DialogDescription>
-            Select whether you want to create a static design or a personalized design with customizable parameters.
+            Wählen Sie, ob Sie ein statisches Design oder ein personalisierbares Design mit anpassbaren Parametern erstellen möchten.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-4 py-4">
@@ -299,8 +192,8 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           >
             <FileText className="h-8 w-8 text-blue-600" />
             <div className="text-center">
-              <div className="font-semibold">Static Design</div>
-              <div className="text-sm text-slate-500">Fixed design file without customization options</div>
+              <div className="font-semibold">Statisches Design</div>
+              <div className="text-sm text-slate-500">Feste Design-Datei ohne Anpassungsoptionen</div>
             </div>
           </Button>
           <Button
@@ -310,8 +203,8 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           >
             <User className="h-8 w-8 text-indigo-600" />
             <div className="text-center">
-              <div className="font-semibold">Personalized Design</div>
-              <div className="text-sm text-slate-500">Design with customizable parameters for personalization</div>
+              <div className="font-semibold">Personalisierbares Design</div>
+              <div className="text-sm text-slate-500">Design mit anpassbaren Parametern für Personalisierung</div>
             </div>
           </Button>
         </div>
@@ -325,12 +218,12 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         <Card 
           key={design.id} 
           className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => handleDesignClick(design.id)}
+          onClick={() => handleDesignClick(parseInt(design.id))}
         >
-          {showImages && (
+          {showImages && design.preview_image_path && (
             <div className="relative h-48 overflow-hidden rounded-t-lg">
               <img 
-                src={design.imageUrl} 
+                src={design.preview_image_path} 
                 alt={design.name}
                 className="w-full h-full object-cover"
               />
@@ -342,35 +235,40 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
               <FileText className="h-5 w-5 text-slate-400" />
             </div>
             <CardDescription>
-              {design.version} • {design.lastModified}
+              {design.version} • {new Date(design.created_at).toLocaleDateString('de-DE')}
               <Badge variant="outline" className="ml-2 text-xs">
                 {categories.find(cat => cat.value === design.category)?.label}
               </Badge>
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                <Download className="h-4 w-4 mr-1" />
-                Download
-              </Button>
-              <Button 
-                size="sm" 
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedDesign(design);
-                }}
-              >
-                Edit
-              </Button>
+            <div className="space-y-2">
+              {design.description && (
+                <p className="text-sm text-slate-600 line-clamp-2">{design.description}</p>
+              )}
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Download
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDesign(design);
+                  }}
+                >
+                  Bearbeiten
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -384,14 +282,14 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         <Card 
           key={design.id} 
           className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => handleDesignClick(design.id)}
+          onClick={() => handleDesignClick(parseInt(design.id))}
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
-              {showImages && (
+              {showImages && design.preview_image_path && (
                 <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded-lg">
                   <img 
-                    src={design.imageUrl} 
+                    src={design.preview_image_path} 
                     alt={design.name}
                     className="w-full h-full object-cover"
                   />
@@ -404,7 +302,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                     {categories.find(cat => cat.value === design.category)?.label}
                   </Badge>
                 </div>
-                <p className="text-sm text-slate-600">{design.version} • {design.lastModified}</p>
+                <p className="text-sm text-slate-600">{design.version} • {new Date(design.created_at).toLocaleDateString('de-DE')}</p>
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 <Button 
@@ -425,7 +323,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                     setSelectedDesign(design);
                   }}
                 >
-                  Edit
+                  Bearbeiten
                 </Button>
               </div>
             </div>
@@ -442,7 +340,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           <Card 
             key={design.id} 
             className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
-            onClick={() => handleDesignClick(design.id)}
+            onClick={() => handleDesignClick(parseInt(design.id))}
           >
             <div className="absolute top-2 right-2 z-10">
               <Badge className="bg-purple-600 text-white">
@@ -504,7 +402,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                   className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handlePrintClick(design);
+                    handleDesignClick(parseInt(design.id));
                   }}
                 >
                   <Printer className="h-3 w-3 mr-1" />
@@ -516,7 +414,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         ))}
       </div>
       
-      {/* Show All Button - Only show if not showing all designs */}
       {!showAllLibraryDesigns && filteredLibraryDesigns.length > 8 && (
         <div className="flex justify-center pt-4">
           <Button 
@@ -530,7 +427,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         </div>
       )}
       
-      {/* Show Less Button - Only show if showing all designs */}
       {showAllLibraryDesigns && (
         <div className="flex justify-center pt-4">
           <Button 
@@ -552,7 +448,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           <Card 
             key={design.id} 
             className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer"
-            onClick={() => handleDesignClick(design.id)}
+            onClick={() => handleDesignClick(parseInt(design.id))}
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
@@ -596,7 +492,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                     className="bg-purple-600 hover:bg-purple-700"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePrintClick(design);
+                      handleDesignClick(parseInt(design.id));
                     }}
                   >
                     <Printer className="h-3 w-3 mr-1" />
@@ -609,7 +505,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         ))}
       </div>
       
-      {/* Show All Button - Only show if not showing all designs */}
       {!showAllLibraryDesigns && filteredLibraryDesigns.length > 8 && (
         <div className="flex justify-center pt-4">
           <Button 
@@ -623,7 +518,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         </div>
       )}
       
-      {/* Show Less Button - Only show if showing all designs */}
       {showAllLibraryDesigns && (
         <div className="flex justify-center pt-4">
           <Button 
@@ -658,7 +552,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         </Dialog>
       </div>
 
-      {/* Search and Filter Controls */}
       <div className="flex flex-col sm:flex-row gap-4 items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -710,67 +603,47 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         </div>
       </div>
 
-      {/* Library Designs Section */}
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
-            <Crown className="h-5 w-5 text-white" />
+          <div className="p-2 bg-slate-600 rounded-lg">
+            <FileText className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-purple-900">Design Library</h3>
-            <p className="text-sm text-purple-600">Professionelle Designs für den jetzigen Abrechnungszeitraum - nur zum Drucken verfügbar</p>
+            <h3 className="text-xl font-bold text-slate-900">Meine Designs</h3>
+            <p className="text-sm text-slate-600">Eigene CAD-Dateien und benutzerdefinierte Vorlagen</p>
           </div>
         </div>
 
-        {filteredLibraryDesigns.length > 0 ? (
-          viewMode === 'grid' ? renderLibraryGridView() : renderLibraryListView()
+        {loading ? (
+          <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+            <CardContent className="p-8 text-center">
+              <Loader2 className="h-12 w-12 text-slate-400 mx-auto mb-4 animate-spin" />
+              <h3 className="text-lg font-medium text-slate-900 mb-2">Designs werden geladen...</h3>
+              <p className="text-slate-600">Bitte warten Sie einen Moment.</p>
+            </CardContent>
+          </Card>
+        ) : filteredOwnDesigns.length > 0 ? (
+          <>
+            <div className="text-sm text-slate-600 mb-4">
+              {filteredOwnDesigns.length} Design{filteredOwnDesigns.length !== 1 ? 's' : ''} gefunden
+            </div>
+            {viewMode === 'grid' ? renderGridView() : renderListView()}
+          </>
         ) : (
-          <Card className="bg-purple-50/50 border-2 border-purple-200">
-            <CardContent className="p-6 text-center">
-              <Crown className="h-10 w-10 text-purple-400 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-purple-900 mb-2">
-                {searchTerm ? 'Keine passenden Library-Designs gefunden' : 'Keine Library-Designs verfügbar'}
+          <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
+            <CardContent className="p-8 text-center">
+              <Search className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 mb-2">
+                {searchTerm ? 'Keine passenden Designs gefunden' : 'Noch keine Designs vorhanden'}
               </h3>
-              <p className="text-purple-600">
-                {searchTerm ? 'Versuchen Sie andere Suchbegriffe.' : 'Mieten Sie Whitelabel-Kataloge, um Zugang zu professionellen Designs zu erhalten.'}
+              <p className="text-slate-600">
+                {searchTerm ? 'Versuchen Sie andere Suchbegriffe.' : 'Erstellen Sie Ihr erstes Design mit dem Button oben.'}
               </p>
             </CardContent>
           </Card>
         )}
       </div>
 
-      {/* Separator */}
-      <div className="border-t border-slate-200 pt-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-slate-600 rounded-lg">
-            <FileText className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-slate-900">Personalised Designs</h3>
-            <p className="text-sm text-slate-600">Eigene CAD-Dateien und benutzerdefinierte Vorlagen</p>
-          </div>
-        </div>
-
-        {/* Results count */}
-        <div className="text-sm text-slate-600 mb-4">
-          {filteredOwnDesigns.length} Design{filteredOwnDesigns.length !== 1 ? 's' : ''} gefunden
-        </div>
-
-        {/* Design Display */}
-        {filteredOwnDesigns.length > 0 ? (
-          viewMode === 'grid' ? renderGridView() : renderListView()
-        ) : (
-          <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
-            <CardContent className="p-8 text-center">
-              <Search className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 mb-2">Keine Designs gefunden</h3>
-              <p className="text-slate-600">Versuchen Sie andere Suchbegriffe oder Kategorien.</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Design Library Section */}
       <div className="mt-12 pt-8 border-t border-slate-200">
         <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onNavigateToWhitelabelCatalog()}>
           <CardHeader>
@@ -817,111 +690,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
         </Card>
       </div>
 
-      {/* Print Selection Sheet */}
-      <Sheet open={isPrintSheetOpen} onOpenChange={setIsPrintSheetOpen}>
-        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-          <SheetHeader>
-            <SheetTitle>Design drucken</SheetTitle>
-            <SheetDescription>
-              Wählen Sie einen Drucker aus oder fügen Sie zur Warteschlange hinzu
-            </SheetDescription>
-          </SheetHeader>
-          
-          {selectedPrintDesign && (
-            <div className="space-y-6 mt-6">
-              {/* Design Info */}
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <h3 className="font-semibold text-purple-900">{selectedPrintDesign.name}</h3>
-                <p className="text-sm text-purple-600">{selectedPrintDesign.material} • {selectedPrintDesign.printTime}</p>
-              </div>
-
-              {/* Queue Priority */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Warteschlangen-Priorität</label>
-                <Select value={queuePriority} onValueChange={(value: 'high' | 'normal') => setQueuePriority(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">Hoch (Vorrangig)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Printer Search */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Drucker auswählen (optional)</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    placeholder="Drucker suchen..."
-                    value={printerSearch}
-                    onChange={(e) => setPrinterSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              {/* Printer List */}
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                <div 
-                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedPrinter === null ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'
-                  }`}
-                  onClick={() => setSelectedPrinter(null)}
-                >
-                  <div className="font-medium">Zur Warteschlange hinzufügen</div>
-                  <div className="text-sm text-slate-500">
-                    Mit {queuePriority === 'high' ? 'hoher' : 'normaler'} Priorität
-                  </div>
-                </div>
-                
-                {filteredMachines.map((machine) => (
-                  <div
-                    key={machine.id}
-                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      selectedPrinter === machine.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'
-                    } ${machine.status === 'offline' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    onClick={() => machine.status !== 'offline' && setSelectedPrinter(machine.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium">{machine.name}</div>
-                      <Badge 
-                        className={
-                          machine.status === 'idle' ? 'bg-green-100 text-green-800' :
-                          machine.status === 'printing' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }
-                      >
-                        {machine.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setIsPrintSheetOpen(false)}
-                >
-                  Abbrechen
-                </Button>
-                <Button 
-                  className="flex-1 bg-purple-600 hover:bg-purple-700"
-                  onClick={handlePrintSubmit}
-                >
-                  {selectedPrinter ? 'Jetzt drucken' : 'Zur Warteschlange'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
-
       {/* Design Edit Dialog */}
       {selectedDesign && (
         <DesignEditDialog
@@ -929,9 +697,9 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           isOpen={!!selectedDesign}
           onClose={() => setSelectedDesign(null)}
           onSave={handleDesignSave}
-          onAddToQueue={handleAddToQueue}
-          onPrintOnMachine={handlePrintOnMachine}
-          machines={mockMachines}
+          onAddToQueue={() => {}}
+          onPrintOnMachine={() => {}}
+          machines={[]}
         />
       )}
     </div>

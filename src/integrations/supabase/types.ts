@@ -9,6 +9,78 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      designs: {
+        Row: {
+          cad_file_path: string | null
+          cad_software: string | null
+          category: string
+          colors: string | null
+          created_at: string
+          description: string | null
+          design_type: string
+          ean_number: string | null
+          gcode: string | null
+          id: string
+          ini_file_path: string | null
+          material: string | null
+          name: string
+          nozzle_diameter: string | null
+          preview_image_path: string | null
+          replacement_value: string | null
+          sketch_name: string | null
+          slicer: string | null
+          updated_at: string
+          user_id: string
+          version: string | null
+        }
+        Insert: {
+          cad_file_path?: string | null
+          cad_software?: string | null
+          category: string
+          colors?: string | null
+          created_at?: string
+          description?: string | null
+          design_type: string
+          ean_number?: string | null
+          gcode?: string | null
+          id?: string
+          ini_file_path?: string | null
+          material?: string | null
+          name: string
+          nozzle_diameter?: string | null
+          preview_image_path?: string | null
+          replacement_value?: string | null
+          sketch_name?: string | null
+          slicer?: string | null
+          updated_at?: string
+          user_id: string
+          version?: string | null
+        }
+        Update: {
+          cad_file_path?: string | null
+          cad_software?: string | null
+          category?: string
+          colors?: string | null
+          created_at?: string
+          description?: string | null
+          design_type?: string
+          ean_number?: string | null
+          gcode?: string | null
+          id?: string
+          ini_file_path?: string | null
+          material?: string | null
+          name?: string
+          nozzle_diameter?: string | null
+          preview_image_path?: string | null
+          replacement_value?: string | null
+          sketch_name?: string | null
+          slicer?: string | null
+          updated_at?: string
+          user_id?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           content: string | null
