@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,11 +16,16 @@ import {
   Zap,
   Settings,
   Edit,
-  Trash2
+  Trash2,
+  Eye
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const MarketplaceTab: React.FC = () => {
+interface MarketplaceTabProps {
+  onNavigateToAllOrders: () => void;
+}
+
+const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }) => {
   const { toast } = useToast();
   const [isIntegrationDialogOpen, setIsIntegrationDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
@@ -376,11 +380,19 @@ const MarketplaceTab: React.FC = () => {
       {/* Recent Orders */}
       <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Recent Orders
-          </CardTitle>
-          <CardDescription>Orders automatically synced from marketplaces</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Recent Orders
+              </CardTitle>
+              <CardDescription>Orders automatically synced from marketplaces</CardDescription>
+            </div>
+            <Button variant="outline" onClick={onNavigateToAllOrders}>
+              <Eye className="h-4 w-4 mr-2" />
+              View All Orders
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
