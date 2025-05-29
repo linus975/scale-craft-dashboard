@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
@@ -104,31 +103,43 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
   };
 
   const handleSyncNow = async (integrationId: string) => {
+    const integration = integrations.find(i => i.id === integrationId);
+    if (!integration) {
+      toast({
+        title: "Fehler",
+        description: "Integration nicht gefunden.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const webhookUrl = integration.webhook_url;
+    
+    if (!webhookUrl) {
+      toast({
+        title: "Fehler",
+        description: "Keine Webhook-URL für diese Integration konfiguriert. Bitte bearbeiten Sie die Integration und fügen Sie eine Webhook-URL hinzu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const integration = integrations.find(i => i.id === integrationId);
-      if (!integration) throw new Error('Integration nicht gefunden');
+      console.log('Triggering sync for integration:', integration.name, 'with webhook URL:', webhookUrl);
 
-      const webhookUrl = integration.webhook_url;
-      
-      if (!webhookUrl) {
-        toast({
-          title: "Fehler",
-          description: "Keine Webhook-URL für diese Integration konfiguriert. Bitte bearbeiten Sie die Integration und fügen Sie eine Webhook-URL hinzu.",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      // Update last sync time in database
       await updateIntegration(integrationId, {
         last_sync: new Date().toISOString(),
         status: 'connected'
       });
 
+      // Call the webhook URL stored in the database
       await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        mode: 'no-cors',
         body: JSON.stringify({
           marketplace: integration.name,
           marketplace_id: integrationId,
@@ -192,6 +203,7 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
         headers: {
           'Content-Type': 'application/json',
         },
+        mode: 'no-cors',
         body: JSON.stringify({
           interval: frequency,
           marketplace_id: integrationId,
