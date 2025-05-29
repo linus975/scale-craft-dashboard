@@ -25,7 +25,7 @@ export const useMarketplaceIntegrations = () => {
     } catch (error: any) {
       console.error('Error fetching marketplace integrations:', error);
       toast({
-        title: "Fehler beim Laden der Integrationen",
+        title: "Error loading integrations",
         description: error.message,
         variant: "destructive",
       });
@@ -37,7 +37,7 @@ export const useMarketplaceIntegrations = () => {
   const createIntegration = async (integrationData: Omit<MarketplaceIntegrationInsert, 'user_id'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Benutzer nicht angemeldet');
+      if (!user) throw new Error('User not logged in');
 
       const { data, error } = await supabase
         .from('marketplace_integrations')
@@ -49,15 +49,15 @@ export const useMarketplaceIntegrations = () => {
 
       setIntegrations(prev => [data, ...prev]);
       toast({
-        title: "Integration erfolgreich erstellt",
-        description: `${data.name} wurde erfolgreich verbunden.`,
+        title: "Integration created successfully",
+        description: `${data.name} has been successfully connected.`,
       });
 
       return data;
     } catch (error: any) {
       console.error('Error creating integration:', error);
       toast({
-        title: "Fehler beim Erstellen der Integration",
+        title: "Error creating integration",
         description: error.message,
         variant: "destructive",
       });
@@ -81,15 +81,15 @@ export const useMarketplaceIntegrations = () => {
       ));
 
       toast({
-        title: "Integration aktualisiert",
-        description: `${data.name} wurde erfolgreich aktualisiert.`,
+        title: "Integration updated",
+        description: `${data.name} has been successfully updated.`,
       });
 
       return data;
     } catch (error: any) {
       console.error('Error updating integration:', error);
       toast({
-        title: "Fehler beim Aktualisieren der Integration",
+        title: "Error updating integration",
         description: error.message,
         variant: "destructive",
       });
@@ -110,13 +110,13 @@ export const useMarketplaceIntegrations = () => {
 
       setIntegrations(prev => prev.filter(integration => integration.id !== id));
       toast({
-        title: "Integration gelöscht",
-        description: `${integration?.name} wurde erfolgreich entfernt.`,
+        title: "Integration deleted",
+        description: `${integration?.name} has been successfully removed.`,
       });
     } catch (error: any) {
       console.error('Error deleting integration:', error);
       toast({
-        title: "Fehler beim Löschen der Integration",
+        title: "Error deleting integration",
         description: error.message,
         variant: "destructive",
       });
@@ -127,7 +127,7 @@ export const useMarketplaceIntegrations = () => {
   const syncIntegration = async (id: string) => {
     try {
       const integration = integrations.find(i => i.id === id);
-      if (!integration) throw new Error('Integration nicht gefunden');
+      if (!integration) throw new Error('Integration not found');
 
       // Update last sync time
       await updateIntegration(id, {
@@ -152,14 +152,14 @@ export const useMarketplaceIntegrations = () => {
       });
 
       toast({
-        title: "Sync gestartet",
-        description: `${integration.name} wird synchronisiert...`,
+        title: "Sync started",
+        description: `${integration.name} is being synchronized...`,
       });
     } catch (error: any) {
       console.error('Sync error:', error);
       toast({
-        title: "Sync-Fehler",
-        description: "Fehler beim Synchronisieren. Bitte versuchen Sie es erneut.",
+        title: "Sync error",
+        description: "Error during synchronization. Please try again.",
         variant: "destructive",
       });
     }

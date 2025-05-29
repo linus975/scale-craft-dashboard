@@ -31,6 +31,7 @@ export const useMarketplaceDialogs = () => {
         client_id: credentials.clientId,
         api_key: credentials.apiKey,
         webhook_url: credentials.webhookUrl,
+        sync_frequency: credentials.syncFrequency,
         icon: selectedMarketplace.icon,
         status: 'connected'
       });
@@ -48,7 +49,7 @@ export const useMarketplaceDialogs = () => {
       clientId: integration.client_id || '',
       apiKey: integration.api_key || '',
       webhookUrl: integration.webhook_url || '',
-      syncFrequency: ''
+      syncFrequency: integration.sync_frequency || ''
     });
     setIsEditDialogOpen(true);
   };
@@ -58,7 +59,8 @@ export const useMarketplaceDialogs = () => {
       await updateIntegration(editingIntegration.id, {
         client_id: credentials.clientId,
         api_key: credentials.apiKey,
-        webhook_url: credentials.webhookUrl
+        webhook_url: credentials.webhookUrl,
+        sync_frequency: credentials.syncFrequency
       });
       
       setIsEditDialogOpen(false);

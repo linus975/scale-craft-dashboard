@@ -93,6 +93,7 @@ export type Database = {
           name: string
           orders_synced: number | null
           status: string
+          sync_frequency: string | null
           updated_at: string
           user_id: string
           webhook_url: string | null
@@ -108,6 +109,7 @@ export type Database = {
           name: string
           orders_synced?: number | null
           status?: string
+          sync_frequency?: string | null
           updated_at?: string
           user_id: string
           webhook_url?: string | null
@@ -123,6 +125,7 @@ export type Database = {
           name?: string
           orders_synced?: number | null
           status?: string
+          sync_frequency?: string | null
           updated_at?: string
           user_id?: string
           webhook_url?: string | null

@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Globe, RefreshCw, Edit, Trash2 } from 'lucide-react';
+import { Globe, RefreshCw, Edit, Trash2, Clock } from 'lucide-react';
 
 interface Integration {
   id: string;
@@ -13,6 +13,7 @@ interface Integration {
   last_sync: string | null;
   orders_synced: number;
   webhook_url?: string;
+  sync_frequency?: string | null;
 }
 
 interface MarketplaceConnectionsProps {
@@ -53,6 +54,16 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
     return `${Math.floor(diffInMinutes / 1440)} days ago`;
   };
 
+  const formatSyncFrequency = (frequency: string | null) => {
+    if (!frequency) return "Not configured";
+    switch (frequency) {
+      case 'every30min': return 'Every 30 minutes';
+      case 'hourly': return 'Every hour';
+      case 'every3hours': return 'Every 3 hours';
+      default: return frequency;
+    }
+  };
+
   return (
     <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
       <CardHeader>
@@ -84,6 +95,13 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
                   <Badge className={getMarketplaceStatusColor(integration.status)}>
                     {integration.status}
                   </Badge>
+                </div>
+
+                <div className="mb-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Clock className="h-3 w-3" />
+                    <span>Auto sync: {formatSyncFrequency(integration.sync_frequency)}</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
