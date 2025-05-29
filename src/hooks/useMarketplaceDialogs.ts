@@ -77,6 +77,16 @@ export const useMarketplaceDialogs = () => {
     }
   };
 
+  // Create a wrapper function that handles the type properly
+  const handleCredentialsChange = (newCredentials: { clientId: string; apiKey: string; webhookUrl: string; syncFrequency?: string }) => {
+    setCredentials({
+      clientId: newCredentials.clientId,
+      apiKey: newCredentials.apiKey,
+      webhookUrl: newCredentials.webhookUrl,
+      syncFrequency: newCredentials.syncFrequency || ''
+    });
+  };
+
   return {
     isIntegrationDialogOpen,
     setIsIntegrationDialogOpen,
@@ -87,7 +97,7 @@ export const useMarketplaceDialogs = () => {
     selectedMarketplace,
     editingIntegration,
     credentials,
-    setCredentials,
+    setCredentials: handleCredentialsChange,
     handleMarketplaceSelect,
     handleCredentialsSubmit,
     handleEditIntegration,
