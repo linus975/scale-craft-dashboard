@@ -12,138 +12,25 @@ import {
   Filter,
   Download,
   Eye,
-  Search
+  Search,
+  Loader2
 } from 'lucide-react';
+import { useMarketplaceOrders } from '@/hooks/useMarketplaceOrders';
 
 interface AllOrdersPageProps {
   onBack: () => void;
 }
 
 const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
+  const { orders, loading } = useMarketplaceOrders();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Extended mock orders data
-  const mockOrders = [
-    { 
-      id: 1, 
-      marketplace: "eBay", 
-      product: "Custom Phone Case", 
-      customer: "john.doe@email.com", 
-      status: "processing", 
-      amount: "$24.99",
-      orderDate: "2024-05-27",
-      printStatus: "queued",
-      designFile: "phone_case_custom.stl",
-      quantity: 1,
-      material: "TPU",
-      notes: "Blue color requested"
-    },
-    { 
-      id: 2, 
-      marketplace: "Etsy", 
-      product: "Personalized Keychain", 
-      customer: "jane.smith@email.com", 
-      status: "printed", 
-      amount: "$12.50",
-      orderDate: "2024-05-26",
-      printStatus: "completed",
-      designFile: "keychain_personalized.stl",
-      quantity: 2,
-      material: "PLA",
-      notes: "Name: 'Jane & Mike'"
-    },
-    { 
-      id: 3, 
-      marketplace: "eBay", 
-      product: "Custom Bracket", 
-      customer: "mike.wilson@email.com", 
-      status: "shipped", 
-      amount: "$18.75",
-      orderDate: "2024-05-25",
-      printStatus: "shipped",
-      designFile: "bracket_custom.stl",
-      quantity: 1,
-      material: "PETG",
-      notes: "Extra strong required"
-    },
-    { 
-      id: 4, 
-      marketplace: "Amazon", 
-      product: "Custom Miniature", 
-      customer: "sarah.jones@email.com", 
-      status: "processing", 
-      amount: "$35.00",
-      orderDate: "2024-05-27",
-      printStatus: "printing",
-      designFile: "miniature_custom.stl",
-      quantity: 1,
-      material: "Resin",
-      notes: "High detail required"
-    },
-    { 
-      id: 5, 
-      marketplace: "Shopify", 
-      product: "Gear Set", 
-      customer: "tom.brown@email.com", 
-      status: "completed", 
-      amount: "$45.99",
-      orderDate: "2024-05-24",
-      printStatus: "delivered",
-      designFile: "gear_set.stl",
-      quantity: 3,
-      material: "PETG",
-      notes: "Industrial grade"
-    },
-    { 
-      id: 6, 
-      marketplace: "Etsy", 
-      product: "Custom Vase", 
-      customer: "lisa.white@email.com", 
-      status: "failed", 
-      amount: "$28.00",
-      orderDate: "2024-05-23",
-      printStatus: "failed",
-      designFile: "vase_custom.stl",
-      quantity: 1,
-      material: "PLA",
-      notes: "Print failed - support issue"
-    },
-    { 
-      id: 7, 
-      marketplace: "Amazon", 
-      product: "Custom Tool Holder", 
-      customer: "robert.lee@email.com", 
-      status: "shipped", 
-      amount: "$32.50",
-      orderDate: "2024-05-22",
-      printStatus: "delivered",
-      designFile: "tool_holder.stl",
-      quantity: 1,
-      material: "ABS",
-      notes: "Workshop use"
-    },
-    { 
-      id: 8, 
-      marketplace: "Etsy", 
-      product: "Wedding Decoration", 
-      customer: "maria.garcia@email.com", 
-      status: "completed", 
-      amount: "$67.00",
-      orderDate: "2024-05-21",
-      printStatus: "delivered",
-      designFile: "wedding_decor.stl",
-      quantity: 5,
-      material: "PLA",
-      notes: "White color, elegant finish"
-    }
-  ];
-
   // Filter orders based on search term
-  const filteredOrders = mockOrders.filter(order => 
-    order.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredOrders = orders.filter(order => 
+    order.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.marketplace.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -180,6 +67,14 @@ const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
     console.log(`Downloading design file: ${designFile}`);
     // In a real app, this would trigger a file download
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -236,54 +131,65 @@ const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
           <CardDescription>Complete order history with search functionality</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredOrders.map((order, index) => (
-              <div 
-                key={order.id} 
-                className="flex items-center justify-between p-4 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
-                onClick={() => handleOrderClick(order)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <ShoppingCart className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-slate-900">{order.product}</h4>
-                    <div className="flex items-center gap-4 text-sm text-slate-500">
-                      <span>{order.marketplace}</span>
-                      <span>•</span>
-                      <span>{order.customer}</span>
-                      <span>•</span>
-                      <span>{order.orderDate}</span>
-                      <span>•</span>
-                      <span>{order.amount}</span>
+          {filteredOrders.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              {searchTerm ? (
+                <>
+                  <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No orders found matching your search criteria.</p>
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Keine Bestellungen vorhanden</p>
+                  <p className="text-sm">Synchronisieren Sie Ihre Marktplätze, um Bestellungen zu sehen</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredOrders.map((order, index) => (
+                <div 
+                  key={order.id} 
+                  className="flex items-center justify-between p-4 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleOrderClick(order)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <ShoppingCart className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-slate-900">{order.product_name}</h4>
+                      <div className="flex items-center gap-4 text-sm text-slate-500">
+                        <span>{order.marketplace}</span>
+                        <span>•</span>
+                        <span>{order.customer_email}</span>
+                        <span>•</span>
+                        <span>{order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}</span>
+                        <span>•</span>
+                        <span>{order.amount}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <Badge className={getOrderStatusColor(order.status)}>
-                      {order.status}
-                    </Badge>
-                    <div className="mt-1">
-                      <Badge variant="outline" className={getPrintStatusColor(order.printStatus)}>
-                        {order.printStatus}
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <Badge className={getOrderStatusColor(order.status)}>
+                        {order.status}
                       </Badge>
+                      <div className="mt-1">
+                        <Badge variant="outline" className={getPrintStatusColor(order.print_status)}>
+                          {order.print_status}
+                        </Badge>
+                      </div>
                     </div>
+                    <Button size="sm" variant="outline">
+                      <Eye className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <Button size="sm" variant="outline">
-                    <Eye className="h-3 w-3" />
-                  </Button>
                 </div>
-              </div>
-            ))}
-            
-            {filteredOrders.length === 0 && (
-              <div className="text-center py-8 text-slate-500">
-                No orders found matching your search criteria.
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -291,7 +197,7 @@ const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
       <Dialog open={isOrderDetailOpen} onOpenChange={setIsOrderDetailOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Order Details - #{selectedOrder?.id}</DialogTitle>
+            <DialogTitle>Order Details - #{selectedOrder?.order_id}</DialogTitle>
             <DialogDescription>
               Complete information about this marketplace order
             </DialogDescription>
@@ -301,7 +207,7 @@ const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-slate-600">Product</label>
-                  <p className="text-sm">{selectedOrder.product}</p>
+                  <p className="text-sm">{selectedOrder.product_name}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-600">Marketplace</label>
@@ -309,7 +215,7 @@ const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-600">Customer</label>
-                  <p className="text-sm">{selectedOrder.customer}</p>
+                  <p className="text-sm">{selectedOrder.customer_email}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-600">Amount</label>
@@ -317,7 +223,7 @@ const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-600">Order Date</label>
-                  <p className="text-sm">{selectedOrder.orderDate}</p>
+                  <p className="text-sm">{selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleDateString() : 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-600">Quantity</label>
@@ -325,7 +231,7 @@ const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-600">Material</label>
-                  <p className="text-sm">{selectedOrder.material}</p>
+                  <p className="text-sm">{selectedOrder.material || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-600">Order Status</label>
@@ -338,8 +244,8 @@ const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
               <div>
                 <label className="text-sm font-medium text-slate-600">Print Status</label>
                 <div className="mt-1">
-                  <Badge className={getPrintStatusColor(selectedOrder.printStatus)}>
-                    {selectedOrder.printStatus}
+                  <Badge className={getPrintStatusColor(selectedOrder.print_status)}>
+                    {selectedOrder.print_status}
                   </Badge>
                 </div>
               </div>
@@ -351,15 +257,17 @@ const AllOrdersPage: React.FC<AllOrdersPageProps> = ({ onBack }) => {
                 </div>
               )}
 
-              <div className="pt-4 border-t">
-                <Button 
-                  className="w-full" 
-                  onClick={() => handleDownloadDesign(selectedOrder.designFile)}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Design File
-                </Button>
-              </div>
+              {selectedOrder.design_file && (
+                <div className="pt-4 border-t">
+                  <Button 
+                    className="w-full" 
+                    onClick={() => handleDownloadDesign(selectedOrder.design_file)}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Design File
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

@@ -23,6 +23,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
+import { useMarketplaceOrders } from '@/hooks/useMarketplaceOrders';
 import { useToast } from '@/hooks/use-toast';
 
 interface MarketplaceTabProps {
@@ -31,6 +32,7 @@ interface MarketplaceTabProps {
 
 const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }) => {
   const { integrations, loading, createIntegration, updateIntegration, deleteIntegration, syncIntegration } = useMarketplaceIntegrations();
+  const { orders: recentOrders, loading: ordersLoading } = useMarketplaceOrders();
   const { toast } = useToast();
   const [isIntegrationDialogOpen, setIsIntegrationDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
@@ -157,9 +159,40 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
 
   const handleSyncNow = async (integrationId: string) => {
     try {
-      await syncIntegration(integrationId);
-    } catch (error) {
-      // Error handling is done in the hook
+      const integration = integrations.find(i => i.id === integrationId);
+      if (!integration) throw new Error('Integration nicht gefunden');
+
+      // Update last sync time in database
+      await updateIntegration(integrationId, {
+        last_sync: new Date().toISOString(),
+        status: 'connected'
+      });
+
+      // Send webhook to n8n
+      await fetch('https://n8n.melemeng.com/webhook/Hood_Sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          marketplace: integration.name,
+          marketplace_id: integrationId,
+          action: 'sync',
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      toast({
+        title: "Sync gestartet",
+        description: `${integration.name} wird synchronisiert...`,
+      });
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      toast({
+        title: "Sync-Fehler",
+        description: "Fehler beim Synchronisieren. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -178,16 +211,16 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
     setIsSyncing(prev => ({ ...prev, [integrationId]: true }));
 
     try {
-      const response = await fetch('http://localhost:5678/webhook-test/Hood_Sync', {
+      const response = await fetch('https://n8n.melemeng.com/webhook/Hood_Sync', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        mode: 'no-cors',
         body: JSON.stringify({
           interval: frequency,
           marketplace_id: integrationId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          action: 'schedule'
         }),
       });
 
@@ -486,33 +519,56 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {mockRecentOrders.map((order, index) => (
-              <div key={order.id}>
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <ShoppingCart className="h-4 w-4 text-blue-600" />
+          {ordersLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : recentOrders.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Keine Bestellungen vorhanden</p>
+              <p className="text-sm">Synchronisieren Sie Ihre Marktplätze, um Bestellungen zu sehen</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentOrders.map((order, index) => (
+                <div key={order.id}>
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <ShoppingCart className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-slate-900">{order.product_name}</h4>
+                        <div className="flex items-center gap-4 text-sm text-slate-500">
+                          <span>{order.marketplace}</span>
+                          <span>•</span>
+                          <span>{order.customer_email}</span>
+                          <span>•</span>
+                          <span>{order.amount}</span>
+                          <span>•</span>
+                          <span>{order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium text-slate-900">{order.product}</h4>
-                      <div className="flex items-center gap-4 text-sm text-slate-500">
-                        <span>{order.marketplace}</span>
-                        <span>•</span>
-                        <span>{order.customer}</span>
-                        <span>•</span>
-                        <span>{order.amount}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <Badge className={getOrderStatusColor(order.status)}>
+                          {order.status}
+                        </Badge>
+                        <div className="mt-1">
+                          <Badge variant="outline" className={getOrderStatusColor(order.print_status)}>
+                            {order.print_status}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <Badge className={getOrderStatusColor(order.status)}>
-                    {order.status}
-                  </Badge>
+                  {index < recentOrders.length - 1 && <Separator className="my-2" />}
                 </div>
-                {index < mockRecentOrders.length - 1 && <Separator className="my-2" />}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -129,6 +129,74 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_orders: {
+        Row: {
+          amount: string | null
+          created_at: string
+          customer_email: string | null
+          design_file: string | null
+          id: string
+          marketplace: string
+          marketplace_integration_id: string | null
+          material: string | null
+          notes: string | null
+          order_date: string | null
+          order_id: string
+          print_status: string
+          product_name: string
+          quantity: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: string | null
+          created_at?: string
+          customer_email?: string | null
+          design_file?: string | null
+          id?: string
+          marketplace: string
+          marketplace_integration_id?: string | null
+          material?: string | null
+          notes?: string | null
+          order_date?: string | null
+          order_id: string
+          print_status?: string
+          product_name: string
+          quantity?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: string | null
+          created_at?: string
+          customer_email?: string | null
+          design_file?: string | null
+          id?: string
+          marketplace?: string
+          marketplace_integration_id?: string | null
+          material?: string | null
+          notes?: string | null
+          order_date?: string | null
+          order_id?: string
+          print_status?: string
+          product_name?: string
+          quantity?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_orders_marketplace_integration_id_fkey"
+            columns: ["marketplace_integration_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           content: string | null
