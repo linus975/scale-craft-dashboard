@@ -126,39 +126,61 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
     }
 
     try {
-      console.log('Triggering sync for integration:', integration.name, 'with webhook URL:', webhookUrl);
+      console.log('Starting webhook call...');
+      console.log('Integration:', integration.name);
+      console.log('Webhook URL:', webhookUrl);
+      console.log('Request method: POST');
+      console.log('Headers:', {
+        'Content-Type': 'application/json',
+        'User-Agent': 'MarketplaceSync/1.0',
+      });
+      
+      const requestBody = {
+        marketplace: integration.name,
+        marketplace_id: integrationId,
+        action: 'sync',
+        timestamp: new Date().toISOString(),
+      };
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
-      // Update last sync time in database
+      // Update last sync time in database first
       await updateIntegration(integrationId, {
         last_sync: new Date().toISOString(),
         status: 'connected'
       });
 
       // Call the webhook URL with proper headers like curl -v
+      console.log('Making fetch request to webhook...');
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'MarketplaceSync/1.0',
         },
-        body: JSON.stringify({
-          marketplace: integration.name,
-          marketplace_id: integrationId,
-          action: 'sync',
-          timestamp: new Date().toISOString(),
-        }),
+        body: JSON.stringify(requestBody),
       });
+
+      console.log('Response status:', response.status);
+      console.log('Response status text:', response.statusText);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      // Try to read response body for debugging
+      const responseText = await response.text();
+      console.log('Response body:', responseText);
 
       toast({
         title: "Sync gestartet",
         description: `${integration.name} wird synchronisiert...`,
       });
     } catch (error: any) {
-      console.error('Sync error:', error);
+      console.error('Sync error details:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
       toast({
         title: "Sync-Fehler",
         description: `Fehler beim Synchronisieren: ${error.message}`,
@@ -203,23 +225,37 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
     setIsSyncing(prev => ({ ...prev, [integrationId]: true }));
 
     try {
+      console.log('Starting frequency sync webhook call...');
+      console.log('Integration:', integration.name);
+      console.log('Webhook URL:', webhookUrl);
+      console.log('Frequency:', frequency);
+      
+      const requestBody = {
+        interval: frequency,
+        marketplace_id: integrationId,
+        timestamp: new Date().toISOString(),
+        action: 'schedule'
+      };
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'MarketplaceSync/1.0',
         },
-        body: JSON.stringify({
-          interval: frequency,
-          marketplace_id: integrationId,
-          timestamp: new Date().toISOString(),
-          action: 'schedule'
-        }),
+        body: JSON.stringify(requestBody),
       });
+
+      console.log('Frequency sync response status:', response.status);
+      console.log('Frequency sync response status text:', response.statusText);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const responseText = await response.text();
+      console.log('Frequency sync response body:', responseText);
 
       const syncFrequencyOptions = [
         { value: 'every30min', label: 'Alle 30 Minuten' },
