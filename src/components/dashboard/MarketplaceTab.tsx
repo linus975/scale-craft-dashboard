@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -162,14 +163,26 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
       const integration = integrations.find(i => i.id === integrationId);
       if (!integration) throw new Error('Integration nicht gefunden');
 
+      // Use the individual webhook URL from the integration instead of hardcoded URL
+      const webhookUrl = integration.webhook_url;
+      
+      if (!webhookUrl) {
+        toast({
+          title: "Fehler",
+          description: "Keine Webhook-URL für diese Integration konfiguriert. Bitte bearbeiten Sie die Integration und fügen Sie eine Webhook-URL hinzu.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Update last sync time in database
       await updateIntegration(integrationId, {
         last_sync: new Date().toISOString(),
         status: 'connected'
       });
 
-      // Send webhook to n8n
-      await fetch('https://n8n.melemeng.com/webhook/Hood_Sync', {
+      // Send webhook to the configured URL
+      await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,10 +221,31 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
       return;
     }
 
+    const integration = integrations.find(i => i.id === integrationId);
+    if (!integration) {
+      toast({
+        title: "Fehler",
+        description: "Integration nicht gefunden.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const webhookUrl = integration.webhook_url;
+    
+    if (!webhookUrl) {
+      toast({
+        title: "Fehler",
+        description: "Keine Webhook-URL für diese Integration konfiguriert. Bitte bearbeiten Sie die Integration und fügen Sie eine Webhook-URL hinzu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSyncing(prev => ({ ...prev, [integrationId]: true }));
 
     try {
-      const response = await fetch('https://n8n.melemeng.com/webhook/Hood_Sync', {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
