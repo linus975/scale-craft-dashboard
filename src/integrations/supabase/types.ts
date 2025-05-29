@@ -135,6 +135,7 @@ export type Database = {
           created_at: string
           customer_email: string | null
           design_file: string | null
+          ean_number: string | null
           id: string
           marketplace: string
           marketplace_integration_id: string | null
@@ -143,6 +144,7 @@ export type Database = {
           order_date: string | null
           order_id: string
           print_status: string
+          product_id: string | null
           product_name: string
           quantity: number | null
           status: string
@@ -154,6 +156,7 @@ export type Database = {
           created_at?: string
           customer_email?: string | null
           design_file?: string | null
+          ean_number?: string | null
           id?: string
           marketplace: string
           marketplace_integration_id?: string | null
@@ -162,6 +165,7 @@ export type Database = {
           order_date?: string | null
           order_id: string
           print_status?: string
+          product_id?: string | null
           product_name: string
           quantity?: number | null
           status?: string
@@ -173,6 +177,7 @@ export type Database = {
           created_at?: string
           customer_email?: string | null
           design_file?: string | null
+          ean_number?: string | null
           id?: string
           marketplace?: string
           marketplace_integration_id?: string | null
@@ -181,6 +186,7 @@ export type Database = {
           order_date?: string | null
           order_id?: string
           print_status?: string
+          product_id?: string | null
           product_name?: string
           quantity?: number | null
           status?: string

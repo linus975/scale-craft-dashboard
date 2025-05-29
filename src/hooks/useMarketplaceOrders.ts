@@ -33,6 +33,52 @@ export const useMarketplaceOrders = () => {
     }
   };
 
+  const createOrder = async (orderData: {
+    order_id: string;
+    marketplace: string;
+    product_name: string;
+    customer_email?: string;
+    amount?: string;
+    quantity?: number;
+    material?: string;
+    design_file?: string;
+    ean_number?: string;
+    product_id?: string;
+    marketplace_integration_id?: string;
+    status?: string;
+    print_status?: string;
+    notes?: string;
+  }) => {
+    try {
+      const { data, error } = await supabase
+        .from('marketplace_orders')
+        .insert([{
+          ...orderData,
+          user_id: 'system', // This should be replaced with actual user ID when auth is implemented
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Bestellung erstellt",
+        description: `Neue Bestellung ${orderData.order_id} wurde hinzugefügt.`,
+      });
+
+      await fetchOrders(); // Refresh the orders list
+      return data;
+    } catch (error: any) {
+      console.error('Error creating marketplace order:', error);
+      toast({
+        title: "Fehler beim Erstellen der Bestellung",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -40,6 +86,7 @@ export const useMarketplaceOrders = () => {
   return {
     orders,
     loading,
-    refetch: fetchOrders
+    refetch: fetchOrders,
+    createOrder
   };
 };

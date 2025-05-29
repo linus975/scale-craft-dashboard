@@ -42,6 +42,18 @@ export const useMarketplaceSync = () => {
         marketplace_id: integrationId,
         action: 'sync',
         timestamp: new Date().toISOString(),
+        client_id: integration.client_id,
+        api_key: integration.api_key,
+        sync_fields: {
+          ean_number: true,
+          product_id: true,
+          order_id: true,
+          customer_email: true,
+          amount: true,
+          quantity: true,
+          material: true,
+          design_file: true
+        }
       };
       console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
