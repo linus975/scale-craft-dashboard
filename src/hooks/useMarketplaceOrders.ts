@@ -33,7 +33,7 @@ export const useMarketplaceOrders = () => {
     }
   };
 
-  const createOrder = async (orderData: {
+  const upsertOrder = async (orderData: {
     order_id: string;
     marketplace: string;
     product_name: string;
@@ -50,28 +50,33 @@ export const useMarketplaceOrders = () => {
     notes?: string;
   }) => {
     try {
+      // Use upsert to either insert new or update existing order
       const { data, error } = await supabase
         .from('marketplace_orders')
-        .insert([{
+        .upsert([{
           ...orderData,
           user_id: 'system', // This should be replaced with actual user ID when auth is implemented
-        }])
+          updated_at: new Date().toISOString()
+        }], {
+          onConflict: 'order_id', // Conflict resolution based on order_id
+          ignoreDuplicates: false // Update if duplicate found
+        })
         .select()
         .single();
 
       if (error) throw error;
 
       toast({
-        title: "Bestellung erstellt",
-        description: `Neue Bestellung ${orderData.order_id} wurde hinzugefügt.`,
+        title: "Bestellung verarbeitet",
+        description: `Bestellung ${orderData.order_id} wurde erfolgreich gespeichert.`,
       });
 
       await fetchOrders(); // Refresh the orders list
       return data;
     } catch (error: any) {
-      console.error('Error creating marketplace order:', error);
+      console.error('Error upserting marketplace order:', error);
       toast({
-        title: "Fehler beim Erstellen der Bestellung",
+        title: "Fehler beim Verarbeiten der Bestellung",
         description: error.message,
         variant: "destructive",
       });
@@ -87,6 +92,6 @@ export const useMarketplaceOrders = () => {
     orders,
     loading,
     refetch: fetchOrders,
-    createOrder
+    upsertOrder
   };
 };

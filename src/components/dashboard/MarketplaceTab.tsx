@@ -18,7 +18,7 @@ interface MarketplaceTabProps {
 
 const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }) => {
   const { integrations, loading } = useMarketplaceIntegrations();
-  const { orders: recentOrders, loading: ordersLoading } = useMarketplaceOrders();
+  const { orders: recentOrders, loading: ordersLoading, upsertOrder } = useMarketplaceOrders();
   
   const {
     syncFrequencies,
