@@ -36,10 +36,6 @@ export const useMarketplaceSync = () => {
       console.log('Integration:', integration.name);
       console.log('Webhook URL:', webhookUrl);
       console.log('Request method: POST');
-      console.log('Headers:', {
-        'Content-Type': 'application/json',
-        'User-Agent': 'MarketplaceSync/1.0',
-      });
       
       const requestBody = {
         marketplace: integration.name,
@@ -55,28 +51,30 @@ export const useMarketplaceSync = () => {
         status: 'connected'
       });
 
-      // Call the webhook URL with no-cors mode to avoid CORS issues
-      console.log('Making fetch request to webhook with no-cors mode...');
+      // Call the webhook URL without no-cors to ensure it actually reaches n8n
+      console.log('Making fetch request to webhook...');
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'MarketplaceSync/1.0',
         },
         body: JSON.stringify(requestBody),
       });
 
-      console.log('Request sent successfully (no-cors mode)');
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
 
-      toast({
-        title: "Sync gestartet",
-        description: `${integration.name} wird synchronisiert. Webhook wurde aufgerufen.`,
-      });
+      if (response.ok) {
+        toast({
+          title: "Sync erfolgreich",
+          description: `${integration.name} wurde erfolgreich synchronisiert.`,
+        });
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
     } catch (error: any) {
       console.error('Sync error details:', error);
       console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
       
       toast({
         title: "Sync-Fehler",
@@ -137,28 +135,29 @@ export const useMarketplaceSync = () => {
 
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'MarketplaceSync/1.0',
         },
         body: JSON.stringify(requestBody),
       });
 
-      console.log('Frequency sync request sent successfully (no-cors mode)');
+      console.log('Frequency sync response status:', response.status);
+      console.log('Frequency sync response ok:', response.ok);
 
-      const syncFrequencyOptions = [
-        { value: 'every30min', label: 'Alle 30 Minuten' },
-        { value: 'hourly', label: 'Jede Stunde' },
-        { value: 'every3hours', label: 'Alle 3 Stunden' }
-      ];
+      if (response.ok) {
+        const syncFrequencyOptions = [
+          { value: 'every30min', label: 'Alle 30 Minuten' },
+          { value: 'hourly', label: 'Jede Stunde' },
+          { value: 'every3hours', label: 'Alle 3 Stunden' }
+        ];
 
-      toast({
-        title: "Sync-Häufigkeit konfiguriert",
-        description: `Der automatische Abruf wurde auf "${syncFrequencyOptions.find(opt => opt.value === frequency)?.label}" eingestellt.`,
-      });
-
-      console.log('Frequency sync request sent:', { interval: frequency, marketplace_id: integrationId });
+        toast({
+          title: "Sync-Häufigkeit konfiguriert",
+          description: `Der automatische Abruf wurde auf "${syncFrequencyOptions.find(opt => opt.value === frequency)?.label}" eingestellt.`,
+        });
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
     } catch (error: any) {
       console.error('Error setting sync frequency:', error);
       toast({
