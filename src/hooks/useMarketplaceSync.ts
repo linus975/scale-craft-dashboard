@@ -13,8 +13,8 @@ export const useMarketplaceSync = () => {
     const integration = integrations.find(i => i.id === integrationId);
     if (!integration) {
       toast({
-        title: "Fehler",
-        description: "Integration nicht gefunden.",
+        title: "Error",
+        description: "Integration not found.",
         variant: "destructive",
       });
       return;
@@ -24,8 +24,8 @@ export const useMarketplaceSync = () => {
     
     if (!webhookUrl) {
       toast({
-        title: "Fehler",
-        description: "Keine Webhook-URL für diese Integration konfiguriert. Bitte bearbeiten Sie die Integration und fügen Sie eine Webhook-URL hinzu.",
+        title: "Error",
+        description: "No webhook URL configured for this integration. Please edit the integration and add a webhook URL.",
         variant: "destructive",
       });
       return;
@@ -78,16 +78,16 @@ export const useMarketplaceSync = () => {
       console.log('Webhook request sent successfully');
 
       toast({
-        title: "Sync gestartet",
-        description: `${integration.name} Webhook wurde erfolgreich aufgerufen.`,
+        title: "Sync started",
+        description: `${integration.name} webhook was successfully called.`,
       });
     } catch (error: any) {
       console.error('Sync error details:', error);
       console.error('Error message:', error.message);
       
       toast({
-        title: "Sync-Fehler",
-        description: `Fehler beim Synchronisieren: ${error.message}`,
+        title: "Sync Error",
+        description: `Error during synchronization: ${error.message}`,
         variant: "destructive",
       });
     }
@@ -98,8 +98,8 @@ export const useMarketplaceSync = () => {
     
     if (!frequency) {
       toast({
-        title: "Fehler",
-        description: "Bitte wählen Sie eine Sync-Häufigkeit aus.",
+        title: "Error",
+        description: "Please select a sync frequency.",
         variant: "destructive",
       });
       return;
@@ -108,8 +108,8 @@ export const useMarketplaceSync = () => {
     const integration = integrations.find(i => i.id === integrationId);
     if (!integration) {
       toast({
-        title: "Fehler",
-        description: "Integration nicht gefunden.",
+        title: "Error",
+        description: "Integration not found.",
         variant: "destructive",
       });
       return;
@@ -119,8 +119,8 @@ export const useMarketplaceSync = () => {
     
     if (!webhookUrl) {
       toast({
-        title: "Fehler",
-        description: "Keine Webhook-URL für diese Integration konfiguriert. Bitte bearbeiten Sie die Integration und fügen Sie eine Webhook-URL hinzu.",
+        title: "Error",
+        description: "No webhook URL configured for this integration. Please edit the integration and add a webhook URL.",
         variant: "destructive",
       });
       return;
@@ -155,20 +155,20 @@ export const useMarketplaceSync = () => {
       console.log('Frequency sync webhook request sent successfully');
 
       const syncFrequencyOptions = [
-        { value: 'every30min', label: 'Alle 30 Minuten' },
-        { value: 'hourly', label: 'Jede Stunde' },
-        { value: 'every3hours', label: 'Alle 3 Stunden' }
+        { value: 'every30min', label: 'Every 30 minutes' },
+        { value: 'hourly', label: 'Every hour' },
+        { value: 'every3hours', label: 'Every 3 hours' }
       ];
 
       toast({
-        title: "Sync-Häufigkeit konfiguriert",
-        description: `Der automatische Abruf wurde auf "${syncFrequencyOptions.find(opt => opt.value === frequency)?.label}" eingestellt.`,
+        title: "Sync frequency configured",
+        description: `Automatic sync has been set to "${syncFrequencyOptions.find(opt => opt.value === frequency)?.label}".`,
       });
     } catch (error: any) {
       console.error('Error setting sync frequency:', error);
       toast({
-        title: "Fehler beim Konfigurieren",
-        description: `Die Sync-Häufigkeit konnte nicht eingestellt werden: ${error.message}`,
+        title: "Configuration Error",
+        description: `The sync frequency could not be set: ${error.message}`,
         variant: "destructive",
       });
     } finally {

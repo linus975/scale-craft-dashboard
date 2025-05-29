@@ -13,7 +13,8 @@ export const useMarketplaceDialogs = () => {
   const [credentials, setCredentials] = useState({
     clientId: '',
     apiKey: '',
-    webhookUrl: ''
+    webhookUrl: '',
+    syncFrequency: ''
   });
 
   const handleMarketplaceSelect = (marketplace: any) => {
@@ -35,7 +36,7 @@ export const useMarketplaceDialogs = () => {
       });
       
       setIsCredentialsDialogOpen(false);
-      setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
+      setCredentials({ clientId: '', apiKey: '', webhookUrl: '', syncFrequency: '' });
     } catch (error) {
       // Error handling is done in the hook
     }
@@ -46,7 +47,8 @@ export const useMarketplaceDialogs = () => {
     setCredentials({
       clientId: integration.client_id || '',
       apiKey: integration.api_key || '',
-      webhookUrl: integration.webhook_url || ''
+      webhookUrl: integration.webhook_url || '',
+      syncFrequency: ''
     });
     setIsEditDialogOpen(true);
   };
@@ -60,7 +62,7 @@ export const useMarketplaceDialogs = () => {
       });
       
       setIsEditDialogOpen(false);
-      setCredentials({ clientId: '', apiKey: '', webhookUrl: '' });
+      setCredentials({ clientId: '', apiKey: '', webhookUrl: '', syncFrequency: '' });
       setEditingIntegration(null);
     } catch (error) {
       // Error handling is done in the hook

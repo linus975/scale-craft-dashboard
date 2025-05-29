@@ -3,9 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Globe, RefreshCw, Edit, Trash2, Clock, Loader2 } from 'lucide-react';
+import { Globe, RefreshCw, Edit, Trash2 } from 'lucide-react';
 
 interface Integration {
   id: string;
@@ -30,20 +28,10 @@ interface MarketplaceConnectionsProps {
 
 const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
   integrations,
-  syncFrequencies,
-  isSyncing,
-  onSyncFrequencyChange,
   onSyncNow,
-  onFrequencySync,
   onEditIntegration,
   onDeleteIntegration
 }) => {
-  const syncFrequencyOptions = [
-    { value: 'every30min', label: 'Alle 30 Minuten' },
-    { value: 'hourly', label: 'Jede Stunde' },
-    { value: 'every3hours', label: 'Alle 3 Stunden' }
-  ];
-
   const getMarketplaceStatusColor = (status: string) => {
     switch (status) {
       case 'connected': return 'bg-green-100 text-green-800 border-green-200';
@@ -78,8 +66,8 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
         {integrations.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
             <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Keine Marktplatz-Integrationen vorhanden</p>
-            <p className="text-sm">Fügen Sie Ihre erste Integration hinzu, um zu beginnen</p>
+            <p>No marketplace integrations available</p>
+            <p className="text-sm">Add your first integration to get started</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -96,41 +84,6 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
                   <Badge className={getMarketplaceStatusColor(integration.status)}>
                     {integration.status}
                   </Badge>
-                </div>
-                
-                <div className="mb-3 space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Automatischer Abruf konfigurieren:</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      value={syncFrequencies[integration.id] || ''}
-                      onValueChange={(value) => onSyncFrequencyChange(integration.id, value)}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Häufigkeit wählen..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {syncFrequencyOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => onFrequencySync(integration.id)}
-                      disabled={!syncFrequencies[integration.id] || isSyncing[integration.id]}
-                      className="min-w-[120px]"
-                    >
-                      {isSyncing[integration.id] ? (
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      ) : (
-                        <Clock className="h-3 w-3 mr-1" />
-                      )}
-                      {isSyncing[integration.id] ? 'Wird gesetzt...' : 'Abruf starten'}
-                    </Button>
-                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
