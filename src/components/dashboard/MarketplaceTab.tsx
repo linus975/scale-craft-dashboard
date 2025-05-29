@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
@@ -133,13 +134,13 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
         status: 'connected'
       });
 
-      // Call the webhook URL stored in the database
-      await fetch(webhookUrl, {
+      // Call the webhook URL with proper headers like curl -v
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'User-Agent': 'MarketplaceSync/1.0',
         },
-        mode: 'no-cors',
         body: JSON.stringify({
           marketplace: integration.name,
           marketplace_id: integrationId,
@@ -147,6 +148,10 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
           timestamp: new Date().toISOString(),
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
       toast({
         title: "Sync gestartet",
@@ -156,7 +161,7 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
       console.error('Sync error:', error);
       toast({
         title: "Sync-Fehler",
-        description: "Fehler beim Synchronisieren. Bitte versuchen Sie es erneut.",
+        description: `Fehler beim Synchronisieren: ${error.message}`,
         variant: "destructive",
       });
     }
@@ -198,12 +203,12 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
     setIsSyncing(prev => ({ ...prev, [integrationId]: true }));
 
     try {
-      await fetch(webhookUrl, {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'User-Agent': 'MarketplaceSync/1.0',
         },
-        mode: 'no-cors',
         body: JSON.stringify({
           interval: frequency,
           marketplace_id: integrationId,
@@ -211,6 +216,10 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
           action: 'schedule'
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
       const syncFrequencyOptions = [
         { value: 'every30min', label: 'Alle 30 Minuten' },
@@ -224,11 +233,11 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
       });
 
       console.log('Frequency sync request sent:', { interval: frequency, marketplace_id: integrationId });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error setting sync frequency:', error);
       toast({
         title: "Fehler beim Konfigurieren",
-        description: "Die Sync-Häufigkeit konnte nicht eingestellt werden. Bitte versuchen Sie es erneut.",
+        description: `Die Sync-Häufigkeit konnte nicht eingestellt werden: ${error.message}`,
         variant: "destructive",
       });
     } finally {
