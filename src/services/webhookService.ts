@@ -1,6 +1,6 @@
 
 const WEBHOOK_ENDPOINTS = {
-  CLASSIFY_JOB: 'http://n8n.melemeng.com/webhook-test/classify-job'
+  CLASSIFY_JOB: 'https://n8n.melemeng.com/webhook/classify-job'
 } as const;
 
 interface ClassifyJobRequest {
