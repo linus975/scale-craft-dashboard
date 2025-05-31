@@ -3,28 +3,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Play, 
-  Pause, 
   Clock,
   CheckCircle,
   AlertCircle,
   ArrowUp,
   ArrowDown,
-  RotateCcw,
-  Eye,
-  ExternalLink,
-  Plus,
-  Minus,
-  Download,
-  FileCode,
-  ArrowLeft,
-  Settings,
-  Loader2
+  ExternalLink
 } from 'lucide-react';
 import JobCreationDialog from './JobCreationDialog';
 import CurrentPrintingJobsPage from './CurrentPrintingJobsPage';
+import { JobSection } from './jobs/JobSection';
+import { JobDetailDialog } from './jobs/JobDetailDialog';
+import { JobViewHeader } from './jobs/JobViewHeader';
 import { webhookService } from '@/services/webhookService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -51,7 +43,7 @@ const JobsTab: React.FC = () => {
   }
 
   const handleAddJob = async (jobId: number) => {
-    if (loadingJobs.has(jobId)) return; // Prevent multiple calls
+    if (loadingJobs.has(jobId)) return;
 
     setLoadingJobs(prev => new Set(prev).add(jobId));
 
@@ -63,7 +55,6 @@ const JobsTab: React.FC = () => {
         description: `Job ${jobId} has been sent for classification.`,
       });
 
-      // Optionally update job status
       setJobs(prev => prev.map(job => 
         job.id === jobId 
           ? { ...job, status: 'classifying' }
@@ -84,48 +75,6 @@ const JobsTab: React.FC = () => {
         return newSet;
       });
     }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'printing': return <Play className="h-4 w-4 text-green-500" />;
-      case 'queued': return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'completed': return <CheckCircle className="h-4 w-4 text-blue-500" />;
-      case 'failed': return <AlertCircle className="h-4 w-4 text-red-500" />;
-      case 'paused': return <Pause className="h-4 w-4 text-orange-500" />;
-      case 'classifying': return <Loader2 className="h-4 w-4 text-purple-500 animate-spin" />;
-      default: return <Clock className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'printing': return 'bg-green-100 text-green-800 border-green-200';
-      case 'queued': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'failed': return 'bg-red-100 text-red-800 border-red-200';
-      case 'paused': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'classifying': return 'bg-purple-100 text-purple-800 border-purple-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'printing': return 'Printing';
-      case 'queued': return 'Queued';
-      case 'completed': return 'Completed';
-      case 'failed': return 'Failed';
-      case 'paused': return 'Paused';
-      case 'classifying': return 'Classifying';
-      default: return status;
-    }
-  };
-
-  const getPriorityIcon = (priority: string) => {
-    return priority === 'high' ? 
-      <ArrowUp className="h-3 w-3 text-red-500" /> : 
-      <ArrowDown className="h-3 w-3 text-blue-500" />;
   };
 
   const handleCreateJob = (jobData: any) => {
@@ -189,12 +138,10 @@ const JobsTab: React.FC = () => {
 
   const handleDownloadGCode = (filePath: string, fileName: string) => {
     console.log(`Downloading GCode from ${filePath} as ${fileName}`);
-    // In a real app, this would trigger a file download
   };
 
   const handleDownloadIni = (iniPath: string, fileName: string) => {
     console.log(`Downloading INI file from ${iniPath} as ${fileName}`);
-    // In a real app, this would trigger a file download
   };
 
   const handlePriorityChange = (jobId: number, newPriority: 'high' | 'normal') => {
@@ -204,7 +151,6 @@ const JobsTab: React.FC = () => {
         : job
     ));
     
-    // Close the dialog and show a success message
     setIsJobDetailOpen(false);
     console.log(`Job priority changed to ${newPriority}`);
   };
@@ -216,205 +162,29 @@ const JobsTab: React.FC = () => {
   const completedJobs = jobs.filter(job => job.status === 'completed');
   const failedJobs = jobs.filter(job => job.status === 'failed');
 
-  const renderJobSection = (jobs: any[], title: string, icon: React.ReactNode, description: string, showRetry?: boolean, showQuantity?: boolean, showRepeat?: boolean, viewType?: string, allowJobClick: boolean = true, showAddButton: boolean = false) => {
-    if (jobs.length === 0 && !showAddButton) return null;
-
-    const displayJobs = currentView === 'main' ? jobs.slice(0, 3) : jobs;
-    const hasMoreJobs = jobs.length > 3 && currentView === 'main';
-
-    return (
-      <Card 
-        className={`bg-slate-50/50 border border-slate-200 ${currentView === 'main' && viewType ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-        onClick={currentView === 'main' && viewType ? () => setCurrentView(viewType as any) : undefined}
-      >
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {icon}
-              <div>
-                <CardTitle className="text-lg">{title}</CardTitle>
-                <CardDescription className="text-sm">{description}</CardDescription>
-              </div>
-              <Badge variant="outline" className="bg-white">
-                {jobs.length}
-              </Badge>
-            </div>
-            <div className="flex gap-2">
-              {showAddButton && currentView !== 'main' && (
-                <Button 
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsJobDialogOpen(true);
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Job
-                </Button>
-              )}
-              {hasMoreJobs && viewType && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentView(viewType as any);
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View All
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-2">
-            {displayJobs.map((job, index) => (
-              <div key={job.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
-                <div className="flex items-center gap-4">
-                  {getStatusIcon(job.status)}
-                  <div className="flex items-center gap-2">
-                    {job.priority && getPriorityIcon(job.priority)}
-                    <div>
-                      <h4 
-                        className={`font-medium text-slate-900 ${allowJobClick ? 'cursor-pointer hover:text-blue-600' : ''}`} 
-                        onClick={allowJobClick ? (e) => {
-                          e.stopPropagation();
-                          handleJobClick(job);
-                        } : undefined}
-                      >
-                        {job.name} ({job.count})
-                      </h4>
-                      <div className="flex items-center gap-4 text-sm text-slate-500">
-                        <span>{job.printer}</span>
-                        <span>•</span>
-                        <span>{job.material}</span>
-                        {job.progress > 0 && (
-                          <>
-                            <span>•</span>
-                            <span>{job.progress}% complete</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {showQuantity && (job.status === 'queued') && (
-                    <div className="flex items-center gap-1 mr-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleQuantityChange(job.id, -1);
-                        }}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="text-sm w-8 text-center">{job.count}</span>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleQuantityChange(job.id, 1);
-                        }}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {/* Add Job Button for queued jobs */}
-                  {job.status === 'queued' && (
-                    <Button 
-                      size="sm" 
-                      variant="default"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddJob(job.id);
-                      }}
-                      disabled={loadingJobs.has(job.id)}
-                      className="ml-2"
-                    >
-                      {loadingJobs.has(job.id) ? (
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      ) : (
-                        <Plus className="h-3 w-3 mr-1" />
-                      )}
-                      Add Job
-                    </Button>
-                  )}
-
-                  <Badge className={getStatusColor(job.status)}>
-                    {getStatusText(job.status)}
-                  </Badge>
-                  {showRetry && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRetryJob(job.id);
-                      }}
-                      className="ml-2"
-                    >
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                      Retry
-                    </Button>
-                  )}
-                  {showRepeat && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRepeatJob(job.id);
-                      }}
-                      className="ml-2"
-                    >
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                      Repeat
-                    </Button>
-                  )}
-                  {job.status === 'printing' && (
-                    <div className="w-16 bg-slate-200 rounded-full h-2 ml-2">
-                      <div 
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${job.progress}%` }}
-                      ></div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
   // Handle different views
   if (currentView === 'allHigh') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to QueueBoard
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">All Priority Jobs</h2>
-            <p className="text-slate-600">High priority jobs in the queue</p>
-          </div>
-        </div>
-        {renderJobSection(highPriorityQueued, "Priority Jobs", <ArrowUp className="h-5 w-5 text-red-500" />, "High priority jobs", false, true, false, undefined, true, true)}
+        <JobViewHeader 
+          title="All Priority Jobs"
+          description="High priority jobs in the queue"
+          onBack={() => setCurrentView('main')}
+        />
+        <JobSection
+          jobs={highPriorityQueued}
+          title="Priority Jobs"
+          icon={<ArrowUp className="h-5 w-5 text-red-500" />}
+          description="High priority jobs"
+          showQuantity={true}
+          showAddButton={true}
+          currentView={currentView}
+          loadingJobs={loadingJobs}
+          onJobClick={handleJobClick}
+          onQuantityChange={handleQuantityChange}
+          onAddJob={handleAddJob}
+          onAddNewJob={() => setIsJobDialogOpen(true)}
+        />
       </div>
     );
   }
@@ -422,17 +192,25 @@ const JobsTab: React.FC = () => {
   if (currentView === 'allNormal') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to QueueBoard
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">All Normal Jobs</h2>
-            <p className="text-slate-600">Standard priority jobs in the queue</p>
-          </div>
-        </div>
-        {renderJobSection(normalPriorityQueued, "Normal Jobs", <ArrowDown className="h-5 w-5 text-blue-500" />, "Standard priority jobs", false, true, false, undefined, true, true)}
+        <JobViewHeader 
+          title="All Normal Jobs"
+          description="Standard priority jobs in the queue"
+          onBack={() => setCurrentView('main')}
+        />
+        <JobSection
+          jobs={normalPriorityQueued}
+          title="Normal Jobs"
+          icon={<ArrowDown className="h-5 w-5 text-blue-500" />}
+          description="Standard priority jobs"
+          showQuantity={true}
+          showAddButton={true}
+          currentView={currentView}
+          loadingJobs={loadingJobs}
+          onJobClick={handleJobClick}
+          onQuantityChange={handleQuantityChange}
+          onAddJob={handleAddJob}
+          onAddNewJob={() => setIsJobDialogOpen(true)}
+        />
       </div>
     );
   }
@@ -440,17 +218,22 @@ const JobsTab: React.FC = () => {
   if (currentView === 'allCompleted') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to QueueBoard
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">All Completed Jobs</h2>
-            <p className="text-slate-600">Successfully completed jobs</p>
-          </div>
-        </div>
-        {renderJobSection(completedJobs, "Completed Jobs", <CheckCircle className="h-5 w-5 text-blue-500" />, "Successfully completed jobs", false, false, true, undefined, true)}
+        <JobViewHeader 
+          title="All Completed Jobs"
+          description="Successfully completed jobs"
+          onBack={() => setCurrentView('main')}
+        />
+        <JobSection
+          jobs={completedJobs}
+          title="Completed Jobs"
+          icon={<CheckCircle className="h-5 w-5 text-blue-500" />}
+          description="Successfully completed jobs"
+          showRepeat={true}
+          currentView={currentView}
+          loadingJobs={loadingJobs}
+          onJobClick={handleJobClick}
+          onRepeatJob={handleRepeatJob}
+        />
       </div>
     );
   }
@@ -458,17 +241,22 @@ const JobsTab: React.FC = () => {
   if (currentView === 'allFailed') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => setCurrentView('main')} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to QueueBoard
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">All Failed Jobs</h2>
-            <p className="text-slate-600">Jobs that encountered errors</p>
-          </div>
-        </div>
-        {renderJobSection(failedJobs, "Failed Jobs", <AlertCircle className="h-5 w-5 text-red-500" />, "Jobs that encountered errors", true, false, false, undefined, true)}
+        <JobViewHeader 
+          title="All Failed Jobs"
+          description="Jobs that encountered errors"
+          onBack={() => setCurrentView('main')}
+        />
+        <JobSection
+          jobs={failedJobs}
+          title="Failed Jobs"
+          icon={<AlertCircle className="h-5 w-5 text-red-500" />}
+          description="Jobs that encountered errors"
+          showRetry={true}
+          currentView={currentView}
+          loadingJobs={loadingJobs}
+          onJobClick={handleJobClick}
+          onRetryJob={handleRetryJob}
+        />
       </div>
     );
   }
@@ -485,7 +273,7 @@ const JobsTab: React.FC = () => {
           onClick={() => setIsJobDialogOpen(true)}
         >
           <Play className="h-4 w-4 mr-2" />
-          New Job
+          Add Job
         </Button>
       </div>
 
@@ -521,55 +309,73 @@ const JobsTab: React.FC = () => {
         </Card>
 
         {/* High Priority Queue */}
-        {renderJobSection(
-          highPriorityQueued, 
-          "Priority Jobs", 
-          <ArrowUp className="h-5 w-5 text-red-500" />,
-          "High priority jobs - will be processed next",
-          false,
-          true,
-          false,
-          'allHigh'
-        )}
+        <JobSection
+          jobs={highPriorityQueued}
+          title="Priority Jobs"
+          icon={<ArrowUp className="h-5 w-5 text-red-500" />}
+          description="High priority jobs - will be processed next"
+          showQuantity={true}
+          viewType="allHigh"
+          currentView={currentView}
+          loadingJobs={loadingJobs}
+          onJobClick={handleJobClick}
+          onQuantityChange={handleQuantityChange}
+          onAddJob={handleAddJob}
+          onSectionClick={() => setCurrentView('allHigh')}
+          onViewAll={() => setCurrentView('allHigh')}
+        />
 
         {/* Normal Priority Queue */}
-        {renderJobSection(
-          normalPriorityQueued, 
-          "Normal Jobs", 
-          <ArrowDown className="h-5 w-5 text-blue-500" />,
-          "Standard priority jobs",
-          false,
-          true,
-          false,
-          'allNormal'
-        )}
+        <JobSection
+          jobs={normalPriorityQueued}
+          title="Normal Jobs"
+          icon={<ArrowDown className="h-5 w-5 text-blue-500" />}
+          description="Standard priority jobs"
+          showQuantity={true}
+          viewType="allNormal"
+          currentView={currentView}
+          loadingJobs={loadingJobs}
+          onJobClick={handleJobClick}
+          onQuantityChange={handleQuantityChange}
+          onAddJob={handleAddJob}
+          onSectionClick={() => setCurrentView('allNormal')}
+          onViewAll={() => setCurrentView('allNormal')}
+        />
 
         {/* Separator */}
         <Separator className="my-6" />
 
         {/* Completed Jobs */}
-        {renderJobSection(
-          completedJobs,
-          "Completed Jobs", 
-          <CheckCircle className="h-5 w-5 text-blue-500" />,
-          "Successfully completed jobs",
-          false,
-          false,
-          true,
-          'allCompleted'
-        )}
+        <JobSection
+          jobs={completedJobs}
+          title="Completed Jobs"
+          icon={<CheckCircle className="h-5 w-5 text-blue-500" />}
+          description="Successfully completed jobs"
+          showRepeat={true}
+          viewType="allCompleted"
+          currentView={currentView}
+          loadingJobs={loadingJobs}
+          onJobClick={handleJobClick}
+          onRepeatJob={handleRepeatJob}
+          onSectionClick={() => setCurrentView('allCompleted')}
+          onViewAll={() => setCurrentView('allCompleted')}
+        />
 
         {/* Failed Jobs */}
-        {renderJobSection(
-          failedJobs,
-          "Failed Jobs", 
-          <AlertCircle className="h-5 w-5 text-red-500" />,
-          "Jobs that encountered errors",
-          true,
-          false,
-          false,
-          'allFailed'
-        )}
+        <JobSection
+          jobs={failedJobs}
+          title="Failed Jobs"
+          icon={<AlertCircle className="h-5 w-5 text-red-500" />}
+          description="Jobs that encountered errors"
+          showRetry={true}
+          viewType="allFailed"
+          currentView={currentView}
+          loadingJobs={loadingJobs}
+          onJobClick={handleJobClick}
+          onRetryJob={handleRetryJob}
+          onSectionClick={() => setCurrentView('allFailed')}
+          onViewAll={() => setCurrentView('allFailed')}
+        />
       </div>
 
       <JobCreationDialog
@@ -578,148 +384,17 @@ const JobsTab: React.FC = () => {
         onCreateJob={handleCreateJob}
       />
 
-      {/* Job Detail Dialog */}
-      <Dialog open={isJobDetailOpen} onOpenChange={setIsJobDetailOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Job Details - {selectedJob?.name}</DialogTitle>
-            <DialogDescription>
-              Detailed information about this print job
-            </DialogDescription>
-          </DialogHeader>
-          {selectedJob && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-600">Status</label>
-                  <Badge className={getStatusColor(selectedJob.status)}>
-                    {getStatusText(selectedJob.status)}
-                  </Badge>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-600">Quantity</label>
-                  <p className="text-sm">{selectedJob.count} pieces</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-600">Material</label>
-                  <p className="text-sm">{selectedJob.material}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-600">Printer</label>
-                  <p className="text-sm">{selectedJob.printer}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-600">Estimated Time</label>
-                  <p className="text-sm">{selectedJob.estimatedTime}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-600">Priority</label>
-                  <div className="flex items-center gap-1">
-                    {getPriorityIcon(selectedJob.priority)}
-                    <span className="text-sm capitalize">{selectedJob.priority}</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Priority Change Section */}
-              {selectedJob.status === 'queued' && (
-                <div className="border-t pt-4">
-                  <label className="text-sm font-medium text-slate-600 block mb-2">Change Priority</label>
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant={selectedJob.priority === 'high' ? 'default' : 'outline'}
-                      onClick={() => handlePriorityChange(selectedJob.id, 'high')}
-                      className="flex items-center gap-1"
-                    >
-                      <ArrowUp className="h-3 w-3" />
-                      High Priority
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant={selectedJob.priority === 'normal' ? 'default' : 'outline'}
-                      onClick={() => handlePriorityChange(selectedJob.id, 'normal')}
-                      className="flex items-center gap-1"
-                    >
-                      <ArrowDown className="h-3 w-3" />
-                      Normal Priority
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Add Job Section for Queued Jobs */}
-              {selectedJob.status === 'queued' && (
-                <div className="border-t pt-4">
-                  <Button 
-                    className="w-full mb-2" 
-                    onClick={() => {
-                      handleAddJob(selectedJob.id);
-                      setIsJobDetailOpen(false);
-                    }}
-                    disabled={loadingJobs.has(selectedJob.id)}
-                  >
-                    {loadingJobs.has(selectedJob.id) ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
-                    Add Job
-                  </Button>
-                </div>
-              )}
-
-              {/* Repeat Job Section for Completed Jobs */}
-              {selectedJob.status === 'completed' && (
-                <div className="border-t pt-4">
-                  <Button 
-                    className="w-full mb-2" 
-                    onClick={() => {
-                      handleRepeatJob(selectedJob.id);
-                      setIsJobDetailOpen(false);
-                    }}
-                  >
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Repeat Job
-                  </Button>
-                </div>
-              )}
-
-              {selectedJob.progress > 0 && (
-                <div>
-                  <label className="text-sm font-medium text-slate-600">Progress</label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-slate-200 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${selectedJob.progress}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-sm">{selectedJob.progress}%</span>
-                  </div>
-                </div>
-              )}
-              <div className="pt-4 border-t space-y-2">
-                <Button 
-                  className="w-full" 
-                  onClick={() => handleDownloadGCode(selectedJob.filePath, `${selectedJob.name}.gcode`)}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download G-Code
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="w-full" 
-                  onClick={() => handleDownloadIni(selectedJob.iniFile, `${selectedJob.name}.ini`)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Download INI File
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <JobDetailDialog
+        isOpen={isJobDetailOpen}
+        onClose={() => setIsJobDetailOpen(false)}
+        selectedJob={selectedJob}
+        loadingJobs={loadingJobs}
+        onPriorityChange={handlePriorityChange}
+        onAddJob={handleAddJob}
+        onRepeatJob={handleRepeatJob}
+        onDownloadGCode={handleDownloadGCode}
+        onDownloadIni={handleDownloadIni}
+      />
     </div>
   );
 };
