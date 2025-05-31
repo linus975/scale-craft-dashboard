@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -70,14 +69,14 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
           await webhookService.classifyJob(createdJob.id);
           
           toast({
-            title: "Job erstellt und zur Klassifizierung gesendet",
+            title: "Job erfolgreich erstellt",
             description: `Job ${createdJob.job_number} wurde erstellt und zur Klassifizierung gesendet.`,
           });
         } catch (webhookError) {
           console.error('Error sending classification webhook:', webhookError);
           toast({
-            title: "Job erstellt, aber Klassifizierung fehlgeschlagen",
-            description: `Job ${createdJob.job_number} wurde erstellt, aber die Klassifizierung konnte nicht gestartet werden.`,
+            title: "Job erstellt, Klassifizierung eventuell fehlgeschlagen",
+            description: `Job ${createdJob.job_number} wurde erstellt. Die Klassifizierung könnte aufgrund von Netzwerkproblemen fehlgeschlagen sein.`,
             variant: "destructive",
           });
         }
