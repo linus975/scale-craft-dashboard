@@ -110,7 +110,7 @@ export const usePrintJobs = () => {
       if (!user) throw new Error('User not authenticated');
 
       // Create the duplicate job data excluding auto-generated fields
-      const duplicateJobData: PrintJobInsert = {
+      const duplicateJobData = {
         product_id: originalJob.product_id,
         product_name: `${originalJob.product_name} (Copy)`,
         ean_number: originalJob.ean_number,
@@ -129,11 +129,14 @@ export const usePrintJobs = () => {
         parameters: originalJob.parameters,
         priority: originalJob.priority,
         notes: `Copy of job ${originalJob.job_number}`,
+        created_by: user.id,
+        // Explicitly set job_number to empty string so trigger can generate it
+        job_number: ''
       };
 
       const { data, error } = await supabase
         .from('print_jobs')
-        .insert({ ...duplicateJobData, created_by: user.id })
+        .insert(duplicateJobData)
         .select()
         .single();
 
