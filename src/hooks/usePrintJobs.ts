@@ -40,9 +40,12 @@ export const usePrintJobs = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Ensure job_number is not included in the insert data to avoid conflicts
+      const { job_number, ...cleanJobData } = jobData as any;
+      
       const { data, error } = await supabase
         .from('print_jobs')
-        .insert({ ...jobData, created_by: user.id } as any)
+        .insert({ ...cleanJobData, created_by: user.id })
         .select()
         .single();
 
@@ -106,7 +109,8 @@ export const usePrintJobs = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const duplicateJobData: PrintJobInsert = {
+      // Create the duplicate job data excluding auto-generated fields
+      const duplicateJobData = {
         product_id: originalJob.product_id,
         product_name: `${originalJob.product_name} (Copy)`,
         ean_number: originalJob.ean_number,
@@ -125,11 +129,12 @@ export const usePrintJobs = () => {
         parameters: originalJob.parameters,
         priority: originalJob.priority,
         notes: `Copy of job ${originalJob.job_number}`,
+        created_by: user.id
       };
 
       const { data, error } = await supabase
         .from('print_jobs')
-        .insert({ ...duplicateJobData, created_by: user.id } as any)
+        .insert(duplicateJobData)
         .select()
         .single();
 
