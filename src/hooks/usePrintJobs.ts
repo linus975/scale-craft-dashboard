@@ -26,7 +26,7 @@ export const usePrintJobs = () => {
     } catch (error: any) {
       console.error('Error fetching print jobs:', error);
       toast({
-        title: "Fehler beim Laden der Print Jobs",
+        title: "Error loading print jobs",
         description: error.message,
         variant: "destructive",
       });
@@ -38,7 +38,7 @@ export const usePrintJobs = () => {
   const createPrintJob = async (jobData: PrintJobInsert) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Benutzer nicht angemeldet');
+      if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('print_jobs')
@@ -50,15 +50,15 @@ export const usePrintJobs = () => {
 
       setPrintJobs(prev => [data, ...prev]);
       toast({
-        title: "Print Job erstellt",
-        description: `Job ${data.job_number} wurde erfolgreich erstellt.`,
+        title: "Print job created",
+        description: `Job ${data.job_number} was successfully created.`,
       });
 
       return data;
     } catch (error: any) {
       console.error('Error creating print job:', error);
       toast({
-        title: "Fehler beim Erstellen des Print Jobs",
+        title: "Error creating print job",
         description: error.message,
         variant: "destructive",
       });
@@ -82,15 +82,15 @@ export const usePrintJobs = () => {
       ));
 
       toast({
-        title: "Print Job aktualisiert",
-        description: `Job ${data.job_number} wurde erfolgreich aktualisiert.`,
+        title: "Print job updated",
+        description: `Job ${data.job_number} was successfully updated.`,
       });
 
       return data;
     } catch (error: any) {
       console.error('Error updating print job:', error);
       toast({
-        title: "Fehler beim Aktualisieren des Print Jobs",
+        title: "Error updating print job",
         description: error.message,
         variant: "destructive",
       });
@@ -101,14 +101,14 @@ export const usePrintJobs = () => {
   const duplicatePrintJob = async (jobId: string) => {
     try {
       const originalJob = printJobs.find(job => job.id === jobId);
-      if (!originalJob) throw new Error('Job nicht gefunden');
+      if (!originalJob) throw new Error('Job not found');
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Benutzer nicht angemeldet');
+      if (!user) throw new Error('User not authenticated');
 
       const duplicateJobData: PrintJobInsert = {
         product_id: originalJob.product_id,
-        product_name: `${originalJob.product_name} (Kopie)`,
+        product_name: `${originalJob.product_name} (Copy)`,
         ean_number: originalJob.ean_number,
         source_type: 'duplicate' as const,
         parent_job_id: originalJob.id,
@@ -124,7 +124,7 @@ export const usePrintJobs = () => {
         personalization_data: originalJob.personalization_data,
         parameters: originalJob.parameters,
         priority: originalJob.priority,
-        notes: `Kopie von Job ${originalJob.job_number}`,
+        notes: `Copy of job ${originalJob.job_number}`,
       };
 
       const { data, error } = await supabase
@@ -137,15 +137,15 @@ export const usePrintJobs = () => {
 
       setPrintJobs(prev => [data, ...prev]);
       toast({
-        title: "Print Job dupliziert",
-        description: `Job ${data.job_number} wurde als Kopie von ${originalJob.job_number} erstellt.`,
+        title: "Print job duplicated",
+        description: `Job ${data.job_number} was created as a copy of ${originalJob.job_number}.`,
       });
 
       return data;
     } catch (error: any) {
       console.error('Error duplicating print job:', error);
       toast({
-        title: "Fehler beim Duplizieren des Print Jobs",
+        title: "Error duplicating print job",
         description: error.message,
         variant: "destructive",
       });
@@ -166,13 +166,13 @@ export const usePrintJobs = () => {
 
       setPrintJobs(prev => prev.filter(job => job.id !== id));
       toast({
-        title: "Print Job gelöscht",
-        description: `Job ${job?.job_number} wurde erfolgreich gelöscht.`,
+        title: "Print job deleted",
+        description: `Job ${job?.job_number} was successfully deleted.`,
       });
     } catch (error: any) {
       console.error('Error deleting print job:', error);
       toast({
-        title: "Fehler beim Löschen des Print Jobs",
+        title: "Error deleting print job",
         description: error.message,
         variant: "destructive",
       });
