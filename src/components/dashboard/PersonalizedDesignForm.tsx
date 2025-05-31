@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +26,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
     name: '',
     description: '',
     category: '',
+    eanNumber: '',
     cadFile: null as File | null,
     cadSoftware: '',
     slicer: '',
@@ -69,6 +69,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
         description: formData.description || null,
         category: formData.category,
         design_type: 'personalized',
+        ean_number: formData.eanNumber || null,
         cad_software: formData.cadSoftware,
         slicer: formData.slicer,
         sketch_name: formData.sketchName || null,
@@ -131,6 +132,21 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
               onChange={(e) => handleInputChange('name', e.target.value)}
               required
             />
+          </div>
+
+          {/* EAN Number */}
+          <div className="space-y-2">
+            <Label htmlFor="eanNumber">EAN-Nummer</Label>
+            <Input
+              id="eanNumber"
+              placeholder="13-stellige EAN-Nummer eingeben"
+              value={formData.eanNumber}
+              onChange={(e) => handleInputChange('eanNumber', e.target.value)}
+              maxLength={13}
+            />
+            <p className="text-sm text-gray-600">
+              Die EAN-Nummer wird für die automatische Produkterkennung verwendet
+            </p>
           </div>
 
           {/* Preview Image Upload */}

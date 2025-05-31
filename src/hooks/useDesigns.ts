@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
+import { useEanMapping } from './useEanMapping';
 
 type Design = Database['public']['Tables']['designs']['Row'];
 type DesignInsert = Database['public']['Tables']['designs']['Insert'];
@@ -12,6 +12,7 @@ export const useDesigns = () => {
   const [designs, setDesigns] = useState<Design[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { createMapping } = useEanMapping();
 
   const fetchDesigns = async () => {
     try {
@@ -46,6 +47,27 @@ export const useDesigns = () => {
         .single();
 
       if (error) throw error;
+
+      // Create EAN mapping if EAN number is provided
+      if (data.ean_number) {
+        try {
+          await createMapping({
+            ean_number: data.ean_number,
+            product_type: data.design_type as 'static' | 'personalized',
+            design_id: data.id
+          });
+          
+          console.log('EAN mapping created successfully for design:', data.name);
+        } catch (mappingError) {
+          console.error('Error creating EAN mapping:', mappingError);
+          // Don't fail the design creation if EAN mapping fails
+          toast({
+            title: "Warnung",
+            description: "Design wurde erstellt, aber EAN-Mapping konnte nicht gespeichert werden.",
+            variant: "destructive",
+          });
+        }
+      }
 
       setDesigns(prev => [data, ...prev]);
       toast({

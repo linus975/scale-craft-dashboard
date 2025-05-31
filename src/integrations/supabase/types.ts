@@ -233,6 +233,41 @@ export type Database = {
         }
         Relationships: []
       }
+      product_ean_mapping: {
+        Row: {
+          created_at: string
+          design_id: string | null
+          ean_number: string
+          id: string
+          product_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          design_id?: string | null
+          ean_number: string
+          id?: string
+          product_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          design_id?: string | null
+          ean_number?: string
+          id?: string
+          product_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_ean_mapping_design_id_fkey"
+            columns: ["design_id"]
+            isOneToOne: false
+            referencedRelation: "designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
