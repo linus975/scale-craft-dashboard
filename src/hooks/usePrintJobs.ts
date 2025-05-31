@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
 type PrintJob = Database['public']['Tables']['print_jobs']['Row'];
-type PrintJobInsert = Omit<Database['public']['Tables']['print_jobs']['Insert'], 'job_number'>; // Exclude job_number since it's auto-generated
+type PrintJobInsert = Omit<Database['public']['Tables']['print_jobs']['Insert'], 'job_number' | 'created_by'>; // Exclude auto-generated fields
 type PrintJobUpdate = Database['public']['Tables']['print_jobs']['Update'];
 
 export const usePrintJobs = () => {
