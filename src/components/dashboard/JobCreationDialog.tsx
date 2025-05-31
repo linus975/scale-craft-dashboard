@@ -10,6 +10,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { FileText, ArrowUp, ArrowDown } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
 import { usePrintJobs } from '@/hooks/usePrintJobs';
+import { webhookService } from '@/services/webhookService';
+import { useToast } from '@/hooks/use-toast';
 
 interface JobCreationDialogProps {
   isOpen: boolean;
@@ -23,6 +25,7 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
   const { designs } = useDesigns();
   const { createPrintJob } = usePrintJobs();
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   
   const [jobData, setJobData] = useState({
     designId: '',
@@ -48,8 +51,8 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
     
     setLoading(true);
     try {
-      // Create using the new print jobs system only
-      await createPrintJob({
+      // Create the print job
+      const createdJob = await createPrintJob({
         product_id: selectedDesign.id,
         product_name: selectedDesign.name,
         ean_number: selectedDesign.ean_number,
@@ -61,10 +64,34 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
         notes: jobData.notes || undefined
       });
 
+      // Send webhook to classify the job
+      if (createdJob && createdJob.id) {
+        try {
+          await webhookService.classifyJob(createdJob.id);
+          
+          toast({
+            title: "Job erstellt und zur Klassifizierung gesendet",
+            description: `Job ${createdJob.job_number} wurde erstellt und zur Klassifizierung gesendet.`,
+          });
+        } catch (webhookError) {
+          console.error('Error sending classification webhook:', webhookError);
+          toast({
+            title: "Job erstellt, aber Klassifizierung fehlgeschlagen",
+            description: `Job ${createdJob.job_number} wurde erstellt, aber die Klassifizierung konnte nicht gestartet werden.`,
+            variant: "destructive",
+          });
+        }
+      }
+
       onClose();
       resetForm();
     } catch (error) {
       console.error('Error creating print job:', error);
+      toast({
+        title: "Fehler beim Erstellen des Jobs",
+        description: "Der Job konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

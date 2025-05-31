@@ -1,6 +1,6 @@
 
 const WEBHOOK_ENDPOINTS = {
-  CLASSIFY_JOB: 'http://n8n.melemeng.com/webhook/classify-job'
+  CLASSIFY_JOB: 'http://n8n.melemeng.com/webhook-test/classify-job'
 } as const;
 
 interface ClassifyJobRequest {
@@ -15,6 +15,7 @@ interface ClassifyJobResponse {
 export const webhookService = {
   async classifyJob(jobId: string): Promise<ClassifyJobResponse> {
     try {
+      console.log('Sending webhook to classify job:', jobId);
       const response = await fetch(WEBHOOK_ENDPOINTS.CLASSIFY_JOB, {
         method: 'POST',
         headers: {
@@ -28,6 +29,7 @@ export const webhookService = {
       }
 
       const data = await response.json();
+      console.log('Webhook response:', data);
       return data;
     } catch (error) {
       console.error('Error classifying job:', error);
