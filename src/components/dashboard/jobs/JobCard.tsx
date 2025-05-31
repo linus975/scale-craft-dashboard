@@ -2,19 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Play, 
-  Pause, 
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  ArrowUp,
-  ArrowDown,
-  Plus,
-  Minus,
-  RotateCcw,
-  Loader2
-} from 'lucide-react';
+import { Play, RotateCcw, Plus, Minus, AlertCircle } from 'lucide-react';
 
 interface JobCardProps {
   job: any;
@@ -22,12 +10,12 @@ interface JobCardProps {
   showQuantity?: boolean;
   showRetry?: boolean;
   showRepeat?: boolean;
-  loadingJobs: Set<number>;
+  loadingJobs: Set<string>; // Changed from Set<number> to Set<string>
   onJobClick?: (job: any) => void;
-  onQuantityChange?: (jobId: number, change: number) => void;
-  onAddJob?: (jobId: number) => void;
-  onRetryJob?: (jobId: number) => void;
-  onRepeatJob?: (jobId: number) => void;
+  onQuantityChange?: (jobId: string, change: number) => void; // Changed from number to string
+  onAddJob?: (jobId: string) => void; // Changed from number to string
+  onRetryJob?: (jobId: string) => void; // Changed from number to string
+  onRepeatJob?: (jobId: string) => void; // Changed from number to string
 }
 
 export const JobCard: React.FC<JobCardProps> = ({
@@ -43,167 +31,145 @@ export const JobCard: React.FC<JobCardProps> = ({
   onRetryJob,
   onRepeatJob
 }) => {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'printing': return <Play className="h-4 w-4 text-green-500" />;
-      case 'queued': return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'completed': return <CheckCircle className="h-4 w-4 text-blue-500" />;
-      case 'failed': return <AlertCircle className="h-4 w-4 text-red-500" />;
-      case 'paused': return <Pause className="h-4 w-4 text-orange-500" />;
-      case 'classifying': return <Loader2 className="h-4 w-4 text-purple-500 animate-spin" />;
-      default: return <Clock className="h-4 w-4 text-gray-500" />;
-    }
-  };
+  const isLoading = loadingJobs.has(job.id);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'printing': return 'bg-green-100 text-green-800 border-green-200';
-      case 'queued': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'failed': return 'bg-red-100 text-red-800 border-red-200';
-      case 'paused': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'classifying': return 'bg-purple-100 text-purple-800 border-purple-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      case 'printing': return 'bg-blue-100 text-blue-800';
+      case 'queued': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'printing': return 'Printing';
-      case 'queued': return 'Queued';
-      case 'completed': return 'Completed';
-      case 'failed': return 'Failed';
-      case 'paused': return 'Paused';
-      case 'classifying': return 'Classifying';
-      default: return status;
-    }
-  };
-
-  const getPriorityIcon = (priority: string) => {
-    return priority === 'high' ? 
-      <ArrowUp className="h-3 w-3 text-red-500" /> : 
-      <ArrowDown className="h-3 w-3 text-blue-500" />;
+  const getPriorityColor = (priority: string) => {
+    return priority === 'high' 
+      ? 'bg-red-100 text-red-800' 
+      : 'bg-blue-100 text-blue-800';
   };
 
   return (
-    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
-      <div className="flex items-center gap-4">
-        {getStatusIcon(job.status)}
-        <div className="flex items-center gap-2">
-          {job.priority && getPriorityIcon(job.priority)}
-          <div>
-            <h4 
-              className={`font-medium text-slate-900 ${allowJobClick ? 'cursor-pointer hover:text-blue-600' : ''}`} 
-              onClick={allowJobClick && onJobClick ? (e) => {
-                e.stopPropagation();
-                onJobClick(job);
-              } : undefined}
-            >
-              {job.name} ({job.count})
-            </h4>
-            <div className="flex items-center gap-4 text-sm text-slate-500">
-              <span>{job.printer}</span>
-              <span>•</span>
-              <span>{job.material}</span>
-              {job.progress > 0 && (
-                <>
-                  <span>•</span>
-                  <span>{job.progress}% complete</span>
-                </>
-              )}
-            </div>
-          </div>
+    <div 
+      className={`p-3 border rounded-lg hover:shadow-sm transition-shadow ${allowJobClick ? 'cursor-pointer' : ''}`}
+      onClick={allowJobClick ? () => onJobClick?.(job) : undefined}
+    >
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex-1">
+          <div className="font-medium text-sm">{job.name}</div>
+          <div className="text-xs text-gray-500">#{job.job_number || job.id}</div>
+        </div>
+        <div className="flex gap-1">
+          <Badge className={getStatusColor(job.status)} variant="outline">
+            {job.status}
+          </Badge>
+          {job.priority && (
+            <Badge className={getPriorityColor(job.priority)} variant="outline">
+              {job.priority === 'high' ? 'High' : 'Normal'}
+            </Badge>
+          )}
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        {showQuantity && (job.status === 'queued') && onQuantityChange && (
-          <div className="flex items-center gap-1 mr-2">
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuantityChange(job.id, -1);
-              }}
-              className="h-6 w-6 p-0"
-            >
-              <Minus className="h-3 w-3" />
-            </Button>
-            <span className="text-sm w-8 text-center">{job.count}</span>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuantityChange(job.id, 1);
-              }}
-              className="h-6 w-6 p-0"
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
-        
-        {/* Add Job Button for queued jobs */}
-        {job.status === 'queued' && onAddJob && (
-          <Button 
-            size="sm" 
-            variant="default"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddJob(job.id);
-            }}
-            disabled={loadingJobs.has(job.id)}
-            className="ml-2"
-          >
-            {loadingJobs.has(job.id) ? (
-              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-            ) : (
-              <Plus className="h-3 w-3 mr-1" />
-            )}
-            Add Job
-          </Button>
-        )}
 
-        <Badge className={getStatusColor(job.status)}>
-          {getStatusText(job.status)}
-        </Badge>
-        {showRetry && onRetryJob && (
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRetryJob(job.id);
-            }}
-            className="ml-2"
-          >
-            <RotateCcw className="h-3 w-3 mr-1" />
-            Retry
-          </Button>
-        )}
-        {showRepeat && onRepeatJob && (
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRepeatJob(job.id);
-            }}
-            className="ml-2"
-          >
-            <RotateCcw className="h-3 w-3 mr-1" />
-            Repeat
-          </Button>
-        )}
-        {job.status === 'printing' && (
-          <div className="w-16 bg-slate-200 rounded-full h-2 ml-2">
+      <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
+        {job.material && <span>Material: {job.material}</span>}
+        {job.printer && <span>• Printer: {job.printer}</span>}
+      </div>
+
+      {job.progress !== undefined && (
+        <div className="mb-2">
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div 
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
               style={{ width: `${job.progress}%` }}
             ></div>
           </div>
-        )}
+          <div className="text-xs text-gray-500 mt-1">{job.progress}% complete</div>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center">
+        <div className="flex gap-1">
+          {showQuantity && onQuantityChange && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuantityChange(job.id, -1);
+                }}
+                disabled={isLoading || (job.count || job.quantity || 1) <= 1}
+                className="h-6 w-6 p-0"
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              <span className="text-xs px-2">{job.count || job.quantity || 1}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuantityChange(job.id, 1);
+                }}
+                disabled={isLoading}
+                className="h-6 w-6 p-0"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-1">
+          {showRetry && onRetryJob && job.status === 'failed' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRetryJob(job.id);
+              }}
+              disabled={isLoading}
+              className="h-6 px-2 flex items-center gap-1"
+            >
+              <AlertCircle className="h-3 w-3" />
+              <span className="text-xs">Retry</span>
+            </Button>
+          )}
+
+          {showRepeat && onRepeatJob && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRepeatJob(job.id);
+              }}
+              disabled={isLoading}
+              className="h-6 px-2 flex items-center gap-1"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span className="text-xs">Repeat</span>
+            </Button>
+          )}
+
+          {onAddJob && job.status === 'queued' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddJob(job.id);
+              }}
+              disabled={isLoading}
+              className="h-6 px-2 flex items-center gap-1"
+            >
+              <Play className="h-3 w-3" />
+              <span className="text-xs">{isLoading ? 'Processing...' : 'Start'}</span>
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
