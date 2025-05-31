@@ -21,14 +21,16 @@ export const webhookService = {
         headers: {
           'Content-Type': 'application/json',
         },
-        mode: 'no-cors', // Add this to handle CORS issues
         body: JSON.stringify({ job_id: jobId }),
       });
 
-      // With no-cors mode, we can't read the response status or body
-      // So we'll assume success if no error is thrown
-      console.log('Webhook request sent (no-cors mode)');
-      return { success: true, message: 'Request sent successfully' };
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Webhook response:', data);
+      return data;
     } catch (error) {
       console.error('Error classifying job:', error);
       throw error;
