@@ -134,7 +134,7 @@ export const usePrintJobs = () => {
 
       const { data, error } = await supabase
         .from('print_jobs')
-        .insert(duplicateJobData)
+        .insert(duplicateJobData as any)
         .select()
         .single();
 
