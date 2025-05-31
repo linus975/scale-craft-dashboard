@@ -27,7 +27,7 @@ const JobsTab: React.FC = () => {
   const [currentView, setCurrentView] = useState<'main' | 'currentJobs' | 'allHigh' | 'allNormal' | 'allCompleted' | 'allFailed'>('main');
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [isJobDetailOpen, setIsJobDetailOpen] = useState(false);
-  const [loadingJobs, setLoadingJobs] = useState<Set<string>>(new Set());
+  const [loadingJobs, setLoadingJobs] = useState<Set<string>>(new Set()); // Changed from Set<number> to Set<string>
   const { toast } = useToast();
 
   // Use the new print jobs system
@@ -41,8 +41,14 @@ const JobsTab: React.FC = () => {
     handleRetryJob,
     handlePriorityChange,
     handleQuantityChange,
-    duplicatePrintJob
+    duplicatePrintJob,
+    refetch
   } = useJobsIntegration();
+
+  // Trigger refetch when needed
+  React.useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   if (currentView === 'currentJobs') {
     return <CurrentPrintingJobsPage onBack={() => setCurrentView('main')} />;

@@ -18,12 +18,12 @@ interface JobSectionProps {
   allowJobClick?: boolean;
   showAddButton?: boolean;
   currentView: string;
-  loadingJobs: Set<number>;
+  loadingJobs: Set<string>; // Changed from Set<number> to Set<string>
   onJobClick?: (job: any) => void;
-  onQuantityChange?: (jobId: number, change: number) => void;
-  onAddJob?: (jobId: number) => void;
-  onRetryJob?: (jobId: number) => void;
-  onRepeatJob?: (jobId: number) => void;
+  onQuantityChange?: (jobId: string, change: number) => void; // Changed from number to string
+  onAddJob?: (jobId: string) => void; // Changed from number to string
+  onRetryJob?: (jobId: string) => void; // Changed from number to string
+  onRepeatJob?: (jobId: string) => void; // Changed from number to string
   onSectionClick?: () => void;
   onViewAll?: () => void;
   onAddNewJob?: () => void;
