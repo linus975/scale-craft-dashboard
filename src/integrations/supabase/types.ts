@@ -81,6 +81,60 @@ export type Database = {
         }
         Relationships: []
       }
+      machines: {
+        Row: {
+          api_key: string | null
+          api_url: string | null
+          connection_type: string
+          created_at: string
+          current_job_id: string | null
+          id: string
+          last_seen: string | null
+          name: string
+          notes: string | null
+          password: string | null
+          printer_type: string
+          status: string
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          api_url?: string | null
+          connection_type: string
+          created_at?: string
+          current_job_id?: string | null
+          id?: string
+          last_seen?: string | null
+          name: string
+          notes?: string | null
+          password?: string | null
+          printer_type: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          api_url?: string | null
+          connection_type?: string
+          created_at?: string
+          current_job_id?: string | null
+          id?: string
+          last_seen?: string | null
+          name?: string
+          notes?: string | null
+          password?: string | null
+          printer_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       marketplace_integrations: {
         Row: {
           api_key: string | null

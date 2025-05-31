@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Settings, Play, ListPlus } from 'lucide-react';
 
 interface Machine {
-  id: number;
+  id: number | string;
   name: string;
   type: string;
   status: string;
@@ -72,10 +73,21 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'idle': return 'bg-green-100 text-green-800 border-green-200';
-      case 'printing': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'active': return 'bg-green-100 text-green-800 border-green-200';
       case 'offline': return 'bg-red-100 text-red-800 border-red-200';
+      case 'needs_configuration': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'error': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active': return 'Aktiv';
+      case 'offline': return 'Offline';
+      case 'needs_configuration': return 'Konfiguration erforderlich';
+      case 'error': return 'Fehler';
+      default: return status;
     }
   };
 
@@ -85,10 +97,10 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Configure {machine.name}
+            {machine.name} konfigurieren
           </DialogTitle>
           <DialogDescription>
-            Update machine settings and manage current operations
+            Maschineneinstellungen aktualisieren und aktuelle Vorgänge verwalten
           </DialogDescription>
         </DialogHeader>
 
@@ -96,12 +108,12 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
           {/* Configuration Form */}
           <Card>
             <CardHeader>
-              <CardTitle>Machine Configuration</CardTitle>
+              <CardTitle>Maschinenkonfiguration</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Machine Name</Label>
+                  <Label htmlFor="name">Maschinenname</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -111,7 +123,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="type">Machine Type</Label>
+                  <Label htmlFor="type">Maschinentyp</Label>
                   <Select onValueChange={(value) => handleInputChange('type', value)} value={formData.type}>
                     <SelectTrigger>
                       <SelectValue />
@@ -126,45 +138,45 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="connectionType">Connection Type</Label>
+                  <Label htmlFor="connectionType">Verbindungstyp</Label>
                   <Select onValueChange={(value) => handleInputChange('connectionType', value)} value={formData.connectionType}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="octoprint">OctoPrint</SelectItem>
+                      <SelectItem value="prusalink">PrusaLink</SelectItem>
                       <SelectItem value="bambu">Bambu Lab API</SelectItem>
-                      <SelectItem value="prusa">Prusa Connect</SelectItem>
-                      <SelectItem value="custom">Custom API</SelectItem>
+                      <SelectItem value="manual">Manuell</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="apiUrl">API URL</Label>
+                  <Label htmlFor="apiUrl">API-URL</Label>
                   <Input
                     id="apiUrl"
                     value={formData.apiUrl}
                     onChange={(e) => handleInputChange('apiUrl', e.target.value)}
-                    placeholder="http://octopi.local or API endpoint"
+                    placeholder="http://octopi.local oder API-Endpunkt"
                   />
                 </div>
 
                 {formData.connectionType === 'octoprint' ? (
                   <div className="space-y-2">
-                    <Label htmlFor="apiKey">API Key</Label>
+                    <Label htmlFor="apiKey">API-Schlüssel</Label>
                     <Input
                       id="apiKey"
                       type="password"
                       value={formData.apiKey}
                       onChange={(e) => handleInputChange('apiKey', e.target.value)}
-                      placeholder="OctoPrint API Key"
+                      placeholder="OctoPrint API-Schlüssel"
                     />
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
+                      <Label htmlFor="username">Benutzername</Label>
                       <Input
                         id="username"
                         value={formData.username}
@@ -172,7 +184,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
+                      <Label htmlFor="password">Passwort</Label>
                       <Input
                         id="password"
                         type="password"
@@ -185,10 +197,10 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
 
                 <div className="flex gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-                    Cancel
+                    Abbrechen
                   </Button>
                   <Button type="submit" className="flex-1">
-                    Save Configuration
+                    Konfiguration speichern
                   </Button>
                 </div>
               </form>
@@ -200,23 +212,23 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
             {/* Current Status */}
             <Card>
               <CardHeader>
-                <CardTitle>Current Status</CardTitle>
+                <CardTitle>Aktueller Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600">Status:</span>
                     <Badge className={getStatusColor(machine.status)}>
-                      {machine.status.charAt(0).toUpperCase() + machine.status.slice(1)}
+                      {getStatusText(machine.status)}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">Last Seen:</span>
+                    <span className="text-sm text-slate-600">Zuletzt gesehen:</span>
                     <span className="text-sm">{machine.lastSeen}</span>
                   </div>
                   {machine.currentJob && (
                     <div className="p-3 bg-blue-50 rounded border border-blue-200">
-                      <p className="text-sm text-blue-900 font-medium">Current Job:</p>
+                      <p className="text-sm text-blue-900 font-medium">Aktueller Job:</p>
                       <p className="text-sm text-blue-700">{machine.currentJob}</p>
                     </div>
                   )}
@@ -227,29 +239,29 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
             {/* Next Job Selection */}
             <Card>
               <CardHeader>
-                <CardTitle>Next Job</CardTitle>
-                <CardDescription>Select next job to print</CardDescription>
+                <CardTitle>Nächster Job</CardTitle>
+                <CardDescription>Nächsten zu druckenden Job auswählen</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Job Source</Label>
+                    <Label>Job-Quelle</Label>
                     <Select onValueChange={(value: 'queue' | 'design') => setJobSource(value)} value={jobSource}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="queue">From Queue</SelectItem>
-                        <SelectItem value="design">From Designs</SelectItem>
+                        <SelectItem value="queue">Aus der Warteschlange</SelectItem>
+                        <SelectItem value="design">Aus Designs</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Select Job/Design</Label>
+                    <Label>Job/Design auswählen</Label>
                     <Select onValueChange={setSelectedNextJob} value={selectedNextJob}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Choose job or design" />
+                        <SelectValue placeholder="Job oder Design auswählen" />
                       </SelectTrigger>
                       <SelectContent>
                         {jobSource === 'queue' ? (
@@ -275,7 +287,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                     className="w-full"
                   >
                     <Play className="h-4 w-4 mr-2" />
-                    Start Next Job
+                    Nächsten Job starten
                   </Button>
                 </div>
               </CardContent>

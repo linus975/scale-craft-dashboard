@@ -16,10 +16,12 @@ import {
   Trash2,
   Activity,
   BarChart3,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import MachineStatisticsPage from './MachineStatisticsPage';
 import MachineConfigDialog from './MachineConfigDialog';
+import { useMachines } from '@/hooks/useMachines';
 
 const MachinesTab: React.FC = () => {
   const [isAddMachineDialogOpen, setIsAddMachineDialogOpen] = useState(false);
@@ -27,60 +29,21 @@ const MachinesTab: React.FC = () => {
   const [selectedMachine, setSelectedMachine] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
-    type: '',
-    connectionType: '',
-    apiUrl: '',
-    apiKey: '',
+    printer_type: '',
+    connection_type: '',
+    api_url: '',
+    api_key: '',
     username: '',
     password: ''
   });
+
+  const { machines, loading, createMachine, updateMachine, deleteMachine } = useMachines();
 
   if (currentView === 'statistics') {
     return <MachineStatisticsPage onBack={() => setCurrentView('main')} />;
   }
 
-  const mockMachines = [
-    { 
-      id: 1, 
-      name: "Prusa i3 MK3S+", 
-      type: "FDM", 
-      status: "idle", 
-      connection: "OctoPrint", 
-      lastSeen: "2 minutes ago",
-      currentJob: null,
-      connectionType: "octoprint",
-      apiUrl: "http://octopi.local",
-      apiKey: "****",
-      username: ""
-    },
-    { 
-      id: 2, 
-      name: "Bambu Lab X1 Carbon", 
-      type: "FDM", 
-      status: "printing", 
-      connection: "Bambu API", 
-      lastSeen: "1 minute ago",
-      currentJob: "Custom Phone Case - 45% complete",
-      connectionType: "bambu",
-      apiUrl: "https://api.bambulab.com",
-      apiKey: "****",
-      username: "user@example.com"
-    },
-    { 
-      id: 3, 
-      name: "Ender 3 V2", 
-      type: "FDM", 
-      status: "offline", 
-      connection: "OctoPrint", 
-      lastSeen: "2 hours ago",
-      currentJob: null,
-      connectionType: "octoprint",
-      apiUrl: "http://192.168.1.100",
-      apiKey: "****",
-      username: ""
-    }
-  ];
-
+  // Mock data für designs und queue jobs (wird später durch echte Daten ersetzt)
   const mockDesigns = [
     { id: 1, name: "Parametric Gear" },
     { id: 2, name: "Custom Bracket" },
@@ -100,44 +63,92 @@ const MachinesTab: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Adding machine:', formData);
-    // TODO: Implement machine addition logic
-    setIsAddMachineDialogOpen(false);
-    setFormData({
-      name: '',
-      type: '',
-      connectionType: '',
-      apiUrl: '',
-      apiKey: '',
-      username: '',
-      password: ''
-    });
+    try {
+      await createMachine(formData);
+      setIsAddMachineDialogOpen(false);
+      setFormData({
+        name: '',
+        printer_type: '',
+        connection_type: '',
+        api_url: '',
+        api_key: '',
+        username: '',
+        password: ''
+      });
+    } catch (error) {
+      // Error is handled in the hook
+    }
   };
 
-  const handleMachineConfigSave = (machineData: any) => {
-    console.log('Saving machine configuration:', machineData);
-    // TODO: Implement machine configuration save logic
+  const handleMachineConfigSave = async (machineData: any) => {
+    try {
+      await updateMachine(machineData.id, {
+        name: machineData.name,
+        printer_type: machineData.type,
+        connection_type: machineData.connectionType,
+        api_url: machineData.apiUrl,
+        api_key: machineData.apiKey,
+        username: machineData.username,
+        password: machineData.password
+      });
+    } catch (error) {
+      // Error is handled in the hook
+    }
+  };
+
+  const handleDeleteMachine = async (machineId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Möchten Sie diese Maschine wirklich löschen?')) {
+      try {
+        await deleteMachine(machineId);
+      } catch (error) {
+        // Error is handled in the hook
+      }
+    }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'idle': return 'bg-green-100 text-green-800 border-green-200';
-      case 'printing': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'active': return 'bg-green-100 text-green-800 border-green-200';
       case 'offline': return 'bg-red-100 text-red-800 border-red-200';
-      case 'error': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'needs_configuration': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'error': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'idle': return <Wifi className="h-4 w-4" />;
-      case 'printing': return <Activity className="h-4 w-4" />;
+      case 'active': return <Wifi className="h-4 w-4" />;
       case 'offline': return <WifiOff className="h-4 w-4" />;
+      case 'needs_configuration': return <Settings className="h-4 w-4" />;
+      case 'error': return <WifiOff className="h-4 w-4" />;
       default: return <WifiOff className="h-4 w-4" />;
     }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active': return 'Aktiv';
+      case 'offline': return 'Offline';
+      case 'needs_configuration': return 'Konfiguration erforderlich';
+      case 'error': return 'Fehler';
+      default: return status;
+    }
+  };
+
+  const formatLastSeen = (lastSeen: string | null) => {
+    if (!lastSeen) return 'Nie verbunden';
+    const date = new Date(lastSeen);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffMinutes < 1) return 'Gerade eben';
+    if (diffMinutes < 60) return `vor ${diffMinutes} Minuten`;
+    if (diffMinutes < 1440) return `vor ${Math.floor(diffMinutes / 60)} Stunden`;
+    return `vor ${Math.floor(diffMinutes / 1440)} Tagen`;
   };
 
   return (
@@ -145,28 +156,28 @@ const MachinesTab: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Machine Parc</h2>
-          <p className="text-slate-600">Manage your connected 3D printers and monitor their status</p>
+          <p className="text-slate-600">Verwalten Sie Ihre verbundenen 3D-Drucker und überwachen Sie deren Status</p>
         </div>
         <Dialog open={isAddMachineDialogOpen} onOpenChange={setIsAddMachineDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
               <Plus className="h-4 w-4 mr-2" />
-              Add Machine
+              Maschine hinzufügen
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Add 3D Printer</DialogTitle>
+              <DialogTitle>3D-Drucker hinzufügen</DialogTitle>
               <DialogDescription>
-                Connect a new 3D printer via API or OctoPrint
+                Verbinden Sie einen neuen 3D-Drucker über API oder OctoPrint
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Machine Name</Label>
+                <Label htmlFor="name">Maschinenname</Label>
                 <Input
                   id="name"
-                  placeholder="e.g., Prusa i3 MK3S+"
+                  placeholder="z.B. Prusa i3 MK3S+"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   required
@@ -174,10 +185,10 @@ const MachinesTab: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="type">Printer Type</Label>
-                <Select onValueChange={(value) => handleInputChange('type', value)} required>
+                <Label htmlFor="printer_type">Druckertyp</Label>
+                <Select onValueChange={(value) => handleInputChange('printer_type', value)} required>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select printer type" />
+                    <SelectValue placeholder="Druckertyp auswählen" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="fdm">FDM</SelectItem>
@@ -189,64 +200,60 @@ const MachinesTab: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="connectionType">Connection Type</Label>
-                <Select onValueChange={(value) => handleInputChange('connectionType', value)} required>
+                <Label htmlFor="connection_type">Verbindungstyp</Label>
+                <Select onValueChange={(value) => handleInputChange('connection_type', value)} required>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select connection type" />
+                    <SelectValue placeholder="Verbindungstyp auswählen" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="octoprint">OctoPrint</SelectItem>
+                    <SelectItem value="prusalink">PrusaLink</SelectItem>
                     <SelectItem value="bambu">Bambu Lab API</SelectItem>
-                    <SelectItem value="prusa">Prusa Connect</SelectItem>
-                    <SelectItem value="custom">Custom API</SelectItem>
+                    <SelectItem value="manual">Manuell</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="apiUrl">API URL</Label>
+                <Label htmlFor="api_url">API-URL</Label>
                 <Input
-                  id="apiUrl"
-                  placeholder="http://octopi.local or API endpoint"
-                  value={formData.apiUrl}
-                  onChange={(e) => handleInputChange('apiUrl', e.target.value)}
-                  required
+                  id="api_url"
+                  placeholder="http://octopi.local oder API-Endpunkt"
+                  value={formData.api_url}
+                  onChange={(e) => handleInputChange('api_url', e.target.value)}
                 />
               </div>
 
-              {formData.connectionType === 'octoprint' ? (
+              {formData.connection_type === 'octoprint' ? (
                 <div className="space-y-2">
-                  <Label htmlFor="apiKey">API Key</Label>
+                  <Label htmlFor="api_key">API-Schlüssel</Label>
                   <Input
-                    id="apiKey"
+                    id="api_key"
                     type="password"
-                    placeholder="OctoPrint API Key"
-                    value={formData.apiKey}
-                    onChange={(e) => handleInputChange('apiKey', e.target.value)}
-                    required
+                    placeholder="OctoPrint API-Schlüssel"
+                    value={formData.api_key}
+                    onChange={(e) => handleInputChange('api_key', e.target.value)}
                   />
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
+                    <Label htmlFor="username">Benutzername</Label>
                     <Input
                       id="username"
-                      placeholder="Username"
+                      placeholder="Benutzername"
                       value={formData.username}
                       onChange={(e) => handleInputChange('username', e.target.value)}
-                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password">Passwort</Label>
                     <Input
                       id="password"
                       type="password"
-                      placeholder="Password"
+                      placeholder="Passwort"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      required
                     />
                   </div>
                 </div>
@@ -259,10 +266,10 @@ const MachinesTab: React.FC = () => {
                   onClick={() => setIsAddMachineDialogOpen(false)}
                   className="flex-1"
                 >
-                  Cancel
+                  Abbrechen
                 </Button>
                 <Button type="submit" className="flex-1">
-                  Add Machine
+                  Maschine hinzufügen
                 </Button>
               </div>
             </form>
@@ -282,8 +289,8 @@ const MachinesTab: React.FC = () => {
                 <BarChart3 className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Machine Statistics</h3>
-                <p className="text-slate-600">View detailed analytics and performance metrics</p>
+                <h3 className="text-lg font-semibold text-slate-900">Maschinenstatistiken</h3>
+                <p className="text-slate-600">Detaillierte Analysen und Leistungsmetriken anzeigen</p>
               </div>
             </div>
             <ExternalLink className="h-5 w-5 text-slate-400" />
@@ -291,65 +298,105 @@ const MachinesTab: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      )}
+
       {/* Machine Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockMachines.map((machine) => (
-          <Card 
-            key={machine.id} 
-            className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => setSelectedMachine(machine)}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Printer className="h-5 w-5 text-slate-400" />
-                  <div>
-                    <CardTitle className="text-lg">{machine.name}</CardTitle>
-                    <CardDescription>{machine.type} • {machine.connection}</CardDescription>
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {machines.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <Printer className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Keine Maschinen gefunden</h3>
+              <p className="text-slate-600 mb-4">Fügen Sie Ihre erste 3D-Drucker hinzu, um zu beginnen.</p>
+              <Button 
+                onClick={() => setIsAddMachineDialogOpen(true)}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Erste Maschine hinzufügen
+              </Button>
+            </div>
+          ) : (
+            machines.map((machine) => (
+              <Card 
+                key={machine.id} 
+                className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => setSelectedMachine(machine)}
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Printer className="h-5 w-5 text-slate-400" />
+                      <div>
+                        <CardTitle className="text-lg">{machine.name}</CardTitle>
+                        <CardDescription>{machine.printer_type?.toUpperCase()} • {machine.connection_type}</CardDescription>
+                      </div>
+                    </div>
+                    <Badge className={getStatusColor(machine.status)}>
+                      {getStatusIcon(machine.status)}
+                      <span className="ml-1">{getStatusText(machine.status)}</span>
+                    </Badge>
                   </div>
-                </div>
-                <Badge className={getStatusColor(machine.status)}>
-                  {getStatusIcon(machine.status)}
-                  <span className="ml-1 capitalize">{machine.status}</span>
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {machine.currentJob && (
-                  <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                    <p className="text-sm text-blue-900 font-medium">Current Job:</p>
-                    <p className="text-sm text-blue-700">{machine.currentJob}</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {machine.current_job_id && (
+                      <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                        <p className="text-sm text-blue-900 font-medium">Aktueller Job:</p>
+                        <p className="text-sm text-blue-700">Job läuft...</p>
+                      </div>
+                    )}
+                    <p className="text-sm text-slate-500">Zuletzt gesehen: {formatLastSeen(machine.last_seen)}</p>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedMachine(machine);
+                        }}
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        Konfigurieren
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={(e) => handleDeleteMachine(machine.id, e)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                )}
-                <p className="text-sm text-slate-500">Last seen: {machine.lastSeen}</p>
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedMachine(machine);
-                    }}
-                  >
-                    <Settings className="h-3 w-3 mr-1" />
-                    Configure
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={(e) => e.stopPropagation()}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Machine Configuration Dialog */}
       {selectedMachine && (
         <MachineConfigDialog
-          machine={selectedMachine}
+          machine={{
+            id: selectedMachine.id,
+            name: selectedMachine.name,
+            type: selectedMachine.printer_type,
+            status: selectedMachine.status,
+            connection: selectedMachine.connection_type,
+            lastSeen: formatLastSeen(selectedMachine.last_seen),
+            currentJob: selectedMachine.current_job_id ? 'Job läuft...' : null,
+            connectionType: selectedMachine.connection_type,
+            apiUrl: selectedMachine.api_url || '',
+            apiKey: selectedMachine.api_key || '',
+            username: selectedMachine.username || ''
+          }}
           isOpen={!!selectedMachine}
           onClose={() => setSelectedMachine(null)}
           onSave={handleMachineConfigSave}
