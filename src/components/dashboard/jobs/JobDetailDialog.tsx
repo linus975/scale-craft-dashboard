@@ -1,28 +1,31 @@
 
 import React from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { 
-  ArrowUp,
+  Play, 
+  RotateCcw, 
+  Download, 
+  ArrowUp, 
   ArrowDown,
-  Plus,
-  RotateCcw,
-  Download,
+  FileText,
   Settings,
-  Loader2
+  Clock,
+  Printer
 } from 'lucide-react';
 
 interface JobDetailDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedJob: any | null;
-  loadingJobs: Set<number>;
-  onPriorityChange: (jobId: number, newPriority: 'high' | 'normal') => void;
-  onAddJob: (jobId: number) => void;
-  onRepeatJob: (jobId: number) => void;
-  onDownloadGCode: (filePath: string, fileName: string) => void;
-  onDownloadIni: (iniPath: string, fileName: string) => void;
+  selectedJob: any;
+  loadingJobs: Set<string>; // Changed from Set<number> to Set<string>
+  onPriorityChange?: (jobId: string, newPriority: 'high' | 'normal') => void; // Changed from number to string
+  onAddJob?: (jobId: string) => void; // Changed from number to string
+  onRepeatJob?: (jobId: string) => void; // Changed from number to string
+  onDownloadGCode?: (filePath: string, fileName: string) => void;
+  onDownloadIni?: (iniPath: string, fileName: string) => void;
 }
 
 export const JobDetailDialog: React.FC<JobDetailDialogProps> = ({
@@ -36,189 +39,182 @@ export const JobDetailDialog: React.FC<JobDetailDialogProps> = ({
   onDownloadGCode,
   onDownloadIni
 }) => {
+  if (!selectedJob) return null;
+
+  const isLoading = loadingJobs.has(selectedJob.id);
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'printing': return 'bg-green-100 text-green-800 border-green-200';
-      case 'queued': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'failed': return 'bg-red-100 text-red-800 border-red-200';
-      case 'paused': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'classifying': return 'bg-purple-100 text-purple-800 border-purple-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      case 'printing': return 'bg-blue-100 text-blue-800';
+      case 'queued': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'printing': return 'Printing';
-      case 'queued': return 'Queued';
-      case 'completed': return 'Completed';
-      case 'failed': return 'Failed';
-      case 'paused': return 'Paused';
-      case 'classifying': return 'Classifying';
-      default: return status;
-    }
+  const getPriorityColor = (priority: string) => {
+    return priority === 'high' 
+      ? 'bg-red-100 text-red-800' 
+      : 'bg-blue-100 text-blue-800';
   };
-
-  const getPriorityIcon = (priority: string) => {
-    return priority === 'high' ? 
-      <ArrowUp className="h-3 w-3 text-red-500" /> : 
-      <ArrowDown className="h-3 w-3 text-blue-500" />;
-  };
-
-  const handlePriorityChange = (newPriority: 'high' | 'normal') => {
-    if (selectedJob) {
-      onPriorityChange(selectedJob.id, newPriority);
-      onClose();
-    }
-  };
-
-  const handleAddJob = () => {
-    if (selectedJob) {
-      onAddJob(selectedJob.id);
-      onClose();
-    }
-  };
-
-  const handleRepeatJob = () => {
-    if (selectedJob) {
-      onRepeatJob(selectedJob.id);
-      onClose();
-    }
-  };
-
-  if (!selectedJob) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Job Details - {selectedJob.name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Job Details: {selectedJob.name}
+          </DialogTitle>
           <DialogDescription>
-            Detailed information about this print job
+            Job Number: {selectedJob.job_number || selectedJob.id}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-slate-600">Status</label>
+        
+        <div className="space-y-6 py-4">
+          {/* Status and Priority */}
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="text-sm font-medium text-gray-600 mb-1">Status</div>
               <Badge className={getStatusColor(selectedJob.status)}>
-                {getStatusText(selectedJob.status)}
+                {selectedJob.status}
               </Badge>
             </div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-gray-600 mb-1">Priority</div>
+              <Badge className={getPriorityColor(selectedJob.priority)}>
+                {selectedJob.priority === 'high' ? 'High Priority' : 'Normal Priority'}
+              </Badge>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Job Information */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-600">Quantity</label>
-              <p className="text-sm">{selectedJob.count} pieces</p>
+              <div className="text-sm font-medium text-gray-600 mb-1">Material</div>
+              <div className="text-sm">{selectedJob.material || 'Not specified'}</div>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-600">Material</label>
-              <p className="text-sm">{selectedJob.material}</p>
+              <div className="text-sm font-medium text-gray-600 mb-1">Quantity</div>
+              <div className="text-sm">{selectedJob.count || selectedJob.quantity || 1}</div>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-600">Printer</label>
-              <p className="text-sm">{selectedJob.printer}</p>
+              <div className="text-sm font-medium text-gray-600 mb-1">Estimated Time</div>
+              <div className="text-sm flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                {selectedJob.estimatedTime || 'Not calculated'}
+              </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-600">Estimated Time</label>
-              <p className="text-sm">{selectedJob.estimatedTime}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-slate-600">Priority</label>
-              <div className="flex items-center gap-1">
-                {getPriorityIcon(selectedJob.priority)}
-                <span className="text-sm capitalize">{selectedJob.priority}</span>
+              <div className="text-sm font-medium text-gray-600 mb-1">Printer</div>
+              <div className="text-sm flex items-center gap-1">
+                <Printer className="h-4 w-4" />
+                {selectedJob.printer || 'Auto-assign'}
               </div>
             </div>
           </div>
-          
-          {/* Priority Change Section */}
-          {selectedJob.status === 'queued' && (
-            <div className="border-t pt-4">
-              <label className="text-sm font-medium text-slate-600 block mb-2">Change Priority</label>
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  variant={selectedJob.priority === 'high' ? 'default' : 'outline'}
-                  onClick={() => handlePriorityChange('high')}
-                  className="flex items-center gap-1"
-                >
-                  <ArrowUp className="h-3 w-3" />
-                  High Priority
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant={selectedJob.priority === 'normal' ? 'default' : 'outline'}
-                  onClick={() => handlePriorityChange('normal')}
-                  className="flex items-center gap-1"
-                >
-                  <ArrowDown className="h-3 w-3" />
-                  Normal Priority
-                </Button>
-              </div>
-            </div>
-          )}
 
-          {/* Add Job Section for Queued Jobs */}
-          {selectedJob.status === 'queued' && (
-            <div className="border-t pt-4">
-              <Button 
-                className="w-full mb-2" 
-                onClick={handleAddJob}
-                disabled={loadingJobs.has(selectedJob.id)}
-              >
-                {loadingJobs.has(selectedJob.id) ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4 mr-2" />
-                )}
-                Add Job
-              </Button>
-            </div>
-          )}
-
-          {/* Repeat Job Section for Completed Jobs */}
-          {selectedJob.status === 'completed' && (
-            <div className="border-t pt-4">
-              <Button 
-                className="w-full mb-2" 
-                onClick={handleRepeatJob}
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Repeat Job
-              </Button>
-            </div>
-          )}
-
-          {selectedJob.progress > 0 && (
-            <div>
-              <label className="text-sm font-medium text-slate-600">Progress</label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 bg-slate-200 rounded-full h-2">
+          {selectedJob.progress !== undefined && (
+            <>
+              <Separator />
+              <div>
+                <div className="text-sm font-medium text-gray-600 mb-2">Progress</div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${selectedJob.progress}%` }}
                   ></div>
                 </div>
-                <span className="text-sm">{selectedJob.progress}%</span>
+                <div className="text-xs text-gray-500 mt-1">{selectedJob.progress}% complete</div>
+              </div>
+            </>
+          )}
+
+          <Separator />
+
+          {/* Priority Change Buttons */}
+          {onPriorityChange && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-600">Change Priority</div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPriorityChange(selectedJob.id, 'high')}
+                  disabled={selectedJob.priority === 'high' || isLoading}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                  Set High Priority
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPriorityChange(selectedJob.id, 'normal')}
+                  disabled={selectedJob.priority === 'normal' || isLoading}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                  Set Normal Priority
+                </Button>
               </div>
             </div>
           )}
-          <div className="pt-4 border-t space-y-2">
-            <Button 
-              className="w-full" 
-              onClick={() => onDownloadGCode(selectedJob.filePath, `${selectedJob.name}.gcode`)}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Download G-Code
-            </Button>
-            <Button 
-              variant="outline"
-              className="w-full" 
-              onClick={() => onDownloadIni(selectedJob.iniFile, `${selectedJob.name}.ini`)}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Download INI File
-            </Button>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 flex-wrap">
+            {onAddJob && selectedJob.status === 'queued' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAddJob(selectedJob.id)}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                <Play className="h-4 w-4" />
+                {isLoading ? 'Processing...' : 'Start Job'}
+              </Button>
+            )}
+
+            {onRepeatJob && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onRepeatJob(selectedJob.id)}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Repeat Job
+              </Button>
+            )}
+
+            {onDownloadGCode && selectedJob.filePath && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDownloadGCode(selectedJob.filePath, `${selectedJob.name}.gcode`)}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download G-Code
+              </Button>
+            )}
+
+            {onDownloadIni && selectedJob.iniFile && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDownloadIni(selectedJob.iniFile, `${selectedJob.name}.ini`)}
+                className="flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Download Settings
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
