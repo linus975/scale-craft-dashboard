@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,47 +20,46 @@ import { JobDetailDialog } from './jobs/JobDetailDialog';
 import { JobViewHeader } from './jobs/JobViewHeader';
 import { webhookService } from '@/services/webhookService';
 import { useToast } from '@/hooks/use-toast';
+import { useJobsIntegration } from '@/hooks/useJobsIntegration';
 
 const JobsTab: React.FC = () => {
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'main' | 'currentJobs' | 'allHigh' | 'allNormal' | 'allCompleted' | 'allFailed'>('main');
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [isJobDetailOpen, setIsJobDetailOpen] = useState(false);
-  const [loadingJobs, setLoadingJobs] = useState<Set<number>>(new Set());
+  const [loadingJobs, setLoadingJobs] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
-  const [jobs, setJobs] = useState([
-    { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2", priority: "normal", count: 3, estimatedTime: "2h 45m", filePath: "/gcode/gear_set.gcode", iniFile: "/settings/gear_set.ini" },
-    { id: 2, name: "Prototype Housing", status: "queued", progress: 0, material: "ABS", printer: "A1 Mini-1", priority: "high", count: 5, estimatedTime: "4h 20m", filePath: "/gcode/housing.gcode", iniFile: "/settings/housing.ini" },
-    { id: 3, name: "Bracket Design", status: "completed", progress: 100, material: "PETG", printer: "X1C-1", priority: "normal", count: 2, estimatedTime: "1h 30m", filePath: "/gcode/bracket.gcode", iniFile: "/settings/bracket.ini" },
-    { id: 4, name: "Enclosure Part", status: "failed", progress: 45, material: "PLA", printer: "Mk3-2", priority: "normal", count: 1, estimatedTime: "3h 15m", filePath: "/gcode/enclosure.gcode", iniFile: "/settings/enclosure.ini" },
-    { id: 5, name: "Phone Case Custom", status: "queued", progress: 0, material: "TPU", printer: "X1C-1", priority: "normal", count: 4, estimatedTime: "2h 10m", filePath: "/gcode/phone_case.gcode", iniFile: "/settings/phone_case.ini" },
-    { id: 6, name: "Test Print", status: "completed", progress: 100, material: "PLA", printer: "X1C-2", priority: "high", count: 1, estimatedTime: "45m", filePath: "/gcode/test.gcode", iniFile: "/settings/test.ini" },
-    { id: 7, name: "Large Component", status: "failed", progress: 20, material: "ABS", printer: "Mk3-2", priority: "normal", count: 2, estimatedTime: "6h 30m", filePath: "/gcode/large.gcode", iniFile: "/settings/large.ini" },
-  ]);
+  // Use the new print jobs system
+  const {
+    printJobs,
+    printing,
+    highPriorityJobs,
+    normalPriorityJobs,
+    completedJobs,
+    failedJobs,
+    handleRetryJob,
+    handlePriorityChange,
+    handleQuantityChange,
+    duplicatePrintJob
+  } = useJobsIntegration();
 
   if (currentView === 'currentJobs') {
     return <CurrentPrintingJobsPage onBack={() => setCurrentView('main')} />;
   }
 
-  const handleAddJob = async (jobId: number) => {
+  const handleAddJob = async (jobId: string) => {
     if (loadingJobs.has(jobId)) return;
 
     setLoadingJobs(prev => new Set(prev).add(jobId));
 
     try {
-      await webhookService.classifyJob(jobId.toString());
+      await webhookService.classifyJob(jobId);
       
       toast({
         title: "Job Classification Started",
         description: `Job ${jobId} has been sent for classification.`,
       });
-
-      setJobs(prev => prev.map(job => 
-        job.id === jobId 
-          ? { ...job, status: 'classifying' }
-          : job
-      ));
 
     } catch (error) {
       console.error('Error starting job classification:', error);
@@ -77,58 +77,12 @@ const JobsTab: React.FC = () => {
     }
   };
 
-  const handleCreateJob = (jobData: any) => {
-    const newJob = {
-      ...jobData,
-      id: Date.now(),
-      name: jobData.designName,
-      status: 'queued',
-      progress: 0,
-      count: jobData.quantity || 1,
-      estimatedTime: "2h 30m",
-      filePath: "/gcode/new_job.gcode",
-      iniFile: "/settings/new_job.ini"
-    };
-
-    setJobs(prev => {
-      if (jobData.priority === 'high') {
-        const printingJobs = prev.filter(job => job.status === 'printing');
-        const otherJobs = prev.filter(job => job.status !== 'printing');
-        return [...printingJobs, newJob, ...otherJobs];
-      } else {
-        return [...prev, newJob];
-      }
-    });
-  };
-
-  const handleRetryJob = (jobId: number) => {
-    setJobs(prev => prev.map(job => 
-      job.id === jobId 
-        ? { ...job, status: 'queued', progress: 0 }
-        : job
-    ));
-  };
-
-  const handleRepeatJob = (jobId: number) => {
-    const jobToRepeat = jobs.find(job => job.id === jobId);
-    if (jobToRepeat) {
-      const newJob = {
-        ...jobToRepeat,
-        id: Date.now(),
-        status: 'queued',
-        progress: 0,
-        name: `${jobToRepeat.name} (Copy)`
-      };
-      setJobs(prev => [...prev, newJob]);
+  const handleRepeatJob = async (jobId: string) => {
+    try {
+      await duplicatePrintJob(jobId);
+    } catch (error) {
+      console.error('Error duplicating job:', error);
     }
-  };
-
-  const handleQuantityChange = (jobId: number, change: number) => {
-    setJobs(prev => prev.map(job => 
-      job.id === jobId 
-        ? { ...job, count: Math.max(1, job.count + change) }
-        : job
-    ));
   };
 
   const handleJobClick = (job: any) => {
@@ -144,23 +98,42 @@ const JobsTab: React.FC = () => {
     console.log(`Downloading INI file from ${iniPath} as ${fileName}`);
   };
 
-  const handlePriorityChange = (jobId: number, newPriority: 'high' | 'normal') => {
-    setJobs(prev => prev.map(job => 
-      job.id === jobId 
-        ? { ...job, priority: newPriority }
-        : job
-    ));
-    
-    setIsJobDetailOpen(false);
-    console.log(`Job priority changed to ${newPriority}`);
+  const handlePriorityChangeWrapper = async (jobId: string, newPriority: 'high' | 'normal') => {
+    try {
+      await handlePriorityChange(jobId, newPriority === 'high' ? 9 : 5);
+      setIsJobDetailOpen(false);
+    } catch (error) {
+      console.error('Error changing priority:', error);
+    }
   };
 
-  // Separate jobs by priority and status
-  const printingJobs = jobs.filter(job => job.status === 'printing');
-  const highPriorityQueued = jobs.filter(job => job.status === 'queued' && job.priority === 'high');
-  const normalPriorityQueued = jobs.filter(job => job.status === 'queued' && job.priority === 'normal');
-  const completedJobs = jobs.filter(job => job.status === 'completed');
-  const failedJobs = jobs.filter(job => job.status === 'failed');
+  const handleQuantityChangeWrapper = async (jobId: string, change: number) => {
+    const job = printJobs.find(j => j.id === jobId);
+    if (job) {
+      const newQuantity = Math.max(1, job.quantity + change);
+      await handleQuantityChange(jobId, newQuantity);
+    }
+  };
+
+  // Convert print jobs to legacy format for display
+  const convertToLegacyFormat = (jobs: any[]) => {
+    return jobs.map(job => ({
+      id: job.id,
+      name: job.product_name,
+      status: job.status === 'waiting_for_classifying' ? 'queued' : 
+              job.status === 'ready_to_print' ? 'queued' :
+              job.status === 'done' ? 'completed' : job.status,
+      progress: job.status === 'completed' || job.status === 'done' ? 100 : 0,
+      material: job.material,
+      printer: job.printer_id,
+      priority: job.priority > 7 ? 'high' : 'normal',
+      count: job.quantity,
+      estimatedTime: "2h 30m", // Default estimate
+      filePath: job.gcode_file_path || "/gcode/default.gcode",
+      iniFile: "/settings/default.ini",
+      job_number: job.job_number
+    }));
+  };
 
   // Handle different views
   if (currentView === 'allHigh') {
@@ -172,7 +145,7 @@ const JobsTab: React.FC = () => {
           onBack={() => setCurrentView('main')}
         />
         <JobSection
-          jobs={highPriorityQueued}
+          jobs={convertToLegacyFormat(highPriorityJobs)}
           title="Priority Jobs"
           icon={<ArrowUp className="h-5 w-5 text-red-500" />}
           description="High priority jobs"
@@ -181,7 +154,7 @@ const JobsTab: React.FC = () => {
           currentView={currentView}
           loadingJobs={loadingJobs}
           onJobClick={handleJobClick}
-          onQuantityChange={handleQuantityChange}
+          onQuantityChange={handleQuantityChangeWrapper}
           onAddJob={handleAddJob}
           onAddNewJob={() => setIsJobDialogOpen(true)}
         />
@@ -198,7 +171,7 @@ const JobsTab: React.FC = () => {
           onBack={() => setCurrentView('main')}
         />
         <JobSection
-          jobs={normalPriorityQueued}
+          jobs={convertToLegacyFormat(normalPriorityJobs)}
           title="Normal Jobs"
           icon={<ArrowDown className="h-5 w-5 text-blue-500" />}
           description="Standard priority jobs"
@@ -207,7 +180,7 @@ const JobsTab: React.FC = () => {
           currentView={currentView}
           loadingJobs={loadingJobs}
           onJobClick={handleJobClick}
-          onQuantityChange={handleQuantityChange}
+          onQuantityChange={handleQuantityChangeWrapper}
           onAddJob={handleAddJob}
           onAddNewJob={() => setIsJobDialogOpen(true)}
         />
@@ -224,7 +197,7 @@ const JobsTab: React.FC = () => {
           onBack={() => setCurrentView('main')}
         />
         <JobSection
-          jobs={completedJobs}
+          jobs={convertToLegacyFormat(completedJobs)}
           title="Completed Jobs"
           icon={<CheckCircle className="h-5 w-5 text-blue-500" />}
           description="Successfully completed jobs"
@@ -247,7 +220,7 @@ const JobsTab: React.FC = () => {
           onBack={() => setCurrentView('main')}
         />
         <JobSection
-          jobs={failedJobs}
+          jobs={convertToLegacyFormat(failedJobs)}
           title="Failed Jobs"
           icon={<AlertCircle className="h-5 w-5 text-red-500" />}
           description="Jobs that encountered errors"
@@ -289,7 +262,7 @@ const JobsTab: React.FC = () => {
                   <CardDescription className="text-sm">Jobs currently being printed</CardDescription>
                 </div>
                 <Badge variant="outline" className="bg-white">
-                  {printingJobs.length}
+                  {printing.length}
                 </Badge>
               </div>
               <Button 
@@ -310,7 +283,7 @@ const JobsTab: React.FC = () => {
 
         {/* High Priority Queue */}
         <JobSection
-          jobs={highPriorityQueued}
+          jobs={convertToLegacyFormat(highPriorityJobs)}
           title="Priority Jobs"
           icon={<ArrowUp className="h-5 w-5 text-red-500" />}
           description="High priority jobs - will be processed next"
@@ -319,7 +292,7 @@ const JobsTab: React.FC = () => {
           currentView={currentView}
           loadingJobs={loadingJobs}
           onJobClick={handleJobClick}
-          onQuantityChange={handleQuantityChange}
+          onQuantityChange={handleQuantityChangeWrapper}
           onAddJob={handleAddJob}
           onSectionClick={() => setCurrentView('allHigh')}
           onViewAll={() => setCurrentView('allHigh')}
@@ -327,7 +300,7 @@ const JobsTab: React.FC = () => {
 
         {/* Normal Priority Queue */}
         <JobSection
-          jobs={normalPriorityQueued}
+          jobs={convertToLegacyFormat(normalPriorityJobs)}
           title="Normal Jobs"
           icon={<ArrowDown className="h-5 w-5 text-blue-500" />}
           description="Standard priority jobs"
@@ -336,7 +309,7 @@ const JobsTab: React.FC = () => {
           currentView={currentView}
           loadingJobs={loadingJobs}
           onJobClick={handleJobClick}
-          onQuantityChange={handleQuantityChange}
+          onQuantityChange={handleQuantityChangeWrapper}
           onAddJob={handleAddJob}
           onSectionClick={() => setCurrentView('allNormal')}
           onViewAll={() => setCurrentView('allNormal')}
@@ -347,7 +320,7 @@ const JobsTab: React.FC = () => {
 
         {/* Completed Jobs */}
         <JobSection
-          jobs={completedJobs}
+          jobs={convertToLegacyFormat(completedJobs)}
           title="Completed Jobs"
           icon={<CheckCircle className="h-5 w-5 text-blue-500" />}
           description="Successfully completed jobs"
@@ -363,7 +336,7 @@ const JobsTab: React.FC = () => {
 
         {/* Failed Jobs */}
         <JobSection
-          jobs={failedJobs}
+          jobs={convertToLegacyFormat(failedJobs)}
           title="Failed Jobs"
           icon={<AlertCircle className="h-5 w-5 text-red-500" />}
           description="Jobs that encountered errors"
@@ -381,7 +354,6 @@ const JobsTab: React.FC = () => {
       <JobCreationDialog
         isOpen={isJobDialogOpen}
         onClose={() => setIsJobDialogOpen(false)}
-        onCreateJob={handleCreateJob}
       />
 
       <JobDetailDialog
@@ -389,7 +361,7 @@ const JobsTab: React.FC = () => {
         onClose={() => setIsJobDetailOpen(false)}
         selectedJob={selectedJob}
         loadingJobs={loadingJobs}
-        onPriorityChange={handlePriorityChange}
+        onPriorityChange={handlePriorityChangeWrapper}
         onAddJob={handleAddJob}
         onRepeatJob={handleRepeatJob}
         onDownloadGCode={handleDownloadGCode}
