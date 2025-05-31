@@ -7,16 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { 
-  FileText,
-  ArrowUp,
-  ArrowDown
-} from 'lucide-react';
+import { FileText, ArrowUp, ArrowDown } from 'lucide-react';
+import { useDesigns } from '@/hooks/useDesigns';
+import { usePrintJobs } from '@/hooks/usePrintJobs';
 
 interface JobCreationDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateJob: (jobData: any) => void;
+  onCreateJob?: (jobData: any) => void; // Keep for backward compatibility
 }
 
 const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
@@ -24,22 +22,18 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
   onClose,
   onCreateJob
 }) => {
+  const { designs } = useDesigns();
+  const { createPrintJob } = usePrintJobs();
+  const [loading, setLoading] = useState(false);
+  
   const [jobData, setJobData] = useState({
     designId: '',
     quantity: 1,
-    priority: 'normal', // 'high' or 'normal'
+    priority: 'normal',
     material: '',
     printer: '',
     notes: ''
   });
-
-  // Mock design data - in real app this would come from your designs
-  const availableDesigns = [
-    { id: '1', name: 'Custom Phone Case', type: 'personalized', material: 'PLA' },
-    { id: '2', name: 'Gear Set v2', type: 'static', material: 'PETG' },
-    { id: '3', name: 'Prototype Housing', type: 'personalized', material: 'ABS' },
-    { id: '4', name: 'Mounting Bracket', type: 'static', material: 'PLA' }
-  ];
 
   const availablePrinters = [
     'Bambu X1C-1',
@@ -50,22 +44,48 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
 
   const materials = ['PLA', 'PETG', 'ABS', 'TPU', 'Wood Fill', 'Carbon Fiber'];
 
-  const handleSubmit = () => {
-    const selectedDesign = availableDesigns.find(d => d.id === jobData.designId);
+  const handleSubmit = async () => {
+    const selectedDesign = designs.find(d => d.id === jobData.designId);
+    if (!selectedDesign) return;
     
-    const newJob = {
-      ...jobData,
-      designName: selectedDesign?.name || '',
-      id: Date.now(),
-      status: 'queued',
-      progress: 0,
-      createdAt: new Date().toISOString()
-    };
+    setLoading(true);
+    try {
+      // Create using the new print jobs system
+      await createPrintJob({
+        product_id: selectedDesign.id,
+        product_name: selectedDesign.name,
+        ean_number: selectedDesign.ean_number,
+        quantity: jobData.quantity,
+        material: jobData.material || selectedDesign.material,
+        priority: jobData.priority === 'high' ? 9 : 5,
+        source_type: 'manual',
+        printer_id: jobData.printer || undefined,
+        notes: jobData.notes || undefined
+      });
 
-    onCreateJob(newJob);
-    onClose();
-    
-    // Reset form
+      // Also call the legacy callback if provided (for backward compatibility)
+      if (onCreateJob) {
+        const legacyJobData = {
+          ...jobData,
+          designName: selectedDesign.name,
+          id: Date.now(),
+          status: 'queued',
+          progress: 0,
+          createdAt: new Date().toISOString()
+        };
+        onCreateJob(legacyJobData);
+      }
+
+      onClose();
+      resetForm();
+    } catch (error) {
+      console.error('Error creating print job:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
     setJobData({
       designId: '',
       quantity: 1,
@@ -76,7 +96,7 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
     });
   };
 
-  const selectedDesign = availableDesigns.find(d => d.id === jobData.designId);
+  const selectedDesign = designs.find(d => d.id === jobData.designId);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -101,14 +121,14 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
                 <RadioGroupItem value="high" id="high" />
                 <Label htmlFor="high" className="flex items-center gap-2">
                   <ArrowUp className="h-4 w-4 text-red-500" />
-                  Vorrangig (Anfang der Queue)
+                  Vorrangig (Hohe Priorität)
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="normal" id="normal" />
                 <Label htmlFor="normal" className="flex items-center gap-2">
                   <ArrowDown className="h-4 w-4 text-blue-500" />
-                  Normal (Ende der Queue)
+                  Normal (Standard Priorität)
                 </Label>
               </div>
             </RadioGroup>
@@ -122,13 +142,13 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
                 <SelectValue placeholder="Wählen Sie ein Design..." />
               </SelectTrigger>
               <SelectContent>
-                {availableDesigns.map((design) => (
+                {designs.map((design) => (
                   <SelectItem key={design.id} value={design.id}>
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4" />
                       <span>{design.name}</span>
                       <Badge variant="outline" className="text-xs">
-                        {design.type}
+                        {design.design_type}
                       </Badge>
                     </div>
                   </SelectItem>
@@ -145,8 +165,13 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
                 <span className="font-medium">{selectedDesign.name}</span>
               </div>
               <div className="flex gap-2">
-                <Badge variant="outline">{selectedDesign.type}</Badge>
-                <Badge variant="outline">Standard: {selectedDesign.material}</Badge>
+                <Badge variant="outline">{selectedDesign.design_type}</Badge>
+                {selectedDesign.material && (
+                  <Badge variant="outline">Standard: {selectedDesign.material}</Badge>
+                )}
+                {selectedDesign.ean_number && (
+                  <Badge variant="outline">EAN: {selectedDesign.ean_number}</Badge>
+                )}
               </div>
             </div>
           )}
@@ -211,9 +236,9 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
           <Button 
             onClick={handleSubmit} 
             className="w-full"
-            disabled={!jobData.designId}
+            disabled={!jobData.designId || loading}
           >
-            Job erstellen
+            {loading ? 'Erstelle Job...' : 'Job erstellen'}
           </Button>
         </div>
       </DialogContent>

@@ -206,6 +206,107 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string
+          ean_number: string | null
+          id: string
+          order_id: string
+          personalization_data: Json | null
+          product_id: string | null
+          product_name: string
+          quantity: number
+          special_instructions: string | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          ean_number?: string | null
+          id?: string
+          order_id: string
+          personalization_data?: Json | null
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          special_instructions?: string | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          ean_number?: string | null
+          id?: string
+          order_id?: string
+          personalization_data?: Json | null
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          special_instructions?: string | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          currency: string | null
+          customer_email: string | null
+          customer_name: string | null
+          id: string
+          marketplace: string
+          marketplace_order_id: string | null
+          notes: string | null
+          order_date: string | null
+          order_number: string
+          shipping_address: Json | null
+          status: string
+          total_amount: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          marketplace: string
+          marketplace_order_id?: string | null
+          notes?: string | null
+          order_date?: string | null
+          order_number: string
+          shipping_address?: Json | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          marketplace?: string
+          marketplace_order_id?: string | null
+          notes?: string | null
+          order_date?: string | null
+          order_number?: string
+          shipping_address?: Json | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           content: string | null
@@ -232,6 +333,145 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      print_jobs: {
+        Row: {
+          bed_temperature: number | null
+          color: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          ean_number: string | null
+          estimated_completion: string | null
+          estimated_material_usage: number | null
+          estimated_print_time: number | null
+          failure_reason: string | null
+          gcode_file_path: string | null
+          id: string
+          infill_percentage: number | null
+          job_number: string
+          layer_height: number | null
+          material: string | null
+          model_file_path: string | null
+          notes: string | null
+          nozzle_temperature: number | null
+          parent_job_id: string | null
+          personalization_applied: boolean | null
+          personalization_data: Json | null
+          preview_image_path: string | null
+          print_speed: number | null
+          printer_id: string | null
+          priority: number | null
+          product_id: string | null
+          product_name: string
+          quantity: number
+          queued_at: string | null
+          source_order_id: string | null
+          source_order_item_id: string | null
+          source_type: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bed_temperature?: number | null
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          ean_number?: string | null
+          estimated_completion?: string | null
+          estimated_material_usage?: number | null
+          estimated_print_time?: number | null
+          failure_reason?: string | null
+          gcode_file_path?: string | null
+          id?: string
+          infill_percentage?: number | null
+          job_number: string
+          layer_height?: number | null
+          material?: string | null
+          model_file_path?: string | null
+          notes?: string | null
+          nozzle_temperature?: number | null
+          parent_job_id?: string | null
+          personalization_applied?: boolean | null
+          personalization_data?: Json | null
+          preview_image_path?: string | null
+          print_speed?: number | null
+          printer_id?: string | null
+          priority?: number | null
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          queued_at?: string | null
+          source_order_id?: string | null
+          source_order_item_id?: string | null
+          source_type?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bed_temperature?: number | null
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          ean_number?: string | null
+          estimated_completion?: string | null
+          estimated_material_usage?: number | null
+          estimated_print_time?: number | null
+          failure_reason?: string | null
+          gcode_file_path?: string | null
+          id?: string
+          infill_percentage?: number | null
+          job_number?: string
+          layer_height?: number | null
+          material?: string | null
+          model_file_path?: string | null
+          notes?: string | null
+          nozzle_temperature?: number | null
+          parent_job_id?: string | null
+          personalization_applied?: boolean | null
+          personalization_data?: Json | null
+          preview_image_path?: string | null
+          print_speed?: number | null
+          printer_id?: string | null
+          priority?: number | null
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          queued_at?: string | null
+          source_order_id?: string | null
+          source_order_item_id?: string | null
+          source_type?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_jobs_parent_job_id_fkey"
+            columns: ["parent_job_id"]
+            isOneToOne: false
+            referencedRelation: "print_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_jobs_source_order_id_fkey"
+            columns: ["source_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_jobs_source_order_item_id_fkey"
+            columns: ["source_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_ean_mapping: {
         Row: {
@@ -300,7 +540,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_job_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
