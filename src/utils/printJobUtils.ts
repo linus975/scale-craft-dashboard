@@ -4,7 +4,7 @@ import { getProductTypeByEan } from './productTypeDetection';
 import type { Database } from '@/integrations/supabase/types';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
-type PrintJobInsert = Database['public']['Tables']['print_jobs']['Insert'];
+type PrintJobInsert = Omit<Database['public']['Tables']['print_jobs']['Insert'], 'job_number'>; // Exclude job_number since it's auto-generated
 
 export const createPrintJobFromOrderItem = async (
   orderItem: OrderItem, 

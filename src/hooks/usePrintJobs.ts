@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
 type PrintJob = Database['public']['Tables']['print_jobs']['Row'];
-type PrintJobInsert = Database['public']['Tables']['print_jobs']['Insert'];
+type PrintJobInsert = Omit<Database['public']['Tables']['print_jobs']['Insert'], 'job_number'>; // Exclude job_number since it's auto-generated
 type PrintJobUpdate = Database['public']['Tables']['print_jobs']['Update'];
 
 export const usePrintJobs = () => {
@@ -105,7 +106,7 @@ export const usePrintJobs = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Benutzer nicht angemeldet');
 
-      const duplicateJobData: Omit<PrintJobInsert, 'job_number'> = {
+      const duplicateJobData: PrintJobInsert = {
         product_id: originalJob.product_id,
         product_name: `${originalJob.product_name} (Kopie)`,
         ean_number: originalJob.ean_number,
