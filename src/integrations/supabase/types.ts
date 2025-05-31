@@ -355,6 +355,7 @@ export type Database = {
           model_file_path: string | null
           notes: string | null
           nozzle_temperature: number | null
+          parameters: Json | null
           parent_job_id: string | null
           personalization_applied: boolean | null
           personalization_data: Json | null
@@ -393,6 +394,7 @@ export type Database = {
           model_file_path?: string | null
           notes?: string | null
           nozzle_temperature?: number | null
+          parameters?: Json | null
           parent_job_id?: string | null
           personalization_applied?: boolean | null
           personalization_data?: Json | null
@@ -431,6 +433,7 @@ export type Database = {
           model_file_path?: string | null
           notes?: string | null
           nozzle_temperature?: number | null
+          parameters?: Json | null
           parent_job_id?: string | null
           personalization_applied?: boolean | null
           personalization_data?: Json | null
@@ -537,7 +540,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      print_job_workflow_summary: {
+        Row: {
+          avg_hours_in_status: number | null
+          job_count: number | null
+          newest_job: string | null
+          oldest_job: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_job_number: {

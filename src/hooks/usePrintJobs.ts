@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -106,7 +105,7 @@ export const usePrintJobs = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Benutzer nicht angemeldet');
 
-      const duplicateJobData = {
+      const duplicateJobData: Omit<PrintJobInsert, 'job_number'> = {
         product_id: originalJob.product_id,
         product_name: `${originalJob.product_name} (Kopie)`,
         ean_number: originalJob.ean_number,
@@ -122,6 +121,7 @@ export const usePrintJobs = () => {
         print_speed: originalJob.print_speed,
         model_file_path: originalJob.model_file_path,
         personalization_data: originalJob.personalization_data,
+        parameters: originalJob.parameters,
         priority: originalJob.priority,
         notes: `Kopie von Job ${originalJob.job_number}`,
         created_by: user.id

@@ -1,63 +1,27 @@
 
-import { useEanMapping } from '@/hooks/useEanMapping';
+import { supabase } from '@/integrations/supabase/client';
 
-export interface ProductTypeResult {
-  productType: 'static' | 'personalized' | 'unknown';
-  requiresPersonalization: boolean;
-  canDirectToQueue: boolean;
-}
+export const getProductTypeByEan = async (eanNumber: string): Promise<'static' | 'personalized' | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('product_ean_mapping')
+      .select('product_type')
+      .eq('ean_number', eanNumber)
+      .maybeSingle();
 
-export const useProductTypeDetection = () => {
-  const { getProductTypeByEan } = useEanMapping();
-
-  const detectProductType = async (eanNumber: string): Promise<ProductTypeResult> => {
-    try {
-      const productType = await getProductTypeByEan(eanNumber);
-      
-      if (!productType) {
-        return {
-          productType: 'unknown',
-          requiresPersonalization: false,
-          canDirectToQueue: false
-        };
-      }
-
-      return {
-        productType,
-        requiresPersonalization: productType === 'personalized',
-        canDirectToQueue: productType === 'static'
-      };
-    } catch (error) {
-      console.error('Error detecting product type:', error);
-      return {
-        productType: 'unknown',
-        requiresPersonalization: false,
-        canDirectToQueue: false
-      };
+    if (error) {
+      console.error('Error fetching product type by EAN:', error);
+      return null;
     }
-  };
 
-  const processOrderByEan = async (eanNumber: string, orderData: any) => {
-    const result = await detectProductType(eanNumber);
-    
-    console.log(`Product type detected for EAN ${eanNumber}:`, result);
-    
-    if (result.canDirectToQueue) {
-      console.log('Static product detected - can go directly to job queue');
-      // TODO: Add logic to send directly to job queue
-      return { action: 'queue', result };
-    } else if (result.requiresPersonalization) {
-      console.log('Personalized product detected - requires personalization step');
-      // TODO: Add logic to show personalization interface
-      return { action: 'personalize', result };
-    } else {
-      console.log('Unknown product type - manual intervention required');
-      return { action: 'manual', result };
+    if (!data) {
+      // If no mapping exists, default to personalized for safety
+      return 'personalized';
     }
-  };
 
-  return {
-    detectProductType,
-    processOrderByEan
-  };
+    return data.product_type as 'static' | 'personalized';
+  } catch (error) {
+    console.error('Error in getProductTypeByEan:', error);
+    return null;
+  }
 };
