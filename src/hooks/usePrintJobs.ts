@@ -35,14 +35,14 @@ export const usePrintJobs = () => {
     }
   };
 
-  const createPrintJob = async (jobData: Omit<PrintJobInsert, 'created_by'>) => {
+  const createPrintJob = async (jobData: PrintJobInsert) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Benutzer nicht angemeldet');
 
       const { data, error } = await supabase
         .from('print_jobs')
-        .insert({ ...jobData, created_by: user.id })
+        .insert({ ...jobData, created_by: user.id } as any)
         .select()
         .single();
 
@@ -125,12 +125,11 @@ export const usePrintJobs = () => {
         parameters: originalJob.parameters,
         priority: originalJob.priority,
         notes: `Kopie von Job ${originalJob.job_number}`,
-        created_by: user.id
       };
 
       const { data, error } = await supabase
         .from('print_jobs')
-        .insert(duplicateJobData)
+        .insert({ ...duplicateJobData, created_by: user.id } as any)
         .select()
         .single();
 
