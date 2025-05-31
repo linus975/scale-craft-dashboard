@@ -1,4 +1,5 @@
 
+
 const WEBHOOK_ENDPOINTS = {
   CLASSIFY_JOB: 'https://n8n.melemeng.com/webhook/classify-job'
 } as const;
@@ -16,16 +17,16 @@ export const webhookService = {
   async classifyJob(jobId: string): Promise<ClassifyJobResponse> {
     try {
       console.log('Sending webhook to classify job:', jobId);
-      const response = await fetch(WEBHOOK_ENDPOINTS.CLASSIFY_JOB, {
-        method: 'POST',
+      
+      // Use GET request with query parameters
+      const url = `${WEBHOOK_ENDPOINTS.CLASSIFY_JOB}?source=marketplace&job_id=${jobId}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
         mode: 'no-cors', // Bypass CORS restrictions
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ job_id: jobId }),
       });
 
-      console.log('Webhook request sent successfully (no-cors mode)');
+      console.log('Webhook GET request sent successfully (no-cors mode)');
       
       // In no-cors mode, we can't read the response, so we assume success
       // if no error was thrown during the fetch
@@ -39,3 +40,4 @@ export const webhookService = {
     }
   }
 };
+
