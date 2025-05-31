@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,16 +20,22 @@ import {
   Download,
   FileCode,
   ArrowLeft,
-  Settings
+  Settings,
+  Loader2
 } from 'lucide-react';
 import JobCreationDialog from './JobCreationDialog';
 import CurrentPrintingJobsPage from './CurrentPrintingJobsPage';
+import { webhookService } from '@/services/webhookService';
+import { useToast } from '@/hooks/use-toast';
 
 const JobsTab: React.FC = () => {
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'main' | 'currentJobs' | 'allHigh' | 'allNormal' | 'allCompleted' | 'allFailed'>('main');
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [isJobDetailOpen, setIsJobDetailOpen] = useState(false);
+  const [loadingJobs, setLoadingJobs] = useState<Set<number>>(new Set());
+  const { toast } = useToast();
+
   const [jobs, setJobs] = useState([
     { id: 1, name: "Custom Gear Set", status: "printing", progress: 75, material: "PLA", printer: "X1C-2", priority: "normal", count: 3, estimatedTime: "2h 45m", filePath: "/gcode/gear_set.gcode", iniFile: "/settings/gear_set.ini" },
     { id: 2, name: "Prototype Housing", status: "queued", progress: 0, material: "ABS", printer: "A1 Mini-1", priority: "high", count: 5, estimatedTime: "4h 20m", filePath: "/gcode/housing.gcode", iniFile: "/settings/housing.ini" },
@@ -45,6 +50,42 @@ const JobsTab: React.FC = () => {
     return <CurrentPrintingJobsPage onBack={() => setCurrentView('main')} />;
   }
 
+  const handleAddJob = async (jobId: number) => {
+    if (loadingJobs.has(jobId)) return; // Prevent multiple calls
+
+    setLoadingJobs(prev => new Set(prev).add(jobId));
+
+    try {
+      await webhookService.classifyJob(jobId.toString());
+      
+      toast({
+        title: "Job Classification Started",
+        description: `Job ${jobId} has been sent for classification.`,
+      });
+
+      // Optionally update job status
+      setJobs(prev => prev.map(job => 
+        job.id === jobId 
+          ? { ...job, status: 'classifying' }
+          : job
+      ));
+
+    } catch (error) {
+      console.error('Error starting job classification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start job classification. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingJobs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(jobId);
+        return newSet;
+      });
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'printing': return <Play className="h-4 w-4 text-green-500" />;
@@ -52,6 +93,7 @@ const JobsTab: React.FC = () => {
       case 'completed': return <CheckCircle className="h-4 w-4 text-blue-500" />;
       case 'failed': return <AlertCircle className="h-4 w-4 text-red-500" />;
       case 'paused': return <Pause className="h-4 w-4 text-orange-500" />;
+      case 'classifying': return <Loader2 className="h-4 w-4 text-purple-500 animate-spin" />;
       default: return <Clock className="h-4 w-4 text-gray-500" />;
     }
   };
@@ -63,7 +105,20 @@ const JobsTab: React.FC = () => {
       case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'failed': return 'bg-red-100 text-red-800 border-red-200';
       case 'paused': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'classifying': return 'bg-purple-100 text-purple-800 border-purple-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'printing': return 'Printing';
+      case 'queued': return 'Queued';
+      case 'completed': return 'Completed';
+      case 'failed': return 'Failed';
+      case 'paused': return 'Paused';
+      case 'classifying': return 'Classifying';
+      default: return status;
     }
   };
 
@@ -275,8 +330,30 @@ const JobsTab: React.FC = () => {
                       </Button>
                     </div>
                   )}
+                  
+                  {/* Add Job Button for queued jobs */}
+                  {job.status === 'queued' && (
+                    <Button 
+                      size="sm" 
+                      variant="default"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddJob(job.id);
+                      }}
+                      disabled={loadingJobs.has(job.id)}
+                      className="ml-2"
+                    >
+                      {loadingJobs.has(job.id) ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Plus className="h-3 w-3 mr-1" />
+                      )}
+                      Add Job
+                    </Button>
+                  )}
+
                   <Badge className={getStatusColor(job.status)}>
-                    {job.status}
+                    {getStatusText(job.status)}
                   </Badge>
                   {showRetry && (
                     <Button 
@@ -516,7 +593,7 @@ const JobsTab: React.FC = () => {
                 <div>
                   <label className="text-sm font-medium text-slate-600">Status</label>
                   <Badge className={getStatusColor(selectedJob.status)}>
-                    {selectedJob.status}
+                    {getStatusText(selectedJob.status)}
                   </Badge>
                 </div>
                 <div>
@@ -568,6 +645,27 @@ const JobsTab: React.FC = () => {
                       Normal Priority
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {/* Add Job Section for Queued Jobs */}
+              {selectedJob.status === 'queued' && (
+                <div className="border-t pt-4">
+                  <Button 
+                    className="w-full mb-2" 
+                    onClick={() => {
+                      handleAddJob(selectedJob.id);
+                      setIsJobDetailOpen(false);
+                    }}
+                    disabled={loadingJobs.has(selectedJob.id)}
+                  >
+                    {loadingJobs.has(selectedJob.id) ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4 mr-2" />
+                    )}
+                    Add Job
+                  </Button>
                 </div>
               )}
 
