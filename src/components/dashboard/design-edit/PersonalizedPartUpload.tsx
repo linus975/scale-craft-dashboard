@@ -9,7 +9,7 @@ interface PersonalizedPartUploadProps {
   partName: string;
   partId: string;
   uploading: boolean;
-  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, partId?: string, expectedFileType?: 'f3d' | 'ini' | 'gcode') => void;
   uploadedFiles: any[];
   onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
 }
@@ -34,6 +34,15 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
     }
   };
 
+  // Separate upload handlers for CAD and INI files
+  const handleCADFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onFileUpload(event, partId, 'f3d');
+  };
+
+  const handleINIFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onFileUpload(event, partId, 'ini');
+  };
+
   return (
     <div className="space-y-4">
       {/* CAD and INI Files Side by Side */}
@@ -48,7 +57,8 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
           partId={partId}
           uploading={uploading}
           uploadedFiles={uploadedFiles}
-          onFileUpload={onFileUpload}
+          onFileUpload={handleCADFileUpload}
+          expectedFileType="f3d"
         />
 
         {/* INI File Upload */}
@@ -61,7 +71,8 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
           partId={partId}
           uploading={uploading}
           uploadedFiles={uploadedFiles}
-          onFileUpload={onFileUpload}
+          onFileUpload={handleINIFileUpload}
+          expectedFileType="ini"
         />
       </div>
 

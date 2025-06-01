@@ -8,7 +8,7 @@ interface FileUploadProps {
   partId: string;
   uploading: boolean;
   partType?: 'static' | 'personalized';
-  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, partId?: string, expectedFileType?: 'f3d' | 'ini' | 'gcode') => void;
   uploadedFiles?: any[];
   onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
 }

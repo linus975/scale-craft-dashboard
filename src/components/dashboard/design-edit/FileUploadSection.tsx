@@ -15,6 +15,7 @@ interface FileUploadSectionProps {
   uploading: boolean;
   uploadedFiles: any[];
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  expectedFileType?: 'f3d' | 'ini' | 'gcode';
 }
 
 const FileUploadSection: React.FC<FileUploadSectionProps> = ({
@@ -26,23 +27,30 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   partId,
   uploading,
   uploadedFiles,
-  onFileUpload
+  onFileUpload,
+  expectedFileType
 }) => {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
     onFileUpload(event);
   };
 
-  const getFilesByType = (fileExtension: string) => {
-    return uploadedFiles.filter(file => 
-      file.partId === partId && file.name.toLowerCase().endsWith(fileExtension)
-    );
+  const getFilesByTypeAndContext = () => {
+    return uploadedFiles.filter(file => {
+      const hasCorrectPartId = file.partId === partId;
+      const hasCorrectExtension = extensions.split(',').some(ext => 
+        file.name.toLowerCase().endsWith(ext.trim())
+      );
+      
+      // Filter by upload context if expectedFileType is specified
+      const hasCorrectContext = expectedFileType ? 
+        file.uploadContext === expectedFileType : true;
+      
+      return hasCorrectPartId && hasCorrectExtension && hasCorrectContext;
+    });
   };
 
-  const relevantFiles = extensions.split(',').map(ext => ext.trim()).reduce((acc, ext) => {
-    return acc.concat(getFilesByType(ext));
-  }, []);
-
+  const relevantFiles = getFilesByTypeAndContext();
   const hasFiles = relevantFiles.length > 0;
   const hasExactlyOne = relevantFiles.length === 1;
   const tooManyFiles = relevantFiles.length > 1;

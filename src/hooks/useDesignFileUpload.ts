@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,7 +32,7 @@ export const useDesignFileUpload = () => {
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, partId?: string) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, partId?: string, expectedFileType?: 'f3d' | 'ini' | 'gcode') => {
     const files = event.target.files;
     if (!files) return;
 
@@ -43,6 +42,39 @@ export const useDesignFileUpload = () => {
     setTimeout(() => {
       const newFiles = Array.from(files).map(file => {
         const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        
+        // Validate file type if expectedFileType is specified
+        if (expectedFileType) {
+          if (expectedFileType === 'f3d' && fileExtension !== 'f3d') {
+            toast({
+              title: "Wrong file type",
+              description: "Please upload a .f3d file for CAD.",
+              variant: "destructive",
+            });
+            setUploading(false);
+            return null;
+          }
+          
+          if (expectedFileType === 'ini' && fileExtension !== 'ini') {
+            toast({
+              title: "Wrong file type", 
+              description: "Please upload a .ini file for configuration.",
+              variant: "destructive",
+            });
+            setUploading(false);
+            return null;
+          }
+          
+          if (expectedFileType === 'gcode' && !['gcode', 'g'].includes(fileExtension || '')) {
+            toast({
+              title: "Wrong file type",
+              description: "Please upload a .gcode or .g file.",
+              variant: "destructive",
+            });
+            setUploading(false);
+            return null;
+          }
+        }
         
         return {
           id: Date.now() + Math.random() + '',
@@ -57,17 +89,29 @@ export const useDesignFileUpload = () => {
           fileExtension: fileExtension,
           // Separate storage for F3D and INI files
           isF3DFile: fileExtension === 'f3d',
-          isINIFile: fileExtension === 'ini'
+          isINIFile: fileExtension === 'ini',
+          // Add upload context to distinguish between different upload areas
+          uploadContext: expectedFileType || 'general'
         };
-      });
+      }).filter(file => file !== null);
+
+      if (newFiles.length === 0) {
+        setUploading(false);
+        return;
+      }
 
       // Remove existing files of the same type and part to ensure only one F3D and one INI per part
       setUploadedFiles(prev => {
         const filteredPrev = prev.filter(existingFile => {
-          const newFileTypes = newFiles.map(nf => ({ extension: nf.fileExtension, partId: nf.partId }));
+          const newFileTypes = newFiles.map(nf => ({ 
+            extension: nf?.fileExtension, 
+            partId: nf?.partId,
+            uploadContext: nf?.uploadContext
+          }));
           return !newFileTypes.some(nf => 
             nf.extension === existingFile.fileExtension && 
-            nf.partId === existingFile.partId
+            nf.partId === existingFile.partId &&
+            nf.uploadContext === existingFile.uploadContext
           );
         });
         return [...filteredPrev, ...newFiles];
