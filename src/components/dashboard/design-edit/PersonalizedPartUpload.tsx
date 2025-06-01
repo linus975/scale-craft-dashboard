@@ -35,38 +35,41 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
   };
 
   return (
-    <div className="space-y-3">
-      {/* CAD File Upload */}
-      <FileUploadSection
-        title={`CAD File for "${partName}"`}
-        accept=".f3d"
-        extensions=".f3d"
-        inputId={`cadFileUpload-${partId}`}
-        required={true}
-        partId={partId}
-        uploading={uploading}
-        uploadedFiles={uploadedFiles}
-        onFileUpload={onFileUpload}
-      />
+    <div className="space-y-4">
+      {/* CAD and INI Files Side by Side */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* CAD File Upload */}
+        <FileUploadSection
+          title={`CAD-Datei für "${partName}"`}
+          accept=".f3d"
+          extensions=".f3d"
+          inputId={`cadFileUpload-${partId}`}
+          required={true}
+          partId={partId}
+          uploading={uploading}
+          uploadedFiles={uploadedFiles}
+          onFileUpload={onFileUpload}
+        />
 
-      {/* INI File Upload */}
-      <FileUploadSection
-        title="INI Configuration File"
-        accept=".ini"
-        extensions=".ini"
-        inputId={`iniFileUpload-${partId}`}
-        required={true}
-        partId={partId}
-        uploading={uploading}
-        uploadedFiles={uploadedFiles}
-        onFileUpload={onFileUpload}
-      />
+        {/* INI File Upload */}
+        <FileUploadSection
+          title="INI-Konfigurationsdatei"
+          accept=".ini"
+          extensions=".ini"
+          inputId={`iniFileUpload-${partId}`}
+          required={true}
+          partId={partId}
+          uploading={uploading}
+          uploadedFiles={uploadedFiles}
+          onFileUpload={onFileUpload}
+        />
+      </div>
 
       {/* CAD Parameters */}
       <CADParametersInputs partId={partId} />
 
       {/* Nozzle Diameter and Filament Type */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-4">
         <NozzleDiameterInput
           id={`personalizedNozzleDiameter-${partId}`}
           required={true}
