@@ -46,7 +46,7 @@ const PartNameEditor: React.FC<PartNameEditorProps> = ({
   };
 
   return (
-    <div className="col-span-3">
+    <div className="col-span-3 pr-1">
       <Label>Select Part</Label>
       {isEditing ? (
         <Input
