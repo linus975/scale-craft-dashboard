@@ -11,6 +11,7 @@ interface UploadedFile {
   uploadDate: string;
   path: string;
   originalName?: string;
+  partId?: string;
 }
 
 export const useDesignFiles = (design: any, isOpen: boolean) => {
@@ -102,7 +103,8 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           size: 'Unknown',
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: design.gcode_file_path,
-          originalName: fileName
+          originalName: fileName,
+          partId: 'main'
         });
       }
 
@@ -115,7 +117,8 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           size: `${(design.gcode.length / 1024).toFixed(1)} KB`,
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: '',
-          originalName: `${design.name || 'design'}.gcode`
+          originalName: `${design.name || 'design'}.gcode`,
+          partId: 'main'
         });
       }
       
@@ -129,7 +132,8 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           size: 'Unknown',
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: design.cad_file_path,
-          originalName: fileName
+          originalName: fileName,
+          partId: 'main'
         });
       }
 
@@ -143,7 +147,8 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           size: 'Unknown',
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: design.ini_file_path,
-          originalName: fileName
+          originalName: fileName,
+          partId: 'main'
         });
       }
 
@@ -157,7 +162,8 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           size: 'Unknown',
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: design.preview_image_path,
-          originalName: fileName
+          originalName: fileName,
+          partId: 'main'
         });
       }
 
@@ -178,6 +184,10 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
               const fullPath = `${designFolderPath}${file.name}`;
               // Only add if not already in the list
               if (!files.find(f => f.path === fullPath)) {
+                // Extract part ID from filename if it exists
+                const partMatch = file.name.match(/^part-([^_]+)_/);
+                const partId = partMatch ? partMatch[1] : 'main';
+                
                 files.push({
                   id: file.id || file.name,
                   name: file.name,
@@ -185,7 +195,8 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
                   size: file.metadata?.size ? `${(file.metadata.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown',
                   uploadDate: new Date(file.created_at || design.created_at).toISOString().split('T')[0],
                   path: fullPath,
-                  originalName: file.name
+                  originalName: file.name,
+                  partId: partId
                 });
               }
             }
@@ -203,14 +214,20 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partId: string = 'main') => {
     const files = event.target.files;
     if (!files || !design?.id) return;
 
     try {
       for (const file of Array.from(files)) {
+        // Add part prefix to filename if not main part
+        const fileName = partId === 'main' ? file.name : `part-${partId}_${file.name}`;
+        
         // Upload files to a design-specific folder
-        const filePath = await uploadFile(file, `designs/${design.id}`);
+        const filePath = await uploadFile(
+          new File([file], fileName, { type: file.type }), 
+          `designs/${design.id}`
+        );
         
         const newFile: UploadedFile = {
           id: Date.now() + Math.random() + '',
@@ -219,14 +236,15 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
           uploadDate: new Date().toISOString().split('T')[0],
           path: filePath,
-          originalName: file.name
+          originalName: file.name,
+          partId: partId
         };
         
         setUploadedFiles(prev => [...prev, newFile]);
         
         toast({
           title: "Datei hochgeladen",
-          description: `${file.name} wurde erfolgreich hochgeladen.`,
+          description: `${file.name} wurde erfolgreich zu "${partId === 'main' ? 'Hauptteil' : partId}" hinzugefügt.`,
         });
       }
       

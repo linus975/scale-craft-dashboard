@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +15,7 @@ interface UploadedFile {
   uploadDate: string;
   path: string;
   originalName?: string;
+  partId?: string;
 }
 
 interface FormData {
@@ -37,7 +37,7 @@ interface DesignFormProps {
   onSelectChange: (field: string, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
-  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, partId?: string) => void;
   onFileRemove: (file: UploadedFile) => void;
   onFileDownload: (file: UploadedFile) => void;
 }
@@ -147,7 +147,7 @@ const DesignForm: React.FC<DesignFormProps> = ({
 
       <Separator />
 
-      {/* File Management */}
+      {/* File Management with Part Support */}
       <FileManagement
         uploadedFiles={uploadedFiles}
         loadingFiles={loadingFiles}
