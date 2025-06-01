@@ -565,7 +565,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                               onClick={handleAddCategory}
                               title="Add category"
                               disabled={editingCategory !== null}
-                              className={editingCategory ? 'opacity-50 cursor-not-allowed text-gray-400' : ''}
+                              className={editingCategory ? 'text-gray-400' : ''}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -619,7 +619,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                               type="button"
                               variant="outline"
                               size="icon"
-                              className={`border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 ${editingCategory ? 'opacity-50 cursor-not-allowed text-gray-400' : ''}`}
+                              className={`border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 ${editingCategory ? 'text-gray-400' : ''}`}
                               title="Delete category"
                               disabled={editingCategory !== null}
                             >
@@ -659,7 +659,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               <CardTitle>Manage Files</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+              {/* CAD Software and Slicer Software */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="space-y-2">
                   <Label>CAD-Software</Label>
                   <Select>
@@ -695,7 +696,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Farbe and Machine */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <FormField
                   control={form.control}
                   name="color"
