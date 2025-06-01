@@ -198,6 +198,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
           <FileUpload
             partName={currentPart.name}
             partId={currentPart.id}
+            partType={currentPart.partType}
             uploading={uploading}
             onFileUpload={handleFileUpload}
           />
