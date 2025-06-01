@@ -13,19 +13,36 @@ export const useFileUpload = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Benutzer nicht angemeldet');
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
+      // Use the original filename but check if it already exists
+      let fileName = file.name;
       const filePath = folder ? `${user.id}/${folder}/${fileName}` : `${user.id}/${fileName}`;
+
+      // Check if file already exists
+      const { data: existingFile } = await supabase.storage
+        .from('design-files')
+        .list(folder ? `${user.id}/${folder}` : user.id, {
+          search: fileName
+        });
+
+      // If file exists, add timestamp to make it unique
+      if (existingFile && existingFile.length > 0) {
+        const fileExt = file.name.split('.').pop();
+        const fileNameWithoutExt = file.name.replace(`.${fileExt}`, '');
+        const timestamp = Date.now();
+        fileName = `${fileNameWithoutExt}_${timestamp}.${fileExt}`;
+      }
+
+      const finalFilePath = folder ? `${user.id}/${folder}/${fileName}` : `${user.id}/${fileName}`;
 
       const { data, error } = await supabase.storage
         .from('design-files')
-        .upload(filePath, file);
+        .upload(finalFilePath, file);
 
       if (error) throw error;
 
       toast({
         title: "Datei hochgeladen",
-        description: `Die Datei "${file.name}" wurde erfolgreich hochgeladen.`,
+        description: `Die Datei "${fileName}" wurde erfolgreich hochgeladen.`,
       });
 
       return data.path;
