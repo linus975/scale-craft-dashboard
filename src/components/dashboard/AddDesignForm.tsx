@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -134,14 +135,16 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     console.log('Downloading file:', file.name);
   };
 
-  const handlePartParametersChange = (partId: string, field: string, value: string) => {
+  // Fix the function signature to match what MultiPartFileManager expects
+  const handlePartParametersChange = (partId: string, parameters: { sketchName: string; replacementValue: string }) => {
     setDesignParts(prev => prev.map(part => 
       part.id === partId 
         ? { 
             ...part, 
             parameters: { 
               ...part.parameters, 
-              [field]: value 
+              sketchName: parameters.sketchName,
+              replacementValue: parameters.replacementValue
             } 
           }
         : part
