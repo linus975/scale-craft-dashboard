@@ -25,12 +25,29 @@ interface FormData {
   designType: string;
 }
 
+interface DesignPart {
+  id: string;
+  name: string;
+  files: any[];
+  partType?: 'static' | 'personalized';
+  parameters?: {
+    sketchName?: string;
+    replacementValue?: string;
+    replacementType?: 'text' | 'dimension';
+  };
+  cadSoftware?: string;
+  slicer?: string;
+}
+
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [selectedPartId, setSelectedPartId] = useState<string>('');
-  const [partParameters, setPartParameters] = useState<Record<string, { sketchName: string; replacementValue: string }>>({});
+  const [designParts, setDesignParts] = useState<DesignPart[]>([
+    { id: 'main', name: 'Hauptteil', files: [], partType: 'static' }
+  ]);
+  const [activePart, setActivePart] = useState<string>('main');
   
   const { createDesign } = useDesigns();
   const { toast } = useToast();
@@ -69,7 +86,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         uploadDate: new Date().toISOString().split('T')[0],
         path: `temp/${file.name}`,
         originalName: file.name,
-        partId: partId || 'main',
+        partId: partId || activePart,
         designType: 'static' as const
       }));
 
@@ -117,32 +134,129 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     console.log('Downloading file:', file.name);
   };
 
-  const handlePartParametersChange = (partId: string, parameters: { sketchName: string; replacementValue: string }) => {
-    setPartParameters(prev => ({
-      ...prev,
-      [partId]: parameters
-    }));
+  const handlePartParametersChange = (partId: string, field: string, value: string) => {
+    setDesignParts(prev => prev.map(part => 
+      part.id === partId 
+        ? { 
+            ...part, 
+            parameters: { 
+              ...part.parameters, 
+              [field]: value 
+            } 
+          }
+        : part
+    ));
   };
 
   const handlePartSelect = (partId: string) => {
     setSelectedPartId(partId);
+    setActivePart(partId);
+  };
+
+  const handleAddPart = (name: string) => {
+    const newPart: DesignPart = {
+      id: Date.now().toString(),
+      name,
+      files: [],
+      partType: 'static'
+    };
+    setDesignParts(prev => [...prev, newPart]);
+    setActivePart(newPart.id);
+  };
+
+  const handleRemovePart = (partId: string) => {
+    if (designParts.length <= 1) return;
+    
+    setDesignParts(prev => prev.filter(part => part.id !== partId));
+    setUploadedFiles(prev => prev.filter(file => file.partId !== partId));
+    
+    if (activePart === partId) {
+      setActivePart(designParts[0].id);
+    }
+  };
+
+  const handleRenamePart = (partId: string, newName: string) => {
+    setDesignParts(prev => prev.map(part =>
+      part.id === partId ? { ...part, name: newName } : part
+    ));
+  };
+
+  const handlePartTypeChange = (partId: string, partType: 'static' | 'personalized') => {
+    setDesignParts(prev => prev.map(part =>
+      part.id === partId ? { ...part, partType } : part
+    ));
+  };
+
+  const handlePartSoftwareChange = (partId: string, field: 'cadSoftware' | 'slicer', value: string) => {
+    setDesignParts(prev => prev.map(part =>
+      part.id === partId ? { ...part, [field]: value } : part
+    ));
+  };
+
+  const validatePartFiles = (part: DesignPart) => {
+    const partFiles = uploadedFiles.filter(file => file.partId === part.id);
+    const hasF3D = partFiles.some(file => file.name.toLowerCase().endsWith('.f3d'));
+    const hasINI = partFiles.some(file => file.name.toLowerCase().endsWith('.ini'));
+    const hasPersonalizedFiles = partFiles.some(file => 
+      file.name.toLowerCase().endsWith('.f3d') || file.name.toLowerCase().endsWith('.ini')
+    );
+    
+    return { hasF3D, hasINI, hasPersonalizedFiles };
   };
 
   const onSubmit = async (data: FormData) => {
     try {
+      // Sammle alle relevanten Daten
+      const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
+      const partFiles = uploadedFiles.filter(file => file.partId === activePart);
+      
+      // Finde spezifische Dateitypen
+      const f3dFile = partFiles.find(file => file.name.toLowerCase().endsWith('.f3d'));
+      const iniFile = partFiles.find(file => file.name.toLowerCase().endsWith('.ini'));
+      const gcodeFile = partFiles.find(file => file.name.toLowerCase().endsWith('.gcode'));
+      const stlFile = partFiles.find(file => file.name.toLowerCase().endsWith('.stl'));
+
       const designData = {
         name: data.name,
         tracking_type: data.trackingType,
         ean_number: data.eanNumber,
         description: data.description,
         category: data.category,
-        design_type: data.designType
+        design_type: data.designType,
+        // Dateipfade
+        cad_file_path: f3dFile?.path || null,
+        ini_file_path: iniFile?.path || null,
+        gcode_file_path: gcodeFile?.path || null,
+        preview_image_path: previewImage ? `preview/${previewImage.name}` : null,
+        // Software-Informationen für personalisierte Designs
+        cad_software: currentPart?.cadSoftware || null,
+        slicer: currentPart?.slicer || null,
+        // Parameter für personalisierte Designs
+        sketch_name: currentPart?.parameters?.sketchName || null,
+        replacement_value: currentPart?.parameters?.replacementValue || null,
+        // Zusätzliche Metadaten
+        version: 'v1.0'
       };
 
+      console.log('Speichere Design mit Daten:', designData);
+      console.log('Hochgeladene Dateien:', uploadedFiles);
+      console.log('Design Parts:', designParts);
+
       await createDesign(designData);
+      
+      toast({
+        title: "Design erfolgreich erstellt",
+        description: `Das Design "${data.name}" wurde mit allen Dateien gespeichert.`,
+      });
+      
       onSave();
     } catch (error) {
       console.error('Error creating design:', error);
+      toast({
+        title: "Fehler beim Erstellen des Designs",
+        description: "Es gab einen Fehler beim Speichern des Designs.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -213,6 +327,28 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="designType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Design-Typ</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Design-Typ auswählen" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="static">Statisch</SelectItem>
+                        <SelectItem value="personalized">Personalisierbar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="previewImage">Vorschaubild</Label>
@@ -286,6 +422,15 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onPartParametersChange={handlePartParametersChange}
                 selectedPartId={selectedPartId}
                 onPartSelect={handlePartSelect}
+                designParts={designParts}
+                activePart={activePart}
+                onPartChange={setActivePart}
+                onAddPart={handleAddPart}
+                onRemovePart={handleRemovePart}
+                onRenamePart={handleRenamePart}
+                onPartTypeChange={handlePartTypeChange}
+                onPartSoftwareChange={handlePartSoftwareChange}
+                validatePartFiles={validatePartFiles}
               />
             </CardContent>
           </Card>
