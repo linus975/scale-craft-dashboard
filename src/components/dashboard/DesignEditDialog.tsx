@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDesignFiles } from '@/hooks/useDesignFiles';
 import DesignForm from './design-edit/DesignForm';
+import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import ActionsPanel from './design-edit/ActionsPanel';
 
 interface DesignEditDialogProps {
@@ -48,14 +49,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   // Filter machines to only show idle ones
   const idleMachines = machines.filter(machine => machine.status === 'idle');
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSelectChange = (field: string, value: string) => {
+  const handleDesignChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -94,22 +88,28 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Design Information */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Design Information</CardTitle>
               </CardHeader>
               <CardContent>
                 <DesignForm
-                  design={design}
-                  formData={formData}
+                  design={{ ...design, ...formData }}
+                  onDesignChange={handleDesignChange}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>File Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MultiPartFileManager
                   uploadedFiles={uploadedFiles}
                   loadingFiles={loadingFiles}
                   uploading={uploading}
-                  onInputChange={handleInputChange}
-                  onSelectChange={handleSelectChange}
-                  onSubmit={handleSubmit}
-                  onClose={onClose}
                   onFileUpload={handleFileUpload}
                   onFileRemove={handleFileRemove}
                   onFileDownload={handleFileDownload}
