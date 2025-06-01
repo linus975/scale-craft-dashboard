@@ -7,10 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Plus, Edit, Trash2, Upload } from 'lucide-react';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface AddDesignFormProps {
   onCancel: () => void;
@@ -23,7 +25,6 @@ interface FormData {
   eanNumber: string;
   description: string;
   category: string;
-  designType: string;
 }
 
 interface DesignPart {
@@ -46,9 +47,21 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [selectedPartId, setSelectedPartId] = useState<string>('');
   const [designParts, setDesignParts] = useState<DesignPart[]>([
-    { id: 'main', name: 'Hauptteil', files: [], partType: 'static' }
+    { id: 'main', name: 'Main Part', files: [], partType: 'static' }
   ]);
   const [activePart, setActivePart] = useState<string>('main');
+  const [categories, setCategories] = useState<string[]>([
+    'Household',
+    'Toys',
+    'Tools',
+    'Decoration',
+    'Accessories',
+    'Other'
+  ]);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
   
   const { createDesign } = useDesigns();
   const { toast } = useToast();
@@ -59,10 +72,28 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       trackingType: '',
       eanNumber: '',
       description: '',
-      category: '',
-      designType: 'static'
+      category: ''
     }
   });
+
+  const trackingType = form.watch('trackingType');
+
+  const handlePreviewImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        setPreviewImage(file);
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const handlePreviewImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -95,8 +126,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setUploading(false);
       
       toast({
-        title: "Dateien hochgeladen",
-        description: `${files.length} Datei(en) wurden erfolgreich hochgeladen.`,
+        title: "Files uploaded",
+        description: `${files.length} file(s) were successfully uploaded.`,
       });
     }, 1000);
 
@@ -126,8 +157,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const handleFileRemove = (file: any) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
     toast({
-      title: "Datei gelöscht",
-      description: `${file.name} wurde erfolgreich gelöscht.`,
+      title: "File deleted",
+      description: `${file.name} was successfully deleted.`,
     });
   };
 
@@ -135,7 +166,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     console.log('Downloading file:', file.name);
   };
 
-  // Fix the function signature to match what MultiPartFileManager expects
   const handlePartParametersChange = (partId: string, parameters: { sketchName: string; replacementValue: string }) => {
     setDesignParts(prev => prev.map(part => 
       part.id === partId 
@@ -207,13 +237,52 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     return { hasF3D, hasINI, hasPersonalizedFiles };
   };
 
+  const handleAddCategory = () => {
+    if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
+      setCategories(prev => [...prev, newCategoryName.trim()]);
+      form.setValue('category', newCategoryName.trim());
+      setNewCategoryName('');
+      setIsAddingCategory(false);
+      toast({
+        title: "Category added",
+        description: `"${newCategoryName.trim()}" was added to categories.`,
+      });
+    }
+  };
+
+  const handleRenameCategory = (oldName: string, newName: string) => {
+    if (newName.trim() && !categories.includes(newName.trim())) {
+      setCategories(prev => prev.map(cat => cat === oldName ? newName.trim() : cat));
+      if (form.getValues('category') === oldName) {
+        form.setValue('category', newName.trim());
+      }
+      setEditingCategory(null);
+      setEditingCategoryName('');
+      toast({
+        title: "Category renamed",
+        description: `Category renamed to "${newName.trim()}".`,
+      });
+    }
+  };
+
+  const handleDeleteCategory = (categoryName: string) => {
+    if (categories.length > 1) {
+      setCategories(prev => prev.filter(cat => cat !== categoryName));
+      if (form.getValues('category') === categoryName) {
+        form.setValue('category', '');
+      }
+      toast({
+        title: "Category deleted",
+        description: `"${categoryName}" was removed from categories.`,
+      });
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
-      // Sammle alle relevanten Daten
       const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
       const partFiles = uploadedFiles.filter(file => file.partId === activePart);
       
-      // Finde spezifische Dateitypen
       const f3dFile = partFiles.find(file => file.name.toLowerCase().endsWith('.f3d'));
       const iniFile = partFiles.find(file => file.name.toLowerCase().endsWith('.ini'));
       const gcodeFile = partFiles.find(file => file.name.toLowerCase().endsWith('.gcode'));
@@ -225,39 +294,35 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         ean_number: data.eanNumber,
         description: data.description,
         category: data.category,
-        design_type: data.designType,
-        // Dateipfade
+        design_type: currentPart?.partType || 'static',
         cad_file_path: f3dFile?.path || null,
         ini_file_path: iniFile?.path || null,
         gcode_file_path: gcodeFile?.path || null,
         preview_image_path: previewImage ? `preview/${previewImage.name}` : null,
-        // Software-Informationen für personalisierte Designs
         cad_software: currentPart?.cadSoftware || null,
         slicer: currentPart?.slicer || null,
-        // Parameter für personalisierte Designs
         sketch_name: currentPart?.parameters?.sketchName || null,
         replacement_value: currentPart?.parameters?.replacementValue || null,
-        // Zusätzliche Metadaten
         version: 'v1.0'
       };
 
-      console.log('Speichere Design mit Daten:', designData);
-      console.log('Hochgeladene Dateien:', uploadedFiles);
+      console.log('Saving design with data:', designData);
+      console.log('Uploaded files:', uploadedFiles);
       console.log('Design Parts:', designParts);
 
       await createDesign(designData);
       
       toast({
-        title: "Design erfolgreich erstellt",
-        description: `Das Design "${data.name}" wurde mit allen Dateien gespeichert.`,
+        title: "Design successfully created",
+        description: `The design "${data.name}" was saved with all files.`,
       });
       
       onSave();
     } catch (error) {
       console.error('Error creating design:', error);
       toast({
-        title: "Fehler beim Erstellen des Designs",
-        description: "Es gab einen Fehler beim Speichern des Designs.",
+        title: "Error creating design",
+        description: "There was an error saving the design.",
         variant: "destructive",
       });
     }
@@ -266,8 +331,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-semibold">Design hinzufügen</h3>
-        <p className="text-sm text-gray-600">Erstellen Sie ein neues Design mit allen erforderlichen Informationen.</p>
+        <h3 className="text-xl font-semibold">Add Design</h3>
+        <p className="text-sm text-gray-600">Create a new design with all required information and files.</p>
       </div>
 
       <Form {...form}>
@@ -275,7 +340,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           {/* Basic Design Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Design-Informationen</CardTitle>
+              <CardTitle>Design Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -283,9 +348,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Design-Name</FormLabel>
+                    <FormLabel>Design Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Name des Designs" {...field} />
+                      <Input placeholder="Name of the design" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -298,17 +363,17 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   name="trackingType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tracking-Typ</FormLabel>
+                      <FormLabel>Tracking Type</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Tracking-Typ auswählen" />
+                            <SelectValue placeholder="Select tracking type" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="ean">EAN</SelectItem>
                           <SelectItem value="sku">SKU</SelectItem>
-                          <SelectItem value="custom">Benutzerdefiniert</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -316,50 +381,55 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="eanNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>EAN-Nummer</FormLabel>
-                      <FormControl>
-                        <Input placeholder="EAN-Nummer eingeben" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {trackingType && trackingType !== 'custom' && (
+                  <FormField
+                    control={form.control}
+                    name="eanNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>EAN / SKU</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter EAN / SKU" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
-              <FormField
-                control={form.control}
-                name="designType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Design-Typ</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Design-Typ auswählen" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="static">Statisch</SelectItem>
-                        <SelectItem value="personalized">Personalisierbar</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              {/* Product Image Drop Zone */}
               <div className="space-y-2">
-                <Label htmlFor="previewImage">Vorschaubild</Label>
+                <Label htmlFor="previewImage">Product Image</Label>
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                  onDrop={handlePreviewImageDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                  onClick={() => document.getElementById('previewImage')?.click()}
+                >
+                  {previewImage ? (
+                    <div className="space-y-2">
+                      <img
+                        src={URL.createObjectURL(previewImage)}
+                        alt="Preview"
+                        className="max-h-32 mx-auto rounded"
+                      />
+                      <p className="text-sm text-gray-600">{previewImage.name}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                      <p className="text-sm text-gray-600">Drop image here or click to upload</p>
+                      <p className="text-xs text-gray-400">PNG, JPG, GIF up to 10MB</p>
+                    </div>
+                  )}
+                </div>
                 <Input
                   id="previewImage"
                   type="file"
                   accept="image/*"
                   onChange={handlePreviewImageChange}
+                  className="hidden"
                 />
               </div>
 
@@ -368,10 +438,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Beschreibung</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Beschreibung des Designs"
+                        placeholder="Description of the design"
                         rows={3}
                         {...field}
                       />
@@ -381,38 +451,142 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 )}
               />
 
+              {/* Category with Management Options */}
               <FormField
                 control={form.control}
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Kategorie</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Kategorie auswählen" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="household">Haushalt</SelectItem>
-                        <SelectItem value="toys">Spielzeug</SelectItem>
-                        <SelectItem value="tools">Werkzeuge</SelectItem>
-                        <SelectItem value="decoration">Dekoration</SelectItem>
-                        <SelectItem value="accessories">Zubehör</SelectItem>
-                        <SelectItem value="other">Sonstiges</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Category</FormLabel>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => setIsAddingCategory(true)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Category
+                          </DropdownMenuItem>
+                          {field.value && (
+                            <>
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setEditingCategory(field.value);
+                                  setEditingCategoryName(field.value);
+                                }}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Rename Category
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteCategory(field.value)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Category
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* Add Category Dialog */}
+              {isAddingCategory && (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    placeholder="New category name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddCategory();
+                      } else if (e.key === 'Escape') {
+                        setIsAddingCategory(false);
+                        setNewCategoryName('');
+                      }
+                    }}
+                  />
+                  <Button onClick={handleAddCategory} size="sm">
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryName('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+
+              {/* Edit Category Dialog */}
+              {editingCategory && (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    placeholder="Category name"
+                    value={editingCategoryName}
+                    onChange={(e) => setEditingCategoryName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleRenameCategory(editingCategory, editingCategoryName);
+                      } else if (e.key === 'Escape') {
+                        setEditingCategory(null);
+                        setEditingCategoryName('');
+                      }
+                    }}
+                  />
+                  <Button 
+                    onClick={() => handleRenameCategory(editingCategory, editingCategoryName)} 
+                    size="sm"
+                  >
+                    Save
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setEditingCategory(null);
+                      setEditingCategoryName('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* File Management */}
           <Card>
             <CardHeader>
-              <CardTitle>Dateien verwalten</CardTitle>
+              <CardTitle>Manage Files</CardTitle>
             </CardHeader>
             <CardContent>
               <MultiPartFileManager
@@ -441,10 +615,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onCancel}>
-              Abbrechen
+              Cancel
             </Button>
             <Button type="submit">
-              Design speichern
+              Save Design
             </Button>
           </div>
         </form>
