@@ -32,6 +32,12 @@ const FileManagement: React.FC<FileManagementProps> = ({
   onFileRemove,
   onFileDownload,
 }) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Prevent event from bubbling up to dialog
+    event.stopPropagation();
+    onFileUpload(event);
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -51,14 +57,18 @@ const FileManagement: React.FC<FileManagementProps> = ({
             id="fileUpload"
             type="file"
             multiple
-            onChange={onFileUpload}
+            onChange={handleFileUpload}
             className="hidden"
             disabled={uploading}
+            onClick={(e) => e.stopPropagation()}
           />
           <Button
             type="button"
             variant="outline"
-            onClick={() => document.getElementById('fileUpload')?.click()}
+            onClick={(e) => {
+              e.stopPropagation();
+              document.getElementById('fileUpload')?.click();
+            }}
             disabled={uploading}
           >
             {uploading ? 'Hochladen...' : 'Dateien auswählen'}
@@ -92,7 +102,10 @@ const FileManagement: React.FC<FileManagementProps> = ({
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => onFileDownload(file)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFileDownload(file);
+                      }}
                       className="h-8 px-2"
                     >
                       Download
@@ -100,7 +113,10 @@ const FileManagement: React.FC<FileManagementProps> = ({
                     <Button 
                       size="sm" 
                       variant="ghost"
-                      onClick={() => onFileRemove(file)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFileRemove(file);
+                      }}
                       className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                       title={file.id === 'legacy_gcode' ? 'Legacy G-Code kann nicht gelöscht werden' : 'Datei löschen'}
                     >

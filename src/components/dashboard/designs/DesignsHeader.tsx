@@ -58,7 +58,7 @@ const DesignsHeader: React.FC<DesignsHeaderProps> = ({
               Add Design
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {!selectedDesignType ? 'Select Design Type' : 
@@ -71,45 +71,39 @@ const DesignsHeader: React.FC<DesignsHeaderProps> = ({
             </DialogHeader>
             
             {!selectedDesignType ? (
-              <div className="space-y-4">
+              <div className="space-y-4 py-2">
                 <div className="grid grid-cols-1 gap-4">
                   <Card 
-                    className="cursor-pointer hover:bg-gray-50 transition-colors border-2"
+                    className="cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-200 border-2 hover:border-blue-200 group"
                     onClick={() => handleDesignTypeSelection('static')}
                   >
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center">
-                        <FileCode className="h-5 w-5 mr-2" />
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center group-hover:text-blue-600 transition-colors">
+                        <FileCode className="h-6 w-6 mr-3 text-green-500" />
                         Static Design (G-Code)
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Upload a ready-to-print G-Code file for direct printing
+                    <CardContent className="pt-0">
+                      <p className="text-sm text-gray-600">
+                        Upload a ready-to-print G-Code file for direct printing. Perfect for finalized designs that don't need customization.
                       </p>
-                      <Button className="w-full" onClick={() => handleDesignTypeSelection('static')}>
-                        Select Static Design
-                      </Button>
                     </CardContent>
                   </Card>
                   
                   <Card 
-                    className="cursor-pointer hover:bg-gray-50 transition-colors border-2"
+                    className="cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-200 border-2 hover:border-blue-200 group"
                     onClick={() => handleDesignTypeSelection('personalized')}
                   >
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center">
-                        <Package className="h-5 w-5 mr-2" />
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center group-hover:text-blue-600 transition-colors">
+                        <Package className="h-6 w-6 mr-3 text-blue-500" />
                         Personalized Design
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Create a design with customizable parameters
+                    <CardContent className="pt-0">
+                      <p className="text-sm text-gray-600">
+                        Create a design with customizable parameters. Ideal for designs that need to be adapted for different requirements.
                       </p>
-                      <Button className="w-full" onClick={() => handleDesignTypeSelection('personalized')}>
-                        Select Personalized Design
-                      </Button>
                     </CardContent>
                   </Card>
                 </div>

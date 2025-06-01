@@ -229,6 +229,9 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           description: `${file.name} wurde erfolgreich hochgeladen.`,
         });
       }
+      
+      // Reload all files to ensure consistency
+      await loadDesignFiles();
     } catch (error) {
       console.error('Error uploading files:', error);
       toast({
@@ -238,6 +241,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
       });
     }
     
+    // Clear the input but don't close the dialog
     event.target.value = '';
   };
 
