@@ -40,12 +40,12 @@ const FileList: React.FC<FileListProps> = ({
 
   return (
     <div className="space-y-2">
-      <Label>Dateien für "{partName}"</Label>
+      <Label>Files for "{partName}"</Label>
       <div className="border rounded-lg p-4 max-h-64 overflow-y-auto">
         {loadingFiles ? (
-          <p className="text-sm text-gray-500">Dateien werden geladen...</p>
+          <p className="text-sm text-gray-500">Loading files...</p>
         ) : files.length === 0 ? (
-          <p className="text-sm text-gray-500">Keine Dateien für diesen Teil</p>
+          <p className="text-sm text-gray-500">No files for this part</p>
         ) : (
           files.map((file) => (
             <div key={file.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
@@ -68,8 +68,8 @@ const FileList: React.FC<FileListProps> = ({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="static">Statisch</SelectItem>
-                        <SelectItem value="personalized">Personalisierbar</SelectItem>
+                        <SelectItem value="static">Static</SelectItem>
+                        <SelectItem value="personalized">Personalizable</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -95,7 +95,7 @@ const FileList: React.FC<FileListProps> = ({
                     handleFileRemove(file);
                   }}
                   className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                  title="Datei löschen"
+                  title="Delete file"
                 >
                   <X className="h-3 w-3" />
                 </Button>

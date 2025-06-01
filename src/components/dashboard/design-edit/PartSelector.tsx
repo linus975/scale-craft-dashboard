@@ -74,7 +74,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-12 gap-2 items-end">
+      <div className="grid grid-cols-12 gap-4 items-end">
         {/* Part Type Selection - spans 6 columns */}
         <div className="col-span-6">
           <Label>Teilart</Label>

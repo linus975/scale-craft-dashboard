@@ -26,12 +26,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
   return (
     <div className="space-y-2">
       <Label htmlFor={`fileUpload-${partId}`}>
-        Dateien für "{partName}" hochladen
+        Upload files for "{partName}"
       </Label>
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
         <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
         <p className="text-sm text-gray-600 mb-2">
-          Dateien für {partName} hochladen
+          Upload files for {partName}
         </p>
         <Input
           id={`fileUpload-${partId}`}
@@ -52,7 +52,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           }}
           disabled={uploading}
         >
-          {uploading ? 'Hochladen...' : 'Dateien auswählen'}
+          {uploading ? 'Uploading...' : 'Select files'}
         </Button>
       </div>
     </div>
