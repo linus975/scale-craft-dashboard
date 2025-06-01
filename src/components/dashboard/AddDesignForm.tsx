@@ -492,7 +492,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <div className={`flex gap-2 ${editingCategory ? 'bg-gray-50 p-2 rounded-md' : ''}`}>
+                    <div className="flex gap-2">
                       <div className="flex-1">
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
@@ -536,7 +536,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                               onClick={handleAddCategory}
                               title="Add category"
                               disabled={editingCategory !== null}
-                              className={editingCategory ? 'opacity-50 cursor-not-allowed' : ''}
+                              className={editingCategory ? 'opacity-30 cursor-not-allowed' : 'opacity-60'}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -590,7 +590,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                               type="button"
                               variant="outline"
                               size="icon"
-                              className={`border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 ${editingCategory ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 ${editingCategory ? 'opacity-30 cursor-not-allowed' : 'opacity-60'}`}
                               title="Delete category"
                               disabled={editingCategory !== null}
                             >
