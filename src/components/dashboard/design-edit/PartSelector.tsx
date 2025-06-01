@@ -225,7 +225,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           <div>
             <Label>CAD-Software</Label>
             <Select
-              value={currentPart?.cadSoftware || ''}
+              value={currentPart?.cadSoftware}
               onValueChange={(value) => onPartSoftwareChange(activePart, 'cadSoftware', value)}
               disabled={isEditing}
             >
@@ -245,7 +245,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           <div>
             <Label>Slicer-Software</Label>
             <Select
-              value={currentPart?.slicer || ''}
+              value={currentPart?.slicer}
               onValueChange={(value) => onPartSoftwareChange(activePart, 'slicer', value)}
               disabled={isEditing}
             >
