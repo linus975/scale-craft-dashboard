@@ -58,6 +58,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     'Accessories',
     'Other'
   ]);
+  const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
   
   const { createDesign } = useDesigns();
   const { toast } = useToast();
@@ -234,7 +238,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   };
 
   const handleAddCategory = () => {
-    const newCategoryName = prompt('Enter new category name:');
+    setShowAddCategoryForm(true);
+    setNewCategoryName('');
+  };
+
+  const handleSaveNewCategory = () => {
     if (newCategoryName && newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
       setCategories(prev => [...prev, newCategoryName.trim()]);
       form.setValue('category', newCategoryName.trim());
@@ -242,10 +250,17 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         title: "Category added",
         description: `"${newCategoryName.trim()}" was added to categories.`,
       });
+      setShowAddCategoryForm(false);
+      setNewCategoryName('');
     }
   };
 
-  const handleRenameCategory = () => {
+  const handleCancelAddCategory = () => {
+    setShowAddCategoryForm(false);
+    setNewCategoryName('');
+  };
+
+  const handleStartEditCategory = () => {
     const currentCategory = form.getValues('category');
     if (!currentCategory) {
       toast({
@@ -255,16 +270,26 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       });
       return;
     }
-    
-    const newName = prompt('Enter new category name:', currentCategory);
-    if (newName && newName.trim() && !categories.includes(newName.trim()) && newName.trim() !== currentCategory) {
-      setCategories(prev => prev.map(cat => cat === currentCategory ? newName.trim() : cat));
-      form.setValue('category', newName.trim());
+    setEditingCategory(currentCategory);
+    setEditCategoryName(currentCategory);
+  };
+
+  const handleSaveEditCategory = () => {
+    if (editCategoryName && editCategoryName.trim() && !categories.includes(editCategoryName.trim()) && editCategoryName.trim() !== editingCategory) {
+      setCategories(prev => prev.map(cat => cat === editingCategory ? editCategoryName.trim() : cat));
+      form.setValue('category', editCategoryName.trim());
       toast({
         title: "Category renamed",
-        description: `Category renamed to "${newName.trim()}".`,
+        description: `Category renamed to "${editCategoryName.trim()}".`,
       });
     }
+    setEditingCategory(null);
+    setEditCategoryName('');
+  };
+
+  const handleCancelEditCategory = () => {
+    setEditingCategory(null);
+    setEditCategoryName('');
   };
 
   const handleDeleteCategory = () => {
@@ -389,7 +414,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                         <SelectContent>
                           <SelectItem value="ean">EAN</SelectItem>
                           <SelectItem value="sku">SKU</SelectItem>
-                          <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -397,21 +421,19 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   )}
                 />
 
-                {trackingType && trackingType !== 'custom' && (
-                  <FormField
-                    control={form.control}
-                    name="eanNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>EAN / SKU</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter EAN / SKU" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+                <FormField
+                  control={form.control}
+                  name="eanNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>EAN / SKU Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter EAN / SKU number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               {/* Product Image Drop Zone */}
@@ -474,72 +496,154 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <div className="flex-1">
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {editingCategory ? (
+                          <div className="flex gap-1">
+                            <Input
+                              value={editCategoryName}
+                              onChange={(e) => setEditCategoryName(e.target.value)}
+                              placeholder="Category name"
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleSaveEditCategory();
+                                }
+                                if (e.key === 'Escape') {
+                                  handleCancelEditCategory();
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleSaveEditCategory}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleCancelEditCategory}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories.map((category) => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={handleRenameCategory}
-                        title="Rename category"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={handleAddCategory}
-                        title="Add category"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
+                      {!editingCategory && (
+                        <>
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-                            title="Delete category"
+                            onClick={handleStartEditCategory}
+                            title="Rename category"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action will permanently delete the category "{form.getValues('category')}" for all products. This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={handleDeleteCategory}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={handleAddCategory}
+                            title="Add category"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                                title="Delete category"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action will permanently delete the category "{form.getValues('category')}" for all products. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={handleDeleteCategory}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      )}
                     </div>
+                    
+                    {/* Add Category Form */}
+                    {showAddCategoryForm && (
+                      <div className="mt-2 p-3 border rounded-lg bg-gray-50">
+                        <Label htmlFor="newCategoryName" className="text-sm font-medium">
+                          New Category Name
+                        </Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            id="newCategoryName"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            placeholder="Enter category name"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSaveNewCategory();
+                              }
+                              if (e.key === 'Escape') {
+                                handleCancelAddCategory();
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSaveNewCategory}
+                          >
+                            Add
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCancelAddCategory}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
                     <FormMessage />
                   </FormItem>
                 )}
