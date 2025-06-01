@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Plus, Pencil, Trash2, Upload } from 'lucide-react';
+import { MoreHorizontal, Plus, Pencil, Trash2, Upload, ArrowRight } from 'lucide-react';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useToast } from '@/hooks/use-toast';
@@ -58,10 +59,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     'Accessories',
     'Other'
   ]);
-  const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
+  const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
   
   const { createDesign } = useDesigns();
   const { toast } = useToast();
@@ -237,29 +238,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     return { hasF3D, hasINI, hasPersonalizedFiles };
   };
 
-  const handleAddCategory = () => {
-    setShowAddCategoryForm(true);
-    setNewCategoryName('');
-  };
-
-  const handleSaveNewCategory = () => {
-    if (newCategoryName && newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
-      setCategories(prev => [...prev, newCategoryName.trim()]);
-      form.setValue('category', newCategoryName.trim());
-      toast({
-        title: "Category added",
-        description: `"${newCategoryName.trim()}" was added to categories.`,
-      });
-      setShowAddCategoryForm(false);
-      setNewCategoryName('');
-    }
-  };
-
-  const handleCancelAddCategory = () => {
-    setShowAddCategoryForm(false);
-    setNewCategoryName('');
-  };
-
   const handleStartEditCategory = () => {
     const currentCategory = form.getValues('category');
     if (!currentCategory) {
@@ -290,6 +268,29 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const handleCancelEditCategory = () => {
     setEditingCategory(null);
     setEditCategoryName('');
+  };
+
+  const handleAddCategory = () => {
+    setShowAddCategoryDialog(true);
+    setNewCategoryName('');
+  };
+
+  const handleSaveNewCategory = () => {
+    if (newCategoryName && newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
+      setCategories(prev => [...prev, newCategoryName.trim()]);
+      form.setValue('category', newCategoryName.trim());
+      toast({
+        title: "Category added",
+        description: `"${newCategoryName.trim()}" was added to categories.`,
+      });
+      setShowAddCategoryDialog(false);
+      setNewCategoryName('');
+    }
+  };
+
+  const handleCancelAddCategory = () => {
+    setShowAddCategoryDialog(false);
+    setNewCategoryName('');
   };
 
   const handleDeleteCategory = () => {
@@ -372,8 +373,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-semibold">Add Design</h3>
-        <p className="text-sm text-gray-600">Create a new design with all required information and files.</p>
+        <h3 className="text-xl font-semibold">Design hinzufügen</h3>
       </div>
 
       <Form {...form}>
@@ -519,8 +519,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                               variant="outline"
                               size="sm"
                               onClick={handleSaveEditCategory}
+                              className="bg-green-500 text-white hover:bg-green-600"
                             >
-                              Save
+                              <ArrowRight className="h-4 w-4" />
                             </Button>
                             <Button
                               type="button"
@@ -559,15 +560,59 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={handleAddCategory}
-                            title="Add category"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
+                          <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
+                            <DialogTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={handleAddCategory}
+                                title="Add category"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                              <DialogHeader>
+                                <DialogTitle>Add New Category</DialogTitle>
+                                <DialogDescription>
+                                  Enter the name for the new category.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <Label htmlFor="categoryName">Category Name</Label>
+                                  <Input
+                                    id="categoryName"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    placeholder="Enter category name"
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleSaveNewCategory();
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleCancelAddCategory}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    onClick={handleSaveNewCategory}
+                                    disabled={!newCategoryName.trim()}
+                                  >
+                                    Add Category
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
@@ -600,50 +645,31 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                           </AlertDialog>
                         </>
                       )}
+                      {editingCategory && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            disabled
+                            className="opacity-50 cursor-not-allowed"
+                            title="Add category (disabled during edit)"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            disabled
+                            className="border-red-300 text-red-600 opacity-50 cursor-not-allowed"
+                            title="Delete category (disabled during edit)"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
-                    
-                    {/* Add Category Form */}
-                    {showAddCategoryForm && (
-                      <div className="mt-2 p-3 border rounded-lg bg-gray-50">
-                        <Label htmlFor="newCategoryName" className="text-sm font-medium">
-                          New Category Name
-                        </Label>
-                        <div className="flex gap-2 mt-1">
-                          <Input
-                            id="newCategoryName"
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            placeholder="Enter category name"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                handleSaveNewCategory();
-                              }
-                              if (e.key === 'Escape') {
-                                handleCancelAddCategory();
-                              }
-                            }}
-                            autoFocus
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleSaveNewCategory}
-                          >
-                            Add
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleCancelAddCategory}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    
                     <FormMessage />
                   </FormItem>
                 )}
