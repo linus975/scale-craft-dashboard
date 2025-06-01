@@ -208,9 +208,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             </TabsContent>
 
             <TabsContent value="designs">
-              <DesignsTab 
-                onNavigateToWhitelabelCatalog={handleWhitelabelCatalogNavigation}
-              />
+              <DesignsTab />
             </TabsContent>
 
             <TabsContent value="jobs">

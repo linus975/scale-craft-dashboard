@@ -20,6 +20,7 @@ export type Database = {
           design_type: string
           ean_number: string | null
           gcode: string | null
+          gcode_file_path: string | null
           id: string
           ini_file_path: string | null
           material: string | null
@@ -44,6 +45,7 @@ export type Database = {
           design_type: string
           ean_number?: string | null
           gcode?: string | null
+          gcode_file_path?: string | null
           id?: string
           ini_file_path?: string | null
           material?: string | null
@@ -68,6 +70,7 @@ export type Database = {
           design_type?: string
           ean_number?: string | null
           gcode?: string | null
+          gcode_file_path?: string | null
           id?: string
           ini_file_path?: string | null
           material?: string | null
