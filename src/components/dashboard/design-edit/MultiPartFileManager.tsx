@@ -138,9 +138,9 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         validatePartFiles={externalValidatePartFiles || validatePartFiles}
       />
 
-      {/* Color and Machine fields placed between PartSelector and file operations */}
+      {/* Color and Machine fields without grey background */}
       {(colorValue !== undefined || machineValue !== undefined) && (
-        <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border">
+        <div className="grid grid-cols-2 gap-4">
           {colorValue !== undefined && formControl && (
             <FormField
               control={formControl}
