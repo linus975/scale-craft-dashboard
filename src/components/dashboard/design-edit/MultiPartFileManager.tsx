@@ -1,14 +1,8 @@
 
 import React from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import PartSelector from './PartSelector';
-import FileUpload from './FileUpload';
-import FileList from './FileList';
-import ParameterConfig from './ParameterConfig';
-import ValidationInfo from './ValidationInfo';
+import ColorMachineFields from './ColorMachineFields';
+import FileManagerContent from './FileManagerContent';
 import { useMultiPartManager } from '@/hooks/useMultiPartManager';
 import { organizeFilesByParts, validatePartFiles } from '@/utils/fileOrganization';
 
@@ -58,7 +52,6 @@ interface MultiPartFileManagerProps {
   onPartSoftwareChange?: (partId: string, field: 'cadSoftware' | 'slicer', value: string) => void;
   onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
   validatePartFiles?: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };
-  // New props for Color and Machine fields
   colorValue?: string;
   machineValue?: string;
   onColorChange?: (value: string) => void;
@@ -89,8 +82,6 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   validatePartFiles: externalValidatePartFiles,
   colorValue,
   machineValue,
-  onColorChange,
-  onMachineChange,
   machines = [],
   formControl,
 }) => {
@@ -116,10 +107,6 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     onFileUpload(event, activePart);
   };
 
-  const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalized') => {
-    console.log(`Changing file ${fileId} to ${designType}`);
-  };
-
   const organizedParts = organizeFilesByParts(designParts, uploadedFiles);
   const currentPart = organizedParts.find(part => part.id === activePart) || organizedParts[0];
   
@@ -141,83 +128,27 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         validatePartFiles={externalValidatePartFiles || validatePartFiles}
       />
 
-      {/* Color and Machine fields */}
-      {(colorValue !== undefined || machineValue !== undefined) && (
-        <div className="grid grid-cols-2 gap-4">
-          {colorValue !== undefined && formControl && (
-            <FormField
-              control={formControl}
-              name="color"
-              rules={{ required: "Color is required" }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Color *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter color" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          {machineValue !== undefined && formControl && (
-            <FormField
-              control={formControl}
-              name="machine"
-              rules={{ required: "Machine is required" }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Machine *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter machine name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-        </div>
-      )}
+      <ColorMachineFields
+        colorValue={colorValue}
+        machineValue={machineValue}
+        formControl={formControl}
+      />
 
       {currentPart && (
-        <>
-          <ValidationInfo
-            partName={currentPart.name}
-            hasPersonalizedFiles={validation.hasPersonalizedFiles}
-            hasF3D={validation.hasF3D}
-            hasINI={validation.hasINI}
-          />
-
-          <FileUpload
-            partName={currentPart.name}
-            partId={currentPart.id}
-            partType={currentPart.partType}
-            uploading={uploading}
-            onFileUpload={handleFileUpload}
-            uploadedFiles={uploadedFiles}
-            onPartSpecificationChange={onPartSpecificationChange}
-          />
-
-          <ParameterConfig
-            currentPart={currentPart}
-            hasPersonalizedFiles={validation.hasPersonalizedFiles}
-            onPartParametersChange={(partId, field, value) => 
-              handlePartParametersChange(partId, field, value, onPartParametersChange)
-            }
-          />
-
-          {(loadingFiles || currentPart.files.length > 0) && (
-            <FileList
-              files={currentPart.files}
-              partName={currentPart.name}
-              loadingFiles={loadingFiles}
-              onFileRemove={onFileRemove}
-              onFileDownload={onFileDownload}
-              onFileTypeChange={handleFileTypeChange}
-            />
-          )}
-        </>
+        <FileManagerContent
+          currentPart={currentPart}
+          validation={validation}
+          uploadedFiles={uploadedFiles}
+          loadingFiles={loadingFiles}
+          uploading={uploading}
+          onFileUpload={handleFileUpload}
+          onFileRemove={onFileRemove}
+          onFileDownload={onFileDownload}
+          onPartParametersChange={(partId, field, value) => 
+            handlePartParametersChange(partId, field, value, onPartParametersChange)
+          }
+          onPartSpecificationChange={onPartSpecificationChange}
+        />
       )}
     </div>
   );
