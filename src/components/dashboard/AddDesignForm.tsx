@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Plus, Pencil, Trash2, Upload, Check } from 'lucide-react';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import { useDesigns } from '@/hooks/useDesigns';
+import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
 
 interface AddDesignFormProps {
@@ -26,6 +27,8 @@ interface FormData {
   eanNumber: string;
   description: string;
   category: string;
+  color: string;
+  machine: string;
 }
 
 interface DesignPart {
@@ -65,6 +68,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const [editingCategoryValue, setEditingCategoryValue] = useState('');
   
   const { createDesign } = useDesigns();
+  const { machines } = useMachines();
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -73,7 +77,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       trackingType: '',
       eanNumber: '',
       description: '',
-      category: ''
+      category: '',
+      color: '',
+      machine: ''
     }
   });
 
@@ -336,6 +342,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         ean_number: data.eanNumber,
         description: data.description,
         category: data.category,
+        color: data.color,
+        machine: data.machine,
         design_type: currentPart?.partType || 'static',
         cad_file_path: f3dFile?.path || null,
         ini_file_path: iniFile?.path || null,
@@ -651,6 +659,83 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               <CardTitle>Manage Files</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>CAD-Software</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="CAD-Software auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fusion360">Fusion 360</SelectItem>
+                      <SelectItem value="solidworks">SolidWorks</SelectItem>
+                      <SelectItem value="blender">Blender</SelectItem>
+                      <SelectItem value="freecad">FreeCAD</SelectItem>
+                      <SelectItem value="onshape">Onshape</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Slicer-Software</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Slicer-Software auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cura">Ultimaker Cura</SelectItem>
+                      <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
+                      <SelectItem value="superslicer">SuperSlicer</SelectItem>
+                      <SelectItem value="bambu">Bambu Studio</SelectItem>
+                      <SelectItem value="simplify3d">Simplify3D</SelectItem>
+                      <SelectItem value="ideamaker">IdeaMaker</SelectItem>
+                      <SelectItem value="slic3r">Slic3r</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Farbe</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Farbe eingeben" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="machine"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Machine</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            placeholder="Maschine eingeben oder auswählen"
+                            {...field}
+                            list="machines-list"
+                          />
+                          <datalist id="machines-list">
+                            {machines.map((machine) => (
+                              <option key={machine.id} value={machine.name} />
+                            ))}
+                          </datalist>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <MultiPartFileManager
                 uploadedFiles={uploadedFiles}
                 loadingFiles={false}
