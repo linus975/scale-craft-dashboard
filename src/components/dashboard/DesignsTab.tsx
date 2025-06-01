@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import { useDesigns } from '@/hooks/useDesigns';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import GCodeViewer from './GCodeViewer';
+import DesignEditDialog from './DesignEditDialog';
 
 interface DesignsTabProps {
   onNavigateToWhitelabelCatalog?: () => void;
@@ -24,6 +24,17 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
   const [selectedType, setSelectedType] = useState<string>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
+  const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
+  const [editingDesign, setEditingDesign] = useState<any>(null);
+
+  // Mock machines data for the edit dialog
+  const mockMachines = [
+    { id: 1, name: "Prusa i3 MK3S+", status: "idle" },
+    { id: 2, name: "Bambu Lab X1 Carbon", status: "printing" },
+    { id: 3, name: "Ender 3 V2", status: "offline" },
+    { id: 4, name: "Ultimaker S3", status: "idle" },
+    { id: 5, name: "Creality CR-10", status: "maintenance" }
+  ];
 
   const filteredDesigns = designs.filter(design => {
     const matchesSearch = design.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,8 +64,38 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
     }
   };
 
+  const handleDesignTypeSelection = (type: 'static' | 'personalized') => {
+    setSelectedDesignType(type);
+  };
+
+  const handleBackToSelection = () => {
+    setSelectedDesignType(null);
+  };
+
+  const handleFormComplete = () => {
+    setShowAddDialog(false);
+    setSelectedDesignType(null);
+  };
+
+  const handleConfigureDesign = (design: any) => {
+    setEditingDesign(design);
+  };
+
+  const handleSaveDesign = (designData: any) => {
+    console.log('Saving design:', designData);
+    // Here you would typically call an update function
+  };
+
+  const handleAddToQueue = (designId: number) => {
+    console.log('Adding design to queue:', designId);
+  };
+
+  const handlePrintOnMachine = (designId: number, machineId: number) => {
+    console.log('Printing design', designId, 'on machine', machineId);
+  };
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -62,7 +103,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Designs werden geladen...</div>;
+    return <div className="flex justify-center p-8">Loading designs...</div>;
   }
 
   return (
@@ -70,54 +111,92 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
       {/* Header with Add Button */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Design-Bibliothek</h2>
-          <p className="text-gray-600">Verwalten Sie Ihre 3D-Designs und G-Code Dateien</p>
+          <h2 className="text-2xl font-bold">Design Library</h2>
+          <p className="text-gray-600">Manage your 3D designs and G-Code files</p>
         </div>
         
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
-              Design hinzufügen
+              Add Design
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Design-Typ auswählen</DialogTitle>
+              <DialogTitle>
+                {!selectedDesignType ? 'Select Design Type' : 
+                 selectedDesignType === 'static' ? 'Add Static Design (G-Code)' : 'Add Personalized Design'}
+              </DialogTitle>
               <DialogDescription>
-                Welchen Typ von Design möchten Sie hinzufügen?
+                {!selectedDesignType ? 'Choose the type of design you want to add' :
+                 selectedDesignType === 'static' ? 'Upload a ready-to-print G-Code file' : 'Create a design with customizable parameters'}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2 flex items-center">
-                    <FileCode className="h-4 w-4 mr-2" />
-                    Statisches Design (G-Code)
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Laden Sie eine fertige G-Code Datei hoch für direktes Drucken
-                  </p>
-                  <StaticDesignForm
-                    onCancel={() => setShowAddDialog(false)}
-                    onSave={() => setShowAddDialog(false)}
-                  />
-                </div>
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2 flex items-center">
-                    <Package className="h-4 w-4 mr-2" />
-                    Personalisierbares Design
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Erstellen Sie ein Design mit anpassbaren Parametern
-                  </p>
-                  <PersonalizedDesignForm
-                    onCancel={() => setShowAddDialog(false)}
-                    onSave={() => setShowAddDialog(false)}
-                  />
+            
+            {!selectedDesignType ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card 
+                    className="cursor-pointer hover:bg-gray-50 transition-colors border-2"
+                    onClick={() => handleDesignTypeSelection('static')}
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center">
+                        <FileCode className="h-5 w-5 mr-2" />
+                        Static Design (G-Code)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Upload a ready-to-print G-Code file for direct printing
+                      </p>
+                      <Button className="w-full" onClick={() => handleDesignTypeSelection('static')}>
+                        Select Static Design
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card 
+                    className="cursor-pointer hover:bg-gray-50 transition-colors border-2"
+                    onClick={() => handleDesignTypeSelection('personalized')}
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center">
+                        <Package className="h-5 w-5 mr-2" />
+                        Personalized Design
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Create a design with customizable parameters
+                      </p>
+                      <Button className="w-full" onClick={() => handleDesignTypeSelection('personalized')}>
+                        Select Personalized Design
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <Button variant="outline" onClick={handleBackToSelection} className="mb-4">
+                  ← Back to Selection
+                </Button>
+                
+                {selectedDesignType === 'static' ? (
+                  <StaticDesignForm
+                    onCancel={handleFormComplete}
+                    onSave={handleFormComplete}
+                  />
+                ) : (
+                  <PersonalizedDesignForm
+                    onCancel={handleFormComplete}
+                    onSave={handleFormComplete}
+                  />
+                )}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -259,7 +338,11 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
                   <Download className="h-4 w-4 mr-1" />
                   Download
                 </Button>
-                <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  size="sm" 
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  onClick={() => handleConfigureDesign(design)}
+                >
                   <Settings className="h-4 w-4 mr-1" />
                   Configure
                 </Button>
@@ -286,6 +369,19 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
         />
         <span className="text-sm text-gray-600">Alle auswählen</span>
       </div>
+
+      {/* Design Edit Dialog */}
+      {editingDesign && (
+        <DesignEditDialog
+          design={editingDesign}
+          isOpen={!!editingDesign}
+          onClose={() => setEditingDesign(null)}
+          onSave={handleSaveDesign}
+          onAddToQueue={handleAddToQueue}
+          onPrintOnMachine={handlePrintOnMachine}
+          machines={mockMachines}
+        />
+      )}
     </div>
   );
 };
