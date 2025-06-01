@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Plus, Search, Filter, Download, Upload, Trash2, Edit, Package, FileCode, Calendar, User, Settings } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useMachines } from '@/hooks/useMachines';
@@ -20,7 +21,7 @@ interface DesignsTabProps {
 }
 
 const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }) => {
-  const { designs, loading } = useDesigns();
+  const { designs, loading, deleteDesign } = useDesigns();
   const { machines } = useMachines();
   const { getFileUrl } = useFileUpload();
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +31,8 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
   const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
   const [editingDesign, setEditingDesign] = useState<any>(null);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const filteredDesigns = designs.filter(design => {
     const matchesSearch = design.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -44,19 +47,33 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
 
   const categories = [...new Set(designs.map(design => design.category))];
 
-  const handleSelectDesign = (designId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedDesigns(prev => [...prev, designId]);
-    } else {
+  const handleSelectDesign = (designId: string) => {
+    if (selectedDesigns.includes(designId)) {
       setSelectedDesigns(prev => prev.filter(id => id !== designId));
+    } else {
+      setSelectedDesigns(prev => [...prev, designId]);
     }
   };
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedDesigns(filteredDesigns.map(design => design.id));
+  const handleToggleSelectionMode = () => {
+    if (isSelectionMode && selectedDesigns.length > 0) {
+      setShowDeleteDialog(true);
     } else {
+      setIsSelectionMode(!isSelectionMode);
       setSelectedDesigns([]);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      for (const designId of selectedDesigns) {
+        await deleteDesign(designId);
+      }
+      setSelectedDesigns([]);
+      setIsSelectionMode(false);
+      setShowDeleteDialog(false);
+    } catch (error) {
+      console.error('Error deleting designs:', error);
     }
   };
 
@@ -141,97 +158,108 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
 
   return (
     <div className="space-y-6">
-      {/* Header with Add Button */}
+      {/* Header with Add Button and Delete Button */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Design Library</h2>
           <p className="text-gray-600">Manage your 3D designs and G-Code files</p>
         </div>
         
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Design
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {!selectedDesignType ? 'Select Design Type' : 
-                 selectedDesignType === 'static' ? 'Add Static Design (G-Code)' : 'Add Personalized Design'}
-              </DialogTitle>
-              <DialogDescription>
-                {!selectedDesignType ? 'Choose the type of design you want to add' :
-                 selectedDesignType === 'static' ? 'Upload a ready-to-print G-Code file' : 'Create a design with customizable parameters'}
-              </DialogDescription>
-            </DialogHeader>
-            
-            {!selectedDesignType ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card 
-                    className="cursor-pointer hover:bg-gray-50 transition-colors border-2"
-                    onClick={() => handleDesignTypeSelection('static')}
-                  >
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center">
-                        <FileCode className="h-5 w-5 mr-2" />
-                        Static Design (G-Code)
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Upload a ready-to-print G-Code file for direct printing
-                      </p>
-                      <Button className="w-full" onClick={() => handleDesignTypeSelection('static')}>
-                        Select Static Design
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card 
-                    className="cursor-pointer hover:bg-gray-50 transition-colors border-2"
-                    onClick={() => handleDesignTypeSelection('personalized')}
-                  >
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center">
-                        <Package className="h-5 w-5 mr-2" />
-                        Personalized Design
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Create a design with customizable parameters
-                      </p>
-                      <Button className="w-full" onClick={() => handleDesignTypeSelection('personalized')}>
-                        Select Personalized Design
-                      </Button>
-                    </CardContent>
-                  </Card>
+        <div className="flex gap-2">
+          <Button 
+            variant={isSelectionMode ? "destructive" : "outline"}
+            onClick={handleToggleSelectionMode}
+            className={isSelectionMode && selectedDesigns.length > 0 ? "bg-red-600 hover:bg-red-700" : ""}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {isSelectionMode ? (selectedDesigns.length > 0 ? `Delete ${selectedDesigns.length}` : 'Cancel') : 'Delete'}
+          </Button>
+          
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Design
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {!selectedDesignType ? 'Select Design Type' : 
+                   selectedDesignType === 'static' ? 'Add Static Design (G-Code)' : 'Add Personalized Design'}
+                </DialogTitle>
+                <DialogDescription>
+                  {!selectedDesignType ? 'Choose the type of design you want to add' :
+                   selectedDesignType === 'static' ? 'Upload a ready-to-print G-Code file' : 'Create a design with customizable parameters'}
+                </DialogDescription>
+              </DialogHeader>
+              
+              {!selectedDesignType ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card 
+                      className="cursor-pointer hover:bg-gray-50 transition-colors border-2"
+                      onClick={() => handleDesignTypeSelection('static')}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center">
+                          <FileCode className="h-5 w-5 mr-2" />
+                          Static Design (G-Code)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Upload a ready-to-print G-Code file for direct printing
+                        </p>
+                        <Button className="w-full" onClick={() => handleDesignTypeSelection('static')}>
+                          Select Static Design
+                        </Button>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card 
+                      className="cursor-pointer hover:bg-gray-50 transition-colors border-2"
+                      onClick={() => handleDesignTypeSelection('personalized')}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center">
+                          <Package className="h-5 w-5 mr-2" />
+                          Personalized Design
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Create a design with customizable parameters
+                        </p>
+                        <Button className="w-full" onClick={() => handleDesignTypeSelection('personalized')}>
+                          Select Personalized Design
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <Button variant="outline" onClick={handleBackToSelection} className="mb-4">
-                  ← Back to Selection
-                </Button>
-                
-                {selectedDesignType === 'static' ? (
-                  <StaticDesignForm
-                    onCancel={handleFormComplete}
-                    onSave={handleFormComplete}
-                  />
-                ) : (
-                  <PersonalizedDesignForm
-                    onCancel={handleFormComplete}
-                    onSave={handleFormComplete}
-                  />
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+              ) : (
+                <div className="space-y-4">
+                  <Button variant="outline" onClick={handleBackToSelection} className="mb-4">
+                    ← Back to Selection
+                  </Button>
+                  
+                  {selectedDesignType === 'static' ? (
+                    <StaticDesignForm
+                      onCancel={handleFormComplete}
+                      onSave={handleFormComplete}
+                    />
+                  ) : (
+                    <PersonalizedDesignForm
+                      onCancel={handleFormComplete}
+                      onSave={handleFormComplete}
+                    />
+                  )}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search and Filter Controls */}
@@ -290,30 +318,32 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
       {/* Design Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredDesigns.map((design) => (
-          <Card key={design.id} className="hover:shadow-md transition-shadow">
+          <Card 
+            key={design.id} 
+            className={`hover:shadow-md transition-all cursor-pointer ${
+              isSelectionMode && selectedDesigns.includes(design.id) 
+                ? 'border-2 border-red-400 bg-red-50' 
+                : 'hover:shadow-md'
+            }`}
+            onClick={isSelectionMode ? () => handleSelectDesign(design.id) : undefined}
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={selectedDesigns.includes(design.id)}
-                    onCheckedChange={(checked) => handleSelectDesign(design.id, checked as boolean)}
-                  />
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{design.name}</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge 
-                        variant={design.design_type === 'static' ? 'outline' : 'default'}
-                        className={design.design_type === 'static' ? 'bg-gray-200 text-gray-700' : 'bg-black text-white'}
-                      >
-                        {design.design_type === 'static' ? 'Static' : 'Personalized'}
+                <div className="flex-1">
+                  <CardTitle className="text-lg">{design.name}</CardTitle>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge 
+                      variant={design.design_type === 'static' ? 'outline' : 'default'}
+                      className={design.design_type === 'static' ? 'bg-gray-200 text-gray-700' : 'bg-black text-white'}
+                    >
+                      {design.design_type === 'static' ? 'Static' : 'Personalized'}
+                    </Badge>
+                    <Badge variant="outline">{design.category}</Badge>
+                    {design.tracking_type && (
+                      <Badge variant="outline" className="text-xs">
+                        {design.tracking_type.toUpperCase()}
                       </Badge>
-                      <Badge variant="outline">{design.category}</Badge>
-                      {design.tracking_type && (
-                        <Badge variant="outline" className="text-xs">
-                          {design.tracking_type.toUpperCase()}
-                        </Badge>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -404,12 +434,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
           <Download className="h-4 w-4 mr-2" />
           Export All
         </Button>
-        <Checkbox
-          checked={selectedDesigns.length === filteredDesigns.length && filteredDesigns.length > 0}
-          onCheckedChange={handleSelectAll}
-          className="ml-4"
-        />
-        <span className="text-sm text-gray-600">Select All</span>
       </div>
 
       {/* Design Edit Dialog */}
@@ -424,6 +448,29 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
           machines={machines}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Designs</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedDesigns.length} design(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
