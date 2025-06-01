@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,7 +30,6 @@ import KnowledgeBaseTab from './KnowledgeBaseTab';
 import ShippingTab from './ShippingTab';
 import BusinessMetricsPage from './BusinessMetricsPage';
 import SystemLogPage from './SystemLogPage';
-import DesignDetailPage from './DesignDetailPage';
 import WhitelabelCatalogPage from './WhitelabelCatalogPage';
 import RecentOrdersPage from './RecentOrdersPage';
 import AllOrdersPage from './AllOrdersPage';
@@ -43,7 +43,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showBusinessMetrics, setShowBusinessMetrics] = useState(false);
   const [showSystemLog, setShowSystemLog] = useState(false);
-  const [showDesignDetail, setShowDesignDetail] = useState<string | null>(null);
   const [showWhitelabelCatalog, setShowWhitelabelCatalog] = useState(false);
   const [showRecentOrders, setShowRecentOrders] = useState(false);
   const [showAllOrders, setShowAllOrders] = useState(false);
@@ -76,14 +75,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const handleBackToOverview = () => {
     setShowBusinessMetrics(false);
     setShowSystemLog(false);
-    setShowDesignDetail(null);
     setShowWhitelabelCatalog(false);
     setShowRecentOrders(false);
     setShowAllOrders(false);
-  };
-
-  const handleDesignDetailNavigation = (designId: string) => {
-    setShowDesignDetail(designId);
   };
 
   const handleMachinesNavigation = () => {
@@ -150,8 +144,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           <BusinessMetricsPage onBack={handleBackToOverview} />
         ) : showSystemLog ? (
           <SystemLogPage onBack={handleBackToOverview} />
-        ) : showDesignDetail ? (
-          <DesignDetailPage designId={showDesignDetail} onBack={handleBackToOverview} />
         ) : showWhitelabelCatalog ? (
           <WhitelabelCatalogPage onBack={handleBackToOverview} />
         ) : showRecentOrders ? (
@@ -217,7 +209,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
             <TabsContent value="designs">
               <DesignsTab 
-                onNavigateToDesignDetail={handleDesignDetailNavigation}
                 onNavigateToWhitelabelCatalog={handleWhitelabelCatalogNavigation}
               />
             </TabsContent>
