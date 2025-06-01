@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Plus, Search, Filter, Download, Upload, Trash2, Edit, Package, FileCode, Calendar, User, Settings } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useMachines } from '@/hooks/useMachines';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import GCodeViewer from './GCodeViewer';
@@ -22,6 +22,7 @@ interface DesignsTabProps {
 const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }) => {
   const { designs, loading } = useDesigns();
   const { machines } = useMachines();
+  const { getFileUrl } = useFileUpload();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -87,6 +88,43 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
 
   const handlePrintOnMachine = (designId: number, machineId: number) => {
     console.log('Printing design', designId, 'on machine', machineId);
+  };
+
+  const handleDownloadDesign = (design: any) => {
+    if (design.design_type === 'static') {
+      if (design.gcode_file_path) {
+        // Download G-code file from storage
+        const fileUrl = getFileUrl(design.gcode_file_path);
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = `${design.name}.gcode`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else if (design.gcode) {
+        // Download legacy G-code from database
+        const blob = new Blob([design.gcode], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${design.name}.gcode`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } else if (design.design_type === 'personalized') {
+      if (design.cad_file_path) {
+        // Download CAD file from storage
+        const fileUrl = getFileUrl(design.cad_file_path);
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = `${design.name}.f3d`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -263,7 +301,10 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
                   <div className="flex-1">
                     <CardTitle className="text-lg">{design.name}</CardTitle>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={design.design_type === 'static' ? 'default' : 'secondary'}>
+                      <Badge 
+                        variant={design.design_type === 'static' ? 'outline' : 'default'}
+                        className={design.design_type === 'static' ? 'bg-gray-200 text-gray-700' : 'bg-black text-white'}
+                      >
                         {design.design_type === 'static' ? 'Static' : 'Personalized'}
                       </Badge>
                       <Badge variant="outline">{design.category}</Badge>
@@ -329,7 +370,13 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
 
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleDownloadDesign(design)}
+                  disabled={design.design_type === 'static' ? !design.gcode_file_path && !design.gcode : !design.cad_file_path}
+                >
                   <Download className="h-4 w-4 mr-1" />
                   Download
                 </Button>
