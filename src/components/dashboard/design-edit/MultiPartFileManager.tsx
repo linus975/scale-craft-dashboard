@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, X, FileCode, Plus, AlertTriangle } from 'lucide-react';
+import { Upload, FileText, X, FileCode, Plus, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface UploadedFile {
   id: string;
@@ -15,6 +16,7 @@ interface UploadedFile {
   path: string;
   originalName?: string;
   partId?: string;
+  designType?: 'static' | 'personalized';
 }
 
 interface DesignPart {
@@ -35,7 +37,6 @@ interface MultiPartFileManagerProps {
   onFileRemove: (file: UploadedFile) => void;
   onFileDownload: (file: UploadedFile) => void;
   onPartParametersChange?: (partId: string, parameters: { sketchName: string; replacementValue: string }) => void;
-  isPersonalized?: boolean;
   selectedPartId?: string;
   onPartSelect?: (partId: string) => void;
 }
@@ -48,7 +49,6 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   onFileRemove,
   onFileDownload,
   onPartParametersChange,
-  isPersonalized = false,
   selectedPartId,
   onPartSelect,
 }) => {
@@ -56,7 +56,10 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     { id: 'part1', name: 'Teil 1', files: [], parameters: { sketchName: '', replacementValue: '' } }
   ]);
   const [activePart, setActivePart] = useState(selectedPartId || 'part1');
+  const [editingPartId, setEditingPartId] = useState<string | null>(null);
+  const [editPartName, setEditPartName] = useState('');
   const [newPartName, setNewPartName] = useState('');
+  const [showAddPartDialog, setShowAddPartDialog] = useState(false);
 
   // Organize files by parts
   const organizeFilesByParts = () => {
@@ -87,6 +90,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       setDesignParts(prev => [...prev, newPart]);
       setActivePart(newPart.id);
       setNewPartName('');
+      setShowAddPartDialog(false);
       
       if (onPartSelect) {
         onPartSelect(newPart.id);
@@ -127,10 +131,24 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     }
   };
 
-  const handlePartNameChange = (partId: string, newName: string) => {
-    setDesignParts(prev => prev.map(part => 
-      part.id === partId ? { ...part, name: newName } : part
-    ));
+  const startEditingPart = (partId: string, currentName: string) => {
+    setEditingPartId(partId);
+    setEditPartName(currentName);
+  };
+
+  const savePartName = () => {
+    if (editingPartId && editPartName.trim()) {
+      setDesignParts(prev => prev.map(part => 
+        part.id === editingPartId ? { ...part, name: editPartName.trim() } : part
+      ));
+    }
+    setEditingPartId(null);
+    setEditPartName('');
+  };
+
+  const cancelEditingPart = () => {
+    setEditingPartId(null);
+    setEditPartName('');
   };
 
   const handlePartChange = (value: string) => {
@@ -140,20 +158,26 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     }
   };
 
+  const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalized') => {
+    // This would update the file's design type
+    console.log(`Changing file ${fileId} to ${designType}`);
+  };
+
   const organizedParts = organizeFilesByParts();
   const currentPart = organizedParts.find(part => part.id === activePart) || organizedParts[0];
 
   const validatePartFiles = (part: DesignPart) => {
-    const hasF3D = part.files.some(f => f.name.toLowerCase().endsWith('.f3d'));
-    const hasINI = part.files.some(f => f.name.toLowerCase().endsWith('.ini'));
-    return { hasF3D, hasINI };
+    const personalizedFiles = part.files.filter(f => f.designType === 'personalized');
+    const hasF3D = personalizedFiles.some(f => f.name.toLowerCase().endsWith('.f3d'));
+    const hasINI = personalizedFiles.some(f => f.name.toLowerCase().endsWith('.ini'));
+    return { hasF3D, hasINI, hasPersonalizedFiles: personalizedFiles.length > 0 };
   };
 
-  const validation = currentPart ? validatePartFiles(currentPart) : { hasF3D: false, hasINI: false };
+  const validation = currentPart ? validatePartFiles(currentPart) : { hasF3D: false, hasINI: false, hasPersonalizedFiles: false };
 
   return (
     <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-      {/* Part Selection */}
+      {/* Part Selection with Controls */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <div className="flex-1">
@@ -165,13 +189,13 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
               <SelectContent>
                 {designParts.map((part) => {
                   const partValidation = validatePartFiles(part);
-                  const isValid = !isPersonalized || (partValidation.hasF3D && partValidation.hasINI);
+                  const needsValidation = partValidation.hasPersonalizedFiles && (!partValidation.hasF3D || !partValidation.hasINI);
                   
                   return (
                     <SelectItem key={part.id} value={part.id}>
                       <div className="flex items-center gap-2">
                         {part.name}
-                        {!isValid && isPersonalized && (
+                        {needsValidation && (
                           <AlertTriangle className="h-3 w-3 text-red-500" />
                         )}
                       </div>
@@ -182,64 +206,125 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
             </Select>
           </div>
           
-          <div className="flex items-end gap-2">
-            <div>
-              <Label>Neuer Teil</Label>
-              <Input
-                placeholder="Teilname..."
-                value={newPartName}
-                onChange={(e) => setNewPartName(e.target.value)}
-                className="w-32"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    addNewPart();
-                  }
-                }}
-              />
-            </div>
+          {/* Control Buttons */}
+          <div className="flex items-end gap-1">
+            {/* Edit Part Name */}
+            {editingPartId === activePart ? (
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={savePartName}
+                  className="h-10"
+                >
+                  ✓
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={cancelEditingPart}
+                  className="h-10"
+                >
+                  ✗
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => startEditingPart(activePart, currentPart?.name || '')}
+                className="h-10 w-10 p-0"
+                title="Teil bearbeiten"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+            
+            {/* Add Part */}
+            <Dialog open={showAddPartDialog} onOpenChange={setShowAddPartDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-10 w-10 p-0"
+                  title="Neues Teil hinzufügen"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Neues Teil hinzufügen</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Teilname</Label>
+                    <Input
+                      placeholder="Name des neuen Teils..."
+                      value={newPartName}
+                      onChange={(e) => setNewPartName(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          addNewPart();
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowAddPartDialog(false)}>
+                      Abbrechen
+                    </Button>
+                    <Button onClick={addNewPart} disabled={!newPartName.trim()}>
+                      Hinzufügen
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            {/* Delete Part */}
             <Button
               type="button"
-              variant="outline"
-              onClick={addNewPart}
-              disabled={!newPartName.trim()}
+              variant={designParts.length <= 1 ? "outline" : "destructive"}
+              size="sm"
+              onClick={() => designParts.length > 1 && removePart(activePart)}
+              disabled={designParts.length <= 1}
+              className={`h-10 w-10 p-0 ${designParts.length <= 1 ? 'bg-gray-100 text-gray-400' : 'text-white'}`}
+              title={designParts.length <= 1 ? "Erstes Teil kann nicht gelöscht werden" : "Teil löschen"}
             >
-              <Plus className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Current Part Name Editor */}
-        {currentPart && (
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <Label>Teilname bearbeiten</Label>
-              <Input
-                value={currentPart.name}
-                onChange={(e) => handlePartNameChange(currentPart.id, e.target.value)}
-                placeholder="Teilname eingeben"
-              />
-            </div>
-            {designParts.length > 1 && (
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={() => removePart(currentPart.id)}
-                className="mt-6"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+        {/* Part Name Editing Field */}
+        {editingPartId === activePart && (
+          <div>
+            <Label>Teilname bearbeiten</Label>
+            <Input
+              value={editPartName}
+              onChange={(e) => setEditPartName(e.target.value)}
+              placeholder="Teilname eingeben"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  savePartName();
+                }
+              }}
+            />
           </div>
         )}
       </div>
 
       {currentPart && (
         <>
-          {/* File Requirements Info */}
-          {isPersonalized && (
+          {/* File Requirements Info for Personalized Files */}
+          {validation.hasPersonalizedFiles && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <h5 className="font-medium text-blue-900 mb-2">Erforderliche Dateien für "{currentPart.name}":</h5>
+              <h5 className="font-medium text-blue-900 mb-2">Erforderliche Dateien für personalisierbare Designs in "{currentPart.name}":</h5>
               <div className="flex gap-4 text-sm">
                 <div className={`flex items-center gap-1 ${validation.hasF3D ? 'text-green-600' : 'text-red-600'}`}>
                   {validation.hasF3D ? '✓' : '✗'} F3D-Datei (CAD)
@@ -251,10 +336,10 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
             </div>
           )}
 
-          {/* Parameter Configuration for Personalized Designs */}
-          {isPersonalized && (
+          {/* Parameter Configuration for Personalized Files */}
+          {validation.hasPersonalizedFiles && (
             <div className="space-y-4 p-4 border rounded-lg">
-              <h5 className="font-medium">Parameter für "{currentPart.name}"</h5>
+              <h5 className="font-medium">Parameter für personalisierbare Dateien in "{currentPart.name}"</h5>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Sketch-Name</Label>
@@ -284,16 +369,13 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
               <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 mb-2">
-                {isPersonalized 
-                  ? `F3D- und INI-Dateien für ${currentPart.name} hochladen` 
-                  : `Dateien für ${currentPart.name} hochladen`
-                }
+                Dateien für {currentPart.name} hochladen
               </p>
               <Input
                 id={`fileUpload-${currentPart.id}`}
                 type="file"
                 multiple
-                accept={isPersonalized ? '.f3d,.ini,.step,.stl,.gcode' : undefined}
+                accept=".f3d,.ini,.step,.stl,.gcode"
                 onChange={handleFileUpload}
                 className="hidden"
                 disabled={uploading}
@@ -333,6 +415,22 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{file.name}</p>
                           <p className="text-xs text-slate-500">{file.type} • {file.size} • {file.uploadDate}</p>
+                          
+                          {/* Design Type Selection per file */}
+                          <div className="mt-1">
+                            <Select 
+                              value={file.designType || 'static'} 
+                              onValueChange={(value) => handleFileTypeChange(file.id, value as 'static' | 'personalized')}
+                            >
+                              <SelectTrigger className="h-6 text-xs w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="static">Statisch</SelectItem>
+                                <SelectItem value="personalized">Personalisierbar</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
                       <div className="flex gap-1 flex-shrink-0 ml-2">

@@ -23,7 +23,6 @@ interface FormData {
   eanNumber: string;
   description: string;
   category: string;
-  designType: 'static' | 'personalized';
 }
 
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
@@ -42,12 +41,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       trackingType: '',
       eanNumber: '',
       description: '',
-      category: '',
-      designType: 'static'
+      category: ''
     }
   });
-
-  const watchDesignType = form.watch('designType');
 
   const handlePreviewImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -72,7 +68,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         uploadDate: new Date().toISOString().split('T')[0],
         path: `temp/${file.name}`,
         originalName: file.name,
-        partId: partId || 'main'
+        partId: partId || 'main',
+        designType: 'static' // Default to static, can be changed per file
       }));
 
       setUploadedFiles(prev => [...prev, ...newFiles]);
@@ -135,7 +132,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     try {
       const designData = {
         name: data.name,
-        design_type: data.designType,
         tracking_type: data.trackingType,
         ean_number: data.eanNumber,
         description: data.description,
@@ -174,28 +170,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                     <FormControl>
                       <Input placeholder="Name des Designs" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="designType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Design-Typ</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Design-Typ auswählen" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="static">Statisches Design</SelectItem>
-                        <SelectItem value="personalized">Personalisierbares Design</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -310,7 +284,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onFileRemove={handleFileRemove}
                 onFileDownload={handleFileDownload}
                 onPartParametersChange={handlePartParametersChange}
-                isPersonalized={watchDesignType === 'personalized'}
                 selectedPartId={selectedPartId}
                 onPartSelect={handlePartSelect}
               />
