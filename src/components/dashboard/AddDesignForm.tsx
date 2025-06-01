@@ -1,20 +1,18 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Plus, Pencil, Trash2, Upload, Check, Settings, File } from 'lucide-react';
+import { File } from 'lucide-react';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
+import DesignInformationSection from './design-edit/DesignInformationSection';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
+import { useCategoryManager } from '@/hooks/useCategoryManager';
+import { useDesignFileUpload } from '@/hooks/useDesignFileUpload';
+import { useDesignParts } from '@/hooks/useDesignParts';
 
 interface AddDesignFormProps {
   onCancel: () => void;
@@ -31,42 +29,7 @@ interface FormData {
   machine: string;
 }
 
-interface DesignPart {
-  id: string;
-  name: string;
-  files: any[];
-  partType?: 'static' | 'personalized';
-  parameters?: {
-    sketchName?: string;
-    replacementValue?: string;
-    replacementType?: 'text' | 'dimension';
-  };
-  cadSoftware?: string;
-  slicer?: string;
-}
-
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [previewImage, setPreviewImage] = useState<File | null>(null);
-  const [selectedPartId, setSelectedPartId] = useState<string>('');
-  const [designParts, setDesignParts] = useState<DesignPart[]>([
-    { id: 'main', name: 'Main Part', files: [], partType: 'static' }
-  ]);
-  const [activePart, setActivePart] = useState<string>('main');
-  const [categories, setCategories] = useState<string[]>([
-    'Household',
-    'Toys',
-    'Tools',
-    'Decoration',
-    'Accessories',
-    'Other'
-  ]);
-  const [editingCategory, setEditingCategory] = useState<string | null>(null);
-  const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [editingCategoryValue, setEditingCategoryValue] = useState('');
-  
   const { createDesign } = useDesigns();
   const { machines } = useMachines();
   const { toast } = useToast();
@@ -85,251 +48,21 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
   const trackingType = form.watch('trackingType');
 
-  const handlePreviewImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      if (file.type.startsWith('image/')) {
-        setPreviewImage(file);
-      } else {
-        toast({
-          title: "Invalid file type",
-          description: "Please upload an image file.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
+  // Use custom hooks
+  const categoryManager = useCategoryManager(form);
+  const fileUpload = useDesignFileUpload();
+  const designParts = useDesignParts();
 
-  const handlePreviewImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setPreviewImage(file);
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, partId?: string) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    setUploading(true);
-    
-    // Simulate file upload
-    setTimeout(() => {
-      const newFiles = Array.from(files).map(file => ({
-        id: Date.now() + Math.random() + '',
-        name: file.name,
-        type: getFileType(file.name),
-        size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-        uploadDate: new Date().toISOString().split('T')[0],
-        path: `temp/${file.name}`,
-        originalName: file.name,
-        partId: partId || activePart,
-        designType: 'static' as const
-      }));
-
-      setUploadedFiles(prev => [...prev, ...newFiles]);
-      setUploading(false);
-      
-      toast({
-        title: "Files uploaded",
-        description: `${files.length} file(s) were successfully uploaded.`,
-      });
-    }, 1000);
-
-    event.target.value = '';
-  };
-
-  const getFileType = (fileName: string): string => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    
-    switch (extension) {
-      case 'f3d':
-        return 'Fusion 360 File';
-      case 'step':
-      case 'stp':
-        return 'STEP File';
-      case 'stl':
-        return 'STL File';
-      case 'ini':
-        return 'Settings File';
-      case 'gcode':
-        return 'G-Code File';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const handleFileRemove = (file: any) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
-    toast({
-      title: "File deleted",
-      description: `${file.name} was successfully deleted.`,
-    });
-  };
-
-  const handleFileDownload = (file: any) => {
-    console.log('Downloading file:', file.name);
-  };
-
-  const handlePartParametersChange = (partId: string, parameters: { sketchName: string; replacementValue: string }) => {
-    setDesignParts(prev => prev.map(part => 
-      part.id === partId 
-        ? { 
-            ...part, 
-            parameters: { 
-              ...part.parameters, 
-              sketchName: parameters.sketchName,
-              replacementValue: parameters.replacementValue
-            } 
-          }
-        : part
-    ));
-  };
-
-  const handlePartSelect = (partId: string) => {
-    setSelectedPartId(partId);
-    setActivePart(partId);
-  };
-
-  const handleAddPart = (name: string) => {
-    const newPart: DesignPart = {
-      id: Date.now().toString(),
-      name,
-      files: [],
-      partType: 'static'
-    };
-    setDesignParts(prev => [...prev, newPart]);
-    setActivePart(newPart.id);
-  };
-
+  // Remove parts from uploaded files when removing a part
   const handleRemovePart = (partId: string) => {
-    if (designParts.length <= 1) return;
-    
-    setDesignParts(prev => prev.filter(part => part.id !== partId));
-    setUploadedFiles(prev => prev.filter(file => file.partId !== partId));
-    
-    if (activePart === partId) {
-      setActivePart(designParts[0].id);
-    }
-  };
-
-  const handleRenamePart = (partId: string, newName: string) => {
-    setDesignParts(prev => prev.map(part =>
-      part.id === partId ? { ...part, name: newName } : part
-    ));
-  };
-
-  const handlePartTypeChange = (partId: string, partType: 'static' | 'personalized') => {
-    setDesignParts(prev => prev.map(part =>
-      part.id === partId ? { ...part, partType } : part
-    ));
-  };
-
-  const handlePartSoftwareChange = (partId: string, field: 'cadSoftware' | 'slicer', value: string) => {
-    setDesignParts(prev => prev.map(part =>
-      part.id === partId ? { ...part, [field]: value } : part
-    ));
-  };
-
-  const validatePartFiles = (part: DesignPart) => {
-    const partFiles = uploadedFiles.filter(file => file.partId === part.id);
-    const hasF3D = partFiles.some(file => file.name.toLowerCase().endsWith('.f3d'));
-    const hasINI = partFiles.some(file => file.name.toLowerCase().endsWith('.ini'));
-    const hasPersonalizedFiles = partFiles.some(file => 
-      file.name.toLowerCase().endsWith('.f3d') || file.name.toLowerCase().endsWith('.ini')
-    );
-    
-    return { hasF3D, hasINI, hasPersonalizedFiles };
-  };
-
-  const handleStartEditCategory = () => {
-    const currentCategory = form.getValues('category');
-    if (!currentCategory) {
-      toast({
-        title: "No category selected",
-        description: "Please select a category to rename.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setEditingCategory(currentCategory);
-    setEditingCategoryValue(currentCategory);
-  };
-
-  const handleSaveEditCategory = () => {
-    if (editingCategory && editingCategoryValue && editingCategory !== editingCategoryValue) {
-      setCategories(prev => prev.map(cat => cat === editingCategory ? editingCategoryValue : cat));
-      form.setValue('category', editingCategoryValue);
-      toast({
-        title: "Category renamed",
-        description: `Category renamed to "${editingCategoryValue}".`,
-      });
-    }
-    setEditingCategory(null);
-    setEditingCategoryValue('');
-  };
-
-  const handleCancelEditCategory = () => {
-    setEditingCategory(null);
-    setEditingCategoryValue('');
-  };
-
-  const handleAddCategory = () => {
-    setShowAddCategoryDialog(true);
-    setNewCategoryName('');
-  };
-
-  const handleSaveNewCategory = () => {
-    if (newCategoryName && newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
-      setCategories(prev => [...prev, newCategoryName.trim()]);
-      form.setValue('category', newCategoryName.trim());
-      toast({
-        title: "Category added",
-        description: `"${newCategoryName.trim()}" was added to categories.`,
-      });
-      setShowAddCategoryDialog(false);
-      setNewCategoryName('');
-    }
-  };
-
-  const handleCancelAddCategory = () => {
-    setShowAddCategoryDialog(false);
-    setNewCategoryName('');
-  };
-
-  const handleDeleteCategory = () => {
-    const currentCategory = form.getValues('category');
-    if (!currentCategory) {
-      toast({
-        title: "No category selected",
-        description: "Please select a category to delete.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (categories.length > 1) {
-      setCategories(prev => prev.filter(cat => cat !== currentCategory));
-      form.setValue('category', '');
-      toast({
-        title: "Category deleted",
-        description: `"${currentCategory}" was removed from categories.`,
-      });
-    } else {
-      toast({
-        title: "Cannot delete category",
-        description: "At least one category must remain.",
-        variant: "destructive",
-      });
-    }
+    designParts.handleRemovePart(partId);
+    fileUpload.setUploadedFiles(prev => prev.filter(file => file.partId !== partId));
   };
 
   const onSubmit = async (data: FormData) => {
     try {
-      const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
-      const partFiles = uploadedFiles.filter(file => file.partId === activePart);
+      const currentPart = designParts.designParts.find(part => part.id === designParts.activePart) || designParts.designParts[0];
+      const partFiles = fileUpload.uploadedFiles.filter(file => file.partId === designParts.activePart);
       
       const f3dFile = partFiles.find(file => file.name.toLowerCase().endsWith('.f3d'));
       const iniFile = partFiles.find(file => file.name.toLowerCase().endsWith('.ini'));
@@ -348,7 +81,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         cad_file_path: f3dFile?.path || null,
         ini_file_path: iniFile?.path || null,
         gcode_file_path: gcodeFile?.path || null,
-        preview_image_path: previewImage ? `preview/${previewImage.name}` : null,
+        preview_image_path: fileUpload.previewImage ? `preview/${fileUpload.previewImage.name}` : null,
         cad_software: currentPart?.cadSoftware || null,
         slicer: currentPart?.slicer || null,
         sketch_name: currentPart?.parameters?.sketchName || null,
@@ -357,8 +90,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       };
 
       console.log('Saving design with data:', designData);
-      console.log('Uploaded files:', uploadedFiles);
-      console.log('Design Parts:', designParts);
+      console.log('Uploaded files:', fileUpload.uploadedFiles);
+      console.log('Design Parts:', designParts.designParts);
 
       await createDesign(designData);
       
@@ -382,275 +115,30 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Basic Design Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Design Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Design Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Name of the design" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="trackingType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tracking Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select tracking type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="ean">EAN</SelectItem>
-                          <SelectItem value="sku">SKU</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="eanNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>EAN / SKU Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter EAN / SKU number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Product Image Drop Zone */}
-              <div className="space-y-2">
-                <Label htmlFor="previewImage">Product Image</Label>
-                <div
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                  onDrop={handlePreviewImageDrop}
-                  onDragOver={(e) => e.preventDefault()}
-                  onClick={() => document.getElementById('previewImage')?.click()}
-                >
-                  {previewImage ? (
-                    <div className="space-y-2">
-                      <img
-                        src={URL.createObjectURL(previewImage)}
-                        alt="Preview"
-                        className="max-h-32 mx-auto rounded"
-                      />
-                      <p className="text-sm text-gray-600">{previewImage.name}</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                      <p className="text-sm text-gray-600">Drop image here or click to upload</p>
-                      <p className="text-xs text-gray-400">PNG, JPG, GIF up to 10MB</p>
-                    </div>
-                  )}
-                </div>
-                <Input
-                  id="previewImage"
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePreviewImageChange}
-                  className="hidden"
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Description of the design"
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Category with Icon Buttons */}
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        {editingCategory ? (
-                          <Input
-                            value={editingCategoryValue}
-                            onChange={(e) => setEditingCategoryValue(e.target.value)}
-                            placeholder="Category name"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                handleSaveEditCategory();
-                              }
-                              if (e.key === 'Escape') {
-                                handleCancelEditCategory();
-                              }
-                            }}
-                            autoFocus
-                          />
-                        ) : (
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select category" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {categories.map((category) => (
-                                <SelectItem key={category} value={category}>
-                                  {category}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
-                      
-                      <div className="flex gap-1">
-                        {/* Rename Category Button */}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={editingCategory ? handleSaveEditCategory : handleStartEditCategory}
-                          title={editingCategory ? "Save changes" : "Rename category"}
-                        >
-                          {editingCategory ? (
-                            <Check className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <Pencil className="h-4 w-4" />
-                          )}
-                        </Button>
-                        
-                        {/* Add Category Button */}
-                        <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
-                          <DialogTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              onClick={handleAddCategory}
-                              title="Add category"
-                              disabled={editingCategory !== null}
-                              className={editingCategory ? 'text-gray-400' : ''}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                              <DialogTitle>Add New Category</DialogTitle>
-                              <DialogDescription>
-                                Enter the name for the new category.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label htmlFor="categoryName">Category Name</Label>
-                                <Input
-                                  id="categoryName"
-                                  value={newCategoryName}
-                                  onChange={(e) => setNewCategoryName(e.target.value)}
-                                  placeholder="Enter category name"
-                                  onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleSaveNewCategory();
-                                    }
-                                  }}
-                                />
-                              </div>
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={handleCancelAddCategory}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  type="button"
-                                  onClick={handleSaveNewCategory}
-                                  disabled={!newCategoryName.trim()}
-                                >
-                                  Add Category
-                                </Button>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        
-                        {/* Delete Category Button */}
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className={`border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 ${editingCategory ? 'text-gray-400' : ''}`}
-                              title="Delete category"
-                              disabled={editingCategory !== null}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action will permanently delete the category "{form.getValues('category')}" for all products. This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={handleDeleteCategory}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+          {/* Design Information Section */}
+          <DesignInformationSection
+            control={form.control}
+            trackingType={trackingType}
+            categories={categoryManager.categories}
+            editingCategory={categoryManager.editingCategory}
+            editingCategoryValue={categoryManager.editingCategoryValue}
+            showAddCategoryDialog={categoryManager.showAddCategoryDialog}
+            newCategoryName={categoryManager.newCategoryName}
+            previewImage={fileUpload.previewImage}
+            onStartEditCategory={categoryManager.handleStartEditCategory}
+            onSaveEditCategory={categoryManager.handleSaveEditCategory}
+            onCancelEditCategory={categoryManager.handleCancelEditCategory}
+            onAddCategory={categoryManager.handleAddCategory}
+            onSaveNewCategory={categoryManager.handleSaveNewCategory}
+            onCancelAddCategory={categoryManager.handleCancelAddCategory}
+            onDeleteCategory={categoryManager.handleDeleteCategory}
+            onPreviewImageDrop={fileUpload.handlePreviewImageDrop}
+            onPreviewImageChange={fileUpload.handlePreviewImageChange}
+            setEditingCategoryValue={categoryManager.setEditingCategoryValue}
+            setNewCategoryName={categoryManager.setNewCategoryName}
+            setShowAddCategoryDialog={categoryManager.setShowAddCategoryDialog}
+            getValues={form.getValues}
+          />
 
           {/* File Management */}
           <Card>
@@ -661,26 +149,25 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* MultiPartFileManager component with Color and Machine fields */}
               <MultiPartFileManager
-                uploadedFiles={uploadedFiles}
+                uploadedFiles={fileUpload.uploadedFiles}
                 loadingFiles={false}
-                uploading={uploading}
-                onFileUpload={handleFileUpload}
-                onFileRemove={handleFileRemove}
-                onFileDownload={handleFileDownload}
-                onPartParametersChange={handlePartParametersChange}
-                selectedPartId={selectedPartId}
-                onPartSelect={handlePartSelect}
-                designParts={designParts}
-                activePart={activePart}
-                onPartChange={setActivePart}
-                onAddPart={handleAddPart}
+                uploading={fileUpload.uploading}
+                onFileUpload={fileUpload.handleFileUpload}
+                onFileRemove={fileUpload.handleFileRemove}
+                onFileDownload={fileUpload.handleFileDownload}
+                onPartParametersChange={designParts.handlePartParametersChange}
+                selectedPartId={designParts.selectedPartId}
+                onPartSelect={designParts.handlePartSelect}
+                designParts={designParts.designParts}
+                activePart={designParts.activePart}
+                onPartChange={designParts.setActivePart}
+                onAddPart={designParts.handleAddPart}
                 onRemovePart={handleRemovePart}
-                onRenamePart={handleRenamePart}
-                onPartTypeChange={handlePartTypeChange}
-                onPartSoftwareChange={handlePartSoftwareChange}
-                validatePartFiles={validatePartFiles}
+                onRenamePart={designParts.handleRenamePart}
+                onPartTypeChange={designParts.handlePartTypeChange}
+                onPartSoftwareChange={designParts.handlePartSoftwareChange}
+                validatePartFiles={(part) => designParts.validatePartFiles(part, fileUpload.uploadedFiles)}
                 colorValue={form.watch('color')}
                 machineValue={form.watch('machine')}
                 machines={machines}
