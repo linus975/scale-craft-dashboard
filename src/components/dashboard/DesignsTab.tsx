@@ -153,13 +153,18 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
     });
   };
 
+  const handleStartSelectionMode = () => {
+    setIsSelectionMode(true);
+    setSelectedDesigns([]);
+  };
+
   if (loading) {
     return <div className="flex justify-center p-8">Loading designs...</div>;
   }
 
   return (
     <div className="space-y-6">
-      {/* Header with Add Button and Delete Button */}
+      {/* Header with Add Button and More Actions Menu */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Design Library</h2>
@@ -167,14 +172,16 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
         </div>
         
         <div className="flex gap-2">
-          <Button 
-            variant={isSelectionMode ? "destructive" : "outline"}
-            onClick={handleToggleSelectionMode}
-            className={isSelectionMode && selectedDesigns.length > 0 ? "bg-red-600 hover:bg-red-700" : ""}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            {isSelectionMode ? (selectedDesigns.length > 0 ? `Delete ${selectedDesigns.length}` : 'Cancel') : 'Delete'}
-          </Button>
+          {isSelectionMode && (
+            <Button 
+              variant={selectedDesigns.length > 0 ? "destructive" : "outline"}
+              onClick={handleToggleSelectionMode}
+              className={selectedDesigns.length > 0 ? "bg-red-600 hover:bg-red-700" : ""}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {selectedDesigns.length > 0 ? `Delete ${selectedDesigns.length}` : 'Cancel'}
+            </Button>
+          )}
           
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
@@ -268,6 +275,10 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleStartSelectionMode}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Designs
+              </DropdownMenuItem>
               <DropdownMenuItem>
                 <Upload className="h-4 w-4 mr-2" />
                 Import Designs
