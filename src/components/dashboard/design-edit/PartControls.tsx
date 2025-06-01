@@ -45,7 +45,7 @@ const PartControls: React.FC<PartControlsProps> = ({
   };
 
   return (
-    <div className="col-span-3 flex gap-1">
+    <div className="col-span-3 flex gap-1 justify-end">
       {/* Edit Part Name */}
       {isEditing ? (
         <Button
