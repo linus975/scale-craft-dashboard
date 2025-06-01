@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Upload, Save, ListPlus, Printer, FileText, X, FileCode } from 'lucide-react';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface DesignEditDialogProps {
@@ -53,6 +54,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   const [loadingFiles, setLoadingFiles] = useState(false);
   
   const { uploadFile, getFileUrl, deleteFile, uploading } = useFileUpload();
+  const { toast } = useToast();
 
   // Filter machines to only show idle ones
   const idleMachines = machines.filter(machine => machine.status === 'idle');
@@ -73,7 +75,6 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
       
       // Add G-Code file if exists (for static designs)
       if (design.design_type === 'static' && design.gcode_file_path) {
-        const gcodeFileUrl = getFileUrl(design.gcode_file_path);
         const fileName = extractOriginalFileName(design.gcode_file_path, 'G-Code File');
         files.push({
           id: 'gcode_file',
@@ -101,7 +102,6 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
       
       // Add CAD file if exists (for personalized designs)
       if (design.design_type === 'personalized' && design.cad_file_path) {
-        const cadFileUrl = getFileUrl(design.cad_file_path);
         const fileName = extractOriginalFileName(design.cad_file_path, 'CAD File');
         files.push({
           id: 'cad_file',
@@ -116,7 +116,6 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
 
       // Add INI file if exists
       if (design.ini_file_path) {
-        const iniFileUrl = getFileUrl(design.ini_file_path);
         const fileName = extractOriginalFileName(design.ini_file_path, 'Settings File');
         files.push({
           id: 'ini_file',
@@ -131,7 +130,6 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
 
       // Add preview image if exists
       if (design.preview_image_path) {
-        const previewFileUrl = getFileUrl(design.preview_image_path);
         const fileName = extractOriginalFileName(design.preview_image_path, 'Preview Image');
         files.push({
           id: 'preview_image',
@@ -146,27 +144,29 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
 
       // Load additional files from storage bucket if they exist
       try {
-        const { data: storageFiles, error } = await supabase.storage
-          .from('design-files')
-          .list(`${design.user_id}/designs/`, {
-            limit: 100,
-            search: design.id
-          });
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: storageFiles, error } = await supabase.storage
+            .from('design-files')
+            .list(`${user.id}/designs/`, {
+              limit: 100
+            });
 
-        if (storageFiles && !error) {
-          for (const file of storageFiles) {
-            // Skip if this file is already included above
-            const fullPath = `${design.user_id}/designs/${file.name}`;
-            if (!files.find(f => f.path === fullPath)) {
-              files.push({
-                id: file.id || file.name,
-                name: file.name,
-                type: getFileType(file.name),
-                size: file.metadata?.size ? `${(file.metadata.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown',
-                uploadDate: new Date(file.created_at || design.created_at).toISOString().split('T')[0],
-                path: fullPath,
-                originalName: file.name
-              });
+          if (storageFiles && !error) {
+            for (const file of storageFiles) {
+              // Skip if this file is already included above
+              const fullPath = `${user.id}/designs/${file.name}`;
+              if (!files.find(f => f.path === fullPath)) {
+                files.push({
+                  id: file.id || file.name,
+                  name: file.name,
+                  type: getFileType(file.name),
+                  size: file.metadata?.size ? `${(file.metadata.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown',
+                  uploadDate: new Date(file.created_at || design.created_at).toISOString().split('T')[0],
+                  path: fullPath,
+                  originalName: file.name
+                });
+              }
             }
           }
         }
@@ -191,7 +191,6 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
     const fileName = parts[parts.length - 1];
     
     // Try to extract original name if it follows the pattern randomString.extension
-    // You might want to adjust this based on how your files are stored
     if (fileName.includes('.')) {
       const extension = fileName.split('.').pop();
       
@@ -288,7 +287,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
 
     try {
       for (const file of Array.from(files)) {
-        const filePath = await uploadFile(file, `designs`);
+        const filePath = await uploadFile(file, 'designs');
         
         // Add the new file to the list
         const newFile: UploadedFile = {
@@ -302,23 +301,59 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
         };
         
         setUploadedFiles(prev => [...prev, newFile]);
+        
+        toast({
+          title: "Datei hochgeladen",
+          description: `${file.name} wurde erfolgreich hochgeladen.`,
+        });
       }
     } catch (error) {
       console.error('Error uploading files:', error);
+      toast({
+        title: "Fehler beim Hochladen",
+        description: "Die Datei konnte nicht hochgeladen werden.",
+        variant: "destructive",
+      });
     }
+    
+    // Reset file input
+    event.target.value = '';
   };
 
   const handleFileRemove = async (file: UploadedFile) => {
     if (file.id === 'legacy_gcode') {
-      // Can't delete legacy G-Code stored in database
+      toast({
+        title: "Nicht löschbar",
+        description: "Legacy G-Code kann nicht gelöscht werden.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!file.path) {
+      toast({
+        title: "Fehler",
+        description: "Datei-Pfad nicht gefunden.",
+        variant: "destructive",
+      });
       return;
     }
     
     try {
       await deleteFile(file.path);
       setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
+      
+      toast({
+        title: "Datei gelöscht",
+        description: `${file.name} wurde erfolgreich gelöscht.`,
+      });
     } catch (error) {
       console.error('Error deleting file:', error);
+      toast({
+        title: "Fehler beim Löschen",
+        description: "Die Datei konnte nicht gelöscht werden.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -339,6 +374,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
       const link = document.createElement('a');
       link.href = fileUrl;
       link.download = file.originalName || file.name;
+      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -458,47 +494,60 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                   {/* File Management */}
                   <div className="space-y-4">
                     <div>
-                      <h4 className="text-lg font-medium">Files</h4>
-                      <p className="text-sm text-gray-600">Manage uploaded files for this design</p>
+                      <h4 className="text-lg font-medium">Dateien verwalten</h4>
+                      <p className="text-sm text-gray-600">Laden Sie neue Dateien hoch oder löschen Sie bestehende</p>
                     </div>
 
                     {/* File Upload */}
                     <div className="space-y-2">
-                      <Label htmlFor="fileUpload">Upload New Files</Label>
-                      <Input
-                        id="fileUpload"
-                        type="file"
-                        multiple
-                        onChange={handleFileUpload}
-                        className="cursor-pointer"
-                        disabled={uploading}
-                      />
-                      {uploading && <p className="text-sm text-blue-600">Uploading...</p>}
+                      <Label htmlFor="fileUpload">Neue Dateien hochladen</Label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600 mb-2">
+                          Klicken Sie hier oder ziehen Sie Dateien hinein
+                        </p>
+                        <Input
+                          id="fileUpload"
+                          type="file"
+                          multiple
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          disabled={uploading}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('fileUpload')?.click()}
+                          disabled={uploading}
+                        >
+                          {uploading ? 'Hochladen...' : 'Dateien auswählen'}
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Uploaded Files List */}
                     {(loadingFiles || uploadedFiles.length > 0) && (
                       <div className="space-y-2">
-                        <Label>Uploaded Files</Label>
-                        <div className="border rounded-lg p-4 max-h-32 overflow-y-auto">
+                        <Label>Hochgeladene Dateien</Label>
+                        <div className="border rounded-lg p-4 max-h-64 overflow-y-auto">
                           {loadingFiles ? (
-                            <p className="text-sm text-gray-500">Loading files...</p>
+                            <p className="text-sm text-gray-500">Dateien werden geladen...</p>
                           ) : uploadedFiles.length === 0 ? (
-                            <p className="text-sm text-gray-500">No files uploaded yet</p>
+                            <p className="text-sm text-gray-500">Keine Dateien hochgeladen</p>
                           ) : (
                             uploadedFiles.map((file) => (
                               <div key={file.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
                                   {file.type.includes('G-Code') ? 
-                                    <FileCode className="h-4 w-4 text-green-500" /> : 
-                                    <FileText className="h-4 w-4 text-slate-500" />
+                                    <FileCode className="h-4 w-4 text-green-500 flex-shrink-0" /> : 
+                                    <FileText className="h-4 w-4 text-slate-500 flex-shrink-0" />
                                   }
-                                  <div>
-                                    <p className="text-sm font-medium">{file.name}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium truncate">{file.name}</p>
                                     <p className="text-xs text-slate-500">{file.type} • {file.size} • {file.uploadDate}</p>
                                   </div>
                                 </div>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 flex-shrink-0 ml-2">
                                   <Button 
                                     size="sm" 
                                     variant="outline"
@@ -507,16 +556,15 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                                   >
                                     Download
                                   </Button>
-                                  {file.id !== 'legacy_gcode' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost"
-                                      onClick={() => handleFileRemove(file)}
-                                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                  )}
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={() => handleFileRemove(file)}
+                                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    title={file.id === 'legacy_gcode' ? 'Legacy G-Code kann nicht gelöscht werden' : 'Datei löschen'}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
                                 </div>
                               </div>
                             ))
