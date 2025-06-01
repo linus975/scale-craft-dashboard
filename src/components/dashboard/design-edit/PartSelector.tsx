@@ -97,30 +97,30 @@ const PartSelector: React.FC<PartSelectorProps> = ({
         />
       </div>
 
-      {/* Required Software Selection for all parts */}
-      <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <div className="space-y-3">
-          <h4 className="font-medium text-blue-900">CAD Software *</h4>
-          <SoftwareSelectors
-            cadSoftware={currentPart?.cadSoftware}
-            slicer={currentPart?.slicer}
-            onSoftwareChange={(field, value) => onPartSoftwareChange(activePart, field, value)}
-            disabled={isEditing}
-            showOnlyCAD={true}
-          />
-        </div>
+      {/* Software Selection only for personalized parts */}
+      {currentPart?.partType === 'personalized' && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <SoftwareSelectors
+              cadSoftware={currentPart?.cadSoftware}
+              slicer={currentPart?.slicer}
+              onSoftwareChange={(field, value) => onPartSoftwareChange(activePart, field, value)}
+              disabled={isEditing}
+              showOnlyCAD={true}
+            />
+          </div>
 
-        <div className="space-y-3">
-          <h4 className="font-medium text-blue-900">Slicer Software *</h4>
-          <SoftwareSelectors
-            cadSoftware={currentPart?.cadSoftware}
-            slicer={currentPart?.slicer}
-            onSoftwareChange={(field, value) => onPartSoftwareChange(activePart, field, value)}
-            disabled={isEditing}
-            showOnlySlicer={true}
-          />
+          <div className="space-y-2">
+            <SoftwareSelectors
+              cadSoftware={currentPart?.cadSoftware}
+              slicer={currentPart?.slicer}
+              onSoftwareChange={(field, value) => onPartSoftwareChange(activePart, field, value)}
+              disabled={isEditing}
+              showOnlySlicer={true}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

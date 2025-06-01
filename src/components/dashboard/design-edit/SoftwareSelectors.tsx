@@ -27,7 +27,7 @@ const SoftwareSelectors: React.FC<SoftwareSelectorsProps> = ({
     <div className={`${(!showOnlyCAD && !showOnlySlicer) ? 'grid grid-cols-2 gap-4' : ''}`}>
       {showCAD && (
         <div className="space-y-2">
-          {(!showOnlyCAD && !showOnlySlicer) && <Label>CAD Software *</Label>}
+          <Label>CAD Software *</Label>
           <Select
             value={cadSoftware}
             onValueChange={(value) => onSoftwareChange('cadSoftware', value)}
@@ -52,7 +52,7 @@ const SoftwareSelectors: React.FC<SoftwareSelectorsProps> = ({
 
       {showSlicer && (
         <div className="space-y-2">
-          {(!showOnlyCAD && !showOnlySlicer) && <Label>Slicer Software *</Label>}
+          <Label>Slicer Software *</Label>
           <Select
             value={slicer}
             onValueChange={(value) => onSoftwareChange('slicer', value)}
