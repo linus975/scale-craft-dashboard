@@ -182,21 +182,43 @@ const FileUpload: React.FC<FileUploadProps> = ({
               required={true}
             />
             
-            {/* Nozzle Diameter */}
-            <div className="mt-3">
-              <Label htmlFor={`nozzleDiameter-${partId}`} className="text-xs">
-                Nozzle Diameter (mm) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id={`nozzleDiameter-${partId}`}
-                placeholder="0.4"
-                type="number"
-                step="0.1"
-                min="0.1"
-                max="2.0"
-                className="h-8 text-xs mt-1"
-                required
-              />
+            {/* Nozzle Diameter and Filament Type */}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="space-y-1">
+                <Label htmlFor={`nozzleDiameter-${partId}`} className="text-xs">
+                  Nozzle Diameter (mm) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id={`nozzleDiameter-${partId}`}
+                  placeholder="0.4"
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  max="2.0"
+                  className="h-8 text-xs"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor={`filamentType-${partId}`} className="text-xs">
+                  Filament Type <span className="text-red-500">*</span>
+                </Label>
+                <Select required>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select filament" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pla">PLA</SelectItem>
+                    <SelectItem value="abs">ABS</SelectItem>
+                    <SelectItem value="petg">PETG</SelectItem>
+                    <SelectItem value="tpu">TPU</SelectItem>
+                    <SelectItem value="wood">Wood</SelectItem>
+                    <SelectItem value="metal">Metal Fill</SelectItem>
+                    <SelectItem value="carbon">Carbon Fiber</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </div>
@@ -204,7 +226,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     );
   }
 
-  // Static part type - single G-code upload with nozzle diameter
+  // Static part type - single G-code upload with nozzle diameter and filament type
   return (
     <div className="space-y-2">
       <FileUploadSection
@@ -215,21 +237,43 @@ const FileUpload: React.FC<FileUploadProps> = ({
         required={true}
       />
       
-      {/* Nozzle Diameter for Static Design */}
-      <div className="mt-3">
-        <Label htmlFor={`staticNozzleDiameter-${partId}`} className="text-xs">
-          Nozzle Diameter (mm) <span className="text-red-500">*</span>
-        </Label>
-        <Input
-          id={`staticNozzleDiameter-${partId}`}
-          placeholder="0.4"
-          type="number"
-          step="0.1"
-          min="0.1"
-          max="2.0"
-          className="h-8 text-xs"
-          required
-        />
+      {/* Nozzle Diameter and Filament Type for Static Design */}
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <div className="space-y-1">
+          <Label htmlFor={`staticNozzleDiameter-${partId}`} className="text-xs">
+            Nozzle Diameter (mm) <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id={`staticNozzleDiameter-${partId}`}
+            placeholder="0.4"
+            type="number"
+            step="0.1"
+            min="0.1"
+            max="2.0"
+            className="h-8 text-xs"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor={`staticFilamentType-${partId}`} className="text-xs">
+            Filament Type <span className="text-red-500">*</span>
+          </Label>
+          <Select required>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Select filament" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pla">PLA</SelectItem>
+              <SelectItem value="abs">ABS</SelectItem>
+              <SelectItem value="petg">PETG</SelectItem>
+              <SelectItem value="tpu">TPU</SelectItem>
+              <SelectItem value="wood">Wood</SelectItem>
+              <SelectItem value="metal">Metal Fill</SelectItem>
+              <SelectItem value="carbon">Carbon Fiber</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );
