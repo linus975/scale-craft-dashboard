@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ interface FormData {
   eanNumber: string;
   description: string;
   category: string;
+  designType: string;
 }
 
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
@@ -41,7 +41,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       trackingType: '',
       eanNumber: '',
       description: '',
-      category: ''
+      category: '',
+      designType: 'static'
     }
   });
 
@@ -69,7 +70,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         path: `temp/${file.name}`,
         originalName: file.name,
         partId: partId || 'main',
-        designType: 'static' // Default to static, can be changed per file
+        designType: 'static' as const
       }));
 
       setUploadedFiles(prev => [...prev, ...newFiles]);
@@ -113,7 +114,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   };
 
   const handleFileDownload = (file: any) => {
-    // Download functionality would be implemented here
     console.log('Downloading file:', file.name);
   };
 
@@ -136,7 +136,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         ean_number: data.eanNumber,
         description: data.description,
         category: data.category,
-        // Add file paths and other data as needed
+        design_type: data.designType
       };
 
       await createDesign(designData);

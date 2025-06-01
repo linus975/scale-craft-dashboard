@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,7 +48,6 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if there's at least one G-code file
     const gcodeFiles = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.gcode') || f.name.toLowerCase().endsWith('.g'));
     
     if (!formData.name || !formData.trackingNumber || !formData.category || gcodeFiles.length === 0) {
@@ -63,10 +61,8 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
 
     setLoading(true);
     try {
-      // Use the first G-code file as the main one
       const mainGcodeFile = gcodeFiles[0];
 
-      // Upload preview image if provided
       let previewImagePath = null;
       if (previewImage) {
         previewImagePath = await uploadFile(previewImage, 'preview-images');
@@ -292,7 +288,6 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
             onFileUpload={handleFileUpload}
             onFileRemove={handleFileRemove}
             onFileDownload={handleFileDownload}
-            isPersonalized={false}
             selectedPartId={selectedPartId}
             onPartSelect={setSelectedPartId}
           />

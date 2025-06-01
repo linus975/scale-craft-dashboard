@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,7 +53,6 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate main part has required files
     const mainPartFiles = uploadedFiles.filter(f => f.partId === 'main' || !f.partId);
     const hasF3D = mainPartFiles.some(f => f.name.toLowerCase().endsWith('.f3d'));
     const hasINI = mainPartFiles.some(f => f.name.toLowerCase().endsWith('.ini'));
@@ -71,7 +69,6 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
 
     setLoading(true);
     try {
-      // Find the F3D and INI files for the main part
       const f3dFile = mainPartFiles.find(f => f.name.toLowerCase().endsWith('.f3d'));
       const iniFile = mainPartFiles.find(f => f.name.toLowerCase().endsWith('.ini'));
 
@@ -79,7 +76,6 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
         throw new Error('F3D- und INI-Dateien sind erforderlich');
       }
 
-      // Upload preview image if provided
       let previewImagePath = null;
       if (previewImage) {
         previewImagePath = await uploadFile(previewImage, 'preview-images');
@@ -182,7 +178,6 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
   };
 
   const handleFileDownload = (file: UploadedFile) => {
-    // This would normally trigger a download - placeholder for now
     toast({
       title: "Download",
       description: `Download für ${file.name} wird vorbereitet.`,
@@ -364,7 +359,6 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
             onFileRemove={handleFileRemove}
             onFileDownload={handleFileDownload}
             onPartParametersChange={handlePartParametersChange}
-            isPersonalized={true}
             selectedPartId={selectedPartId}
             onPartSelect={setSelectedPartId}
           />
