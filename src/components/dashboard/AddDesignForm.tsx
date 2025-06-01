@@ -59,8 +59,47 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     fileUpload.setUploadedFiles(prev => prev.filter(file => file.partId !== partId));
   };
 
+  const validateForm = (data: FormData) => {
+    const errors: string[] = [];
+    
+    // Check required fields
+    if (!data.name) errors.push("Design name is required");
+    if (!data.trackingType) errors.push("Tracking type is required");
+    if (!data.eanNumber) errors.push("EAN/SKU number is required");
+    if (!data.color) errors.push("Color is required");
+    if (!data.machine) errors.push("Machine is required");
+    
+    // Check file requirements
+    const currentPart = designParts.designParts.find(part => part.id === designParts.activePart) || designParts.designParts[0];
+    const partFiles = fileUpload.uploadedFiles.filter(file => file.partId === designParts.activePart);
+    
+    if (currentPart?.partType === 'personalized') {
+      const f3dFiles = partFiles.filter(file => file.name.toLowerCase().endsWith('.f3d'));
+      const iniFiles = partFiles.filter(file => file.name.toLowerCase().endsWith('.ini'));
+      
+      if (f3dFiles.length !== 1) errors.push("Exactly one CAD file (.f3d) is required");
+      if (iniFiles.length !== 1) errors.push("Exactly one INI file is required");
+    } else {
+      const gcodeFiles = partFiles.filter(file => file.name.toLowerCase().endsWith('.gcode') || file.name.toLowerCase().endsWith('.g'));
+      if (gcodeFiles.length !== 1) errors.push("Exactly one G-code file is required");
+    }
+    
+    return errors;
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
+      // Validate form and files
+      const validationErrors = validateForm(data);
+      if (validationErrors.length > 0) {
+        toast({
+          title: "Validation Error",
+          description: validationErrors.join(", "),
+          variant: "destructive",
+        });
+        return;
+      }
+
       const currentPart = designParts.designParts.find(part => part.id === designParts.activePart) || designParts.designParts[0];
       const partFiles = fileUpload.uploadedFiles.filter(file => file.partId === designParts.activePart);
       

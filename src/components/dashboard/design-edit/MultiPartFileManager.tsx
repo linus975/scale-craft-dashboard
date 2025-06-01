@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import PartSelector from './PartSelector';
 import FileUpload from './FileUpload';
@@ -137,18 +139,57 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         validatePartFiles={externalValidatePartFiles || validatePartFiles}
       />
 
-      {/* Color and Machine fields without grey background */}
+      {/* Required Fields Section */}
+      <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="space-y-3">
+          <h4 className="font-medium text-blue-900">CAD Software *</h4>
+          <Select required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select CAD software" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fusion360">Fusion 360</SelectItem>
+              <SelectItem value="solidworks">SolidWorks</SelectItem>
+              <SelectItem value="autocad">AutoCAD</SelectItem>
+              <SelectItem value="inventor">Inventor</SelectItem>
+              <SelectItem value="creo">Creo</SelectItem>
+              <SelectItem value="catia">CATIA</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-3">
+          <h4 className="font-medium text-blue-900">Slicer Software *</h4>
+          <Select required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select slicer software" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="prusa">PrusaSlicer</SelectItem>
+              <SelectItem value="cura">Ultimaker Cura</SelectItem>
+              <SelectItem value="superslicer">SuperSlicer</SelectItem>
+              <SelectItem value="bambu">Bambu Studio</SelectItem>
+              <SelectItem value="simplify3d">Simplify3D</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Color and Machine fields */}
       {(colorValue !== undefined || machineValue !== undefined) && (
         <div className="grid grid-cols-2 gap-4">
           {colorValue !== undefined && formControl && (
             <FormField
               control={formControl}
               name="color"
+              rules={{ required: "Color is required" }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Farbe</FormLabel>
+                  <FormLabel>Color *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Farbe eingeben" {...field} />
+                    <Input placeholder="Enter color" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -160,11 +201,12 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
             <FormField
               control={formControl}
               name="machine"
+              rules={{ required: "Machine is required" }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Machine</FormLabel>
+                  <FormLabel>Machine *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Maschine eingeben" {...field} />
+                    <Input placeholder="Enter machine name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -189,6 +231,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
             partType={currentPart.partType}
             uploading={uploading}
             onFileUpload={handleFileUpload}
+            uploadedFiles={uploadedFiles}
           />
 
           <ParameterConfig

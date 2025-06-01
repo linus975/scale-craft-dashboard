@@ -81,11 +81,12 @@ const DesignInformationSection: React.FC<DesignInformationSectionProps> = ({
         <FormField
           control={control}
           name="name"
+          rules={{ required: "Design name is required" }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Design Name</FormLabel>
+              <FormLabel>Design Name *</FormLabel>
               <FormControl>
-                <Input placeholder="Name of the design" {...field} />
+                <Input placeholder="Enter design name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -96,9 +97,10 @@ const DesignInformationSection: React.FC<DesignInformationSectionProps> = ({
           <FormField
             control={control}
             name="trackingType"
+            rules={{ required: "Tracking type is required" }}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tracking Type</FormLabel>
+                <FormLabel>Tracking Type *</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
@@ -118,9 +120,10 @@ const DesignInformationSection: React.FC<DesignInformationSectionProps> = ({
           <FormField
             control={control}
             name="eanNumber"
+            rules={{ required: "EAN/SKU number is required" }}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>EAN / SKU Number</FormLabel>
+                <FormLabel>EAN / SKU Number *</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter EAN / SKU number" {...field} />
                 </FormControl>
