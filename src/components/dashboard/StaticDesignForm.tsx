@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, Loader2, Image } from 'lucide-react';
+import { Save, Loader2, Image, FileCode } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useToast } from '@/hooks/use-toast';
@@ -22,22 +22,22 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
+  const [gcodeFile, setGcodeFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     trackingType: 'ean' as 'ean' | 'sku',
     trackingNumber: '',
     description: '',
-    category: '',
-    gcode: ''
+    category: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.trackingNumber || !formData.category || !formData.gcode) {
+    if (!formData.name || !formData.trackingNumber || !formData.category || !gcodeFile) {
       toast({
         title: "Fehlende Angaben",
-        description: "Bitte füllen Sie alle Pflichtfelder aus.",
+        description: "Bitte füllen Sie alle Pflichtfelder aus und laden Sie eine G-Code Datei hoch.",
         variant: "destructive",
       });
       return;
@@ -45,6 +45,9 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
 
     setLoading(true);
     try {
+      // Upload G-code file
+      const gcodeFilePath = await uploadFile(gcodeFile, 'gcode-files');
+      
       // Upload preview image if provided
       let previewImagePath = null;
       if (previewImage) {
@@ -56,7 +59,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         description: formData.description || null,
         category: formData.category,
         design_type: 'static',
-        gcode: formData.gcode,
+        gcode_file_path: gcodeFilePath,
         ean_number: formData.trackingNumber,
         tracking_type: formData.trackingType,
         preview_image_path: previewImagePath
@@ -81,12 +84,16 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     setPreviewImage(file);
   };
 
+  const handleGcodeFileChange = (file: File | null) => {
+    setGcodeFile(file);
+  };
+
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>Statisches Design hinzufügen</CardTitle>
         <CardDescription>
-          Laden Sie Ihren G-Code hoch und konfigurieren Sie die Druckeinstellungen für dieses statische Design
+          Laden Sie Ihre G-Code Datei hoch und konfigurieren Sie die Druckeinstellungen für dieses statische Design
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -189,17 +196,32 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
             </p>
           </div>
 
-          {/* G-code Upload */}
+          {/* G-code File Upload */}
           <div className="space-y-2">
-            <Label htmlFor="gcode">G-Code *</Label>
-            <Textarea
-              id="gcode"
-              placeholder="Fügen Sie Ihren G-Code hier ein..."
-              value={formData.gcode}
-              onChange={(e) => handleInputChange('gcode', e.target.value)}
-              className="min-h-32 font-mono text-sm"
-              required
-            />
+            <Label htmlFor="gcodeFile">G-Code Datei *</Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+              <FileCode className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600 mb-2">
+                {gcodeFile ? gcodeFile.name : 'G-Code Datei (.gcode, .g) hochladen'}
+              </p>
+              <Input
+                id="gcodeFile"
+                type="file"
+                accept=".gcode,.g,.txt"
+                onChange={(e) => handleGcodeFileChange(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('gcodeFile')?.click()}
+              >
+                G-Code Datei auswählen
+              </Button>
+            </div>
+            <p className="text-sm text-gray-600">
+              Wählen Sie eine G-Code Datei (.gcode, .g, .txt) für das statische Design aus.
+            </p>
           </div>
 
           {/* Action Buttons */}
@@ -211,7 +233,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
               {loading || uploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {uploading ? 'Bild hochladen...' : 'Speichern...'}
+                  {uploading ? 'Datei hochladen...' : 'Speichern...'}
                 </>
               ) : (
                 <>
