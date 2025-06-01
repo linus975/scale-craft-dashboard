@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -492,7 +493,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <div className="flex gap-1">
+                    <div className={`flex gap-2 ${editingCategory ? 'bg-gray-50 p-2 rounded-md' : ''}`}>
                       <div className="flex-1">
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
