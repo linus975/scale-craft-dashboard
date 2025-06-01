@@ -241,7 +241,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
       });
     }
     
-    // Clear the input but don't close the dialog
+    // Clear the input but keep the dialog open
     event.target.value = '';
   };
 
@@ -272,6 +272,8 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
         title: "Datei gelöscht",
         description: `${file.name} wurde erfolgreich gelöscht.`,
       });
+      
+      // Don't close the dialog - keep it open
     } catch (error) {
       console.error('Error deleting file:', error);
       toast({
@@ -282,26 +284,47 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
     }
   };
 
-  const handleFileDownload = (file: UploadedFile) => {
-    if (file.id === 'legacy_gcode') {
-      const blob = new Blob([design.gcode], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = file.originalName || file.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } else {
-      const fileUrl = getFileUrl(file.path);
-      const link = document.createElement('a');
-      link.href = fileUrl;
-      link.download = file.originalName || file.name;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const handleFileDownload = async (file: UploadedFile) => {
+    try {
+      if (file.id === 'legacy_gcode') {
+        const blob = new Blob([design.gcode], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.originalName || file.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        // For files stored in Supabase storage
+        const { data, error } = await supabase.storage
+          .from('design-files')
+          .download(file.path);
+        
+        if (error) throw error;
+        
+        const url = URL.createObjectURL(data);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.originalName || file.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Download erfolgreich",
+          description: `${file.name} wurde heruntergeladen.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Download fehlgeschlagen",
+        description: "Die Datei konnte nicht heruntergeladen werden.",
+        variant: "destructive",
+      });
     }
   };
 

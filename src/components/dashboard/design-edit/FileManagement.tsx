@@ -38,8 +38,13 @@ const FileManagement: React.FC<FileManagementProps> = ({
     onFileUpload(event);
   };
 
+  const handleFileRemove = (file: UploadedFile) => {
+    // Remove the file but don't close the dialog
+    onFileRemove(file);
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
       <div>
         <h4 className="text-lg font-medium">Dateien verwalten</h4>
         <p className="text-sm text-gray-600">Laden Sie neue Dateien hoch oder löschen Sie bestehende</p>
@@ -115,10 +120,11 @@ const FileManagement: React.FC<FileManagementProps> = ({
                       variant="ghost"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onFileRemove(file);
+                        handleFileRemove(file);
                       }}
                       className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                       title={file.id === 'legacy_gcode' ? 'Legacy G-Code kann nicht gelöscht werden' : 'Datei löschen'}
+                      disabled={file.id === 'legacy_gcode'}
                     >
                       <X className="h-3 w-3" />
                     </Button>
