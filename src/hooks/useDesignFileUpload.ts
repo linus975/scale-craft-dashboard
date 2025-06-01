@@ -41,19 +41,38 @@ export const useDesignFileUpload = () => {
     
     // Simulate file upload
     setTimeout(() => {
-      const newFiles = Array.from(files).map(file => ({
-        id: Date.now() + Math.random() + '',
-        name: file.name,
-        type: getFileType(file.name),
-        size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-        uploadDate: new Date().toISOString().split('T')[0],
-        path: `temp/${file.name}`,
-        originalName: file.name,
-        partId: partId || 'main',
-        designType: 'static' as const
-      }));
+      const newFiles = Array.from(files).map(file => {
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        
+        return {
+          id: Date.now() + Math.random() + '',
+          name: file.name,
+          type: getFileType(file.name),
+          size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+          uploadDate: new Date().toISOString().split('T')[0],
+          path: `temp/${file.name}`,
+          originalName: file.name,
+          partId: partId || 'main',
+          designType: 'static' as const,
+          fileExtension: fileExtension,
+          // Separate storage for F3D and INI files
+          isF3DFile: fileExtension === 'f3d',
+          isINIFile: fileExtension === 'ini'
+        };
+      });
 
-      setUploadedFiles(prev => [...prev, ...newFiles]);
+      // Remove existing files of the same type and part to ensure only one F3D and one INI per part
+      setUploadedFiles(prev => {
+        const filteredPrev = prev.filter(existingFile => {
+          const newFileTypes = newFiles.map(nf => ({ extension: nf.fileExtension, partId: nf.partId }));
+          return !newFileTypes.some(nf => 
+            nf.extension === existingFile.fileExtension && 
+            nf.partId === existingFile.partId
+          );
+        });
+        return [...filteredPrev, ...newFiles];
+      });
+
       setUploading(false);
       
       toast({

@@ -35,10 +35,11 @@ export const useDesignFormValidation = (
         if (!part.cadSoftware) errors.push(`CAD Software is required for part "${part.name}"`);
         if (!part.slicer) errors.push(`Slicer Software is required for part "${part.name}"`);
         
-        const f3dFiles = partFiles.filter(file => file.name.toLowerCase().endsWith('.f3d'));
-        const iniFiles = partFiles.filter(file => file.name.toLowerCase().endsWith('.ini'));
+        // Validate F3D and INI files separately
+        const f3dFiles = partFiles.filter(file => file.isF3DFile && file.name.toLowerCase().endsWith('.f3d'));
+        const iniFiles = partFiles.filter(file => file.isINIFile && file.name.toLowerCase().endsWith('.ini'));
         
-        if (f3dFiles.length !== 1) errors.push(`Exactly one CAD file (.f3d) is required for part "${part.name}"`);
+        if (f3dFiles.length !== 1) errors.push(`Exactly one F3D file is required for part "${part.name}"`);
         if (iniFiles.length !== 1) errors.push(`Exactly one INI file is required for part "${part.name}"`);
         
         // Check sketch name and replacement type for personalized parts

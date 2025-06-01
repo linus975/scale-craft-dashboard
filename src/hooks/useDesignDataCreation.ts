@@ -21,8 +21,9 @@ export const useDesignDataCreation = (
     const mainPart = designParts.designParts[0];
     const mainPartFiles = fileUpload.uploadedFiles.filter(file => file.partId === mainPart.id);
     
-    const f3dFile = mainPartFiles.find(file => file.name.toLowerCase().endsWith('.f3d'));
-    const iniFile = mainPartFiles.find(file => file.name.toLowerCase().endsWith('.ini'));
+    // Separate F3D and INI files for individual database storage
+    const f3dFile = mainPartFiles.find(file => file.isF3DFile && file.name.toLowerCase().endsWith('.f3d'));
+    const iniFile = mainPartFiles.find(file => file.isINIFile && file.name.toLowerCase().endsWith('.ini'));
     const gcodeFile = mainPartFiles.find(file => file.name.toLowerCase().endsWith('.gcode') || file.name.toLowerCase().endsWith('.g'));
 
     const designData = {
@@ -34,6 +35,7 @@ export const useDesignDataCreation = (
       color: data.color,
       machine: data.machine,
       design_type: mainPart?.partType || 'static',
+      // Store F3D and INI files separately in database
       cad_file_path: f3dFile?.path || null,
       ini_file_path: iniFile?.path || null,
       gcode_file_path: gcodeFile?.path || null,
@@ -45,23 +47,34 @@ export const useDesignDataCreation = (
       nozzle_diameter: mainPart?.nozzleDiameter || null,
       material: mainPart?.filamentType || null,
       version: 'v1.0',
-      // Store all parts data as JSON
+      // Store all parts data as JSON with separate file references
       parameters: {
-        parts: designParts.designParts.map(part => ({
-          id: part.id,
-          name: part.name,
-          partType: part.partType,
-          cadSoftware: part.cadSoftware,
-          slicer: part.slicer,
-          nozzleDiameter: part.nozzleDiameter,
-          filamentType: part.filamentType,
-          parameters: part.parameters,
-          files: fileUpload.uploadedFiles.filter(file => file.partId === part.id).map(file => ({
-            name: file.name,
-            path: file.path,
-            type: file.type
-          }))
-        }))
+        parts: designParts.designParts.map(part => {
+          const partFiles = fileUpload.uploadedFiles.filter(file => file.partId === part.id);
+          const partF3DFile = partFiles.find(file => file.isF3DFile);
+          const partINIFile = partFiles.find(file => file.isINIFile);
+          
+          return {
+            id: part.id,
+            name: part.name,
+            partType: part.partType,
+            cadSoftware: part.cadSoftware,
+            slicer: part.slicer,
+            nozzleDiameter: part.nozzleDiameter,
+            filamentType: part.filamentType,
+            parameters: part.parameters,
+            // Store F3D and INI file paths separately
+            f3dFilePath: partF3DFile?.path || null,
+            iniFilePath: partINIFile?.path || null,
+            files: partFiles.map(file => ({
+              name: file.name,
+              path: file.path,
+              type: file.type,
+              isF3DFile: file.isF3DFile || false,
+              isINIFile: file.isINIFile || false
+            }))
+          };
+        })
       }
     };
 

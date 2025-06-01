@@ -17,8 +17,9 @@ export const useDesignJobCreation = (
       for (const part of designParts.designParts) {
         const partFiles = fileUpload.uploadedFiles.filter(file => file.partId === part.id);
         
-        const f3dFile = partFiles.find(file => file.name.toLowerCase().endsWith('.f3d'));
-        const iniFile = partFiles.find(file => file.name.toLowerCase().endsWith('.ini'));
+        // Get F3D and INI files separately
+        const f3dFile = partFiles.find(file => file.isF3DFile && file.name.toLowerCase().endsWith('.f3d'));
+        const iniFile = partFiles.find(file => file.isINIFile && file.name.toLowerCase().endsWith('.ini'));
         const gcodeFile = partFiles.find(file => file.name.toLowerCase().endsWith('.gcode') || file.name.toLowerCase().endsWith('.g'));
 
         const jobData = {
@@ -39,6 +40,7 @@ export const useDesignJobCreation = (
             replacementType: part.parameters?.replacementType,
             cadSoftware: part.cadSoftware,
             slicer: part.slicer,
+            // Store F3D and INI paths separately for personalization
             cadFilePath: f3dFile?.path,
             iniFilePath: iniFile?.path
           } : null,
@@ -49,7 +51,10 @@ export const useDesignJobCreation = (
             nozzleDiameter: part.nozzleDiameter,
             filamentType: part.filamentType,
             cadSoftware: part.cadSoftware || null,
-            slicer: part.slicer || null
+            slicer: part.slicer || null,
+            // Include separate file references
+            f3dFilePath: f3dFile?.path || null,
+            iniFilePath: iniFile?.path || null
           },
           priority: 5,
           status: part.partType === 'personalized' ? 'waiting_for_personalization' : 'ready_to_print',
