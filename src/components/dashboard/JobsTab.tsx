@@ -88,6 +88,19 @@ const JobsTab: React.FC = () => {
     }
   };
 
+  // Create wrapper functions for type-safe view changes
+  const handleSectionClick = (view: string) => {
+    if (view === 'allHigh' || view === 'allNormal' || view === 'allCompleted' || view === 'allFailed') {
+      setCurrentView(view);
+    }
+  };
+
+  const handleViewAll = (view: string) => {
+    if (view === 'allHigh' || view === 'allNormal' || view === 'allCompleted' || view === 'allFailed') {
+      setCurrentView(view);
+    }
+  };
+
   // Filter for only actually printing jobs (not dummy data)
   const actuallyPrintingJobs = printing.filter(job => job.status === 'printing');
 
@@ -213,8 +226,8 @@ const JobsTab: React.FC = () => {
           onAddJob={handleAddJob}
           onRepeatJob={handleRepeatJob}
           onRetryJob={handleRetryJob}
-          onSectionClick={setCurrentView}
-          onViewAll={setCurrentView}
+          onSectionClick={handleSectionClick}
+          onViewAll={handleViewAll}
         />
       </div>
 
