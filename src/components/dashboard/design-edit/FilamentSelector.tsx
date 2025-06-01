@@ -8,32 +8,44 @@ interface FilamentSelectorProps {
   label?: string;
   required?: boolean;
   className?: string;
+  onChange?: (value: string) => void;
 }
 
 const FilamentSelector: React.FC<FilamentSelectorProps> = ({
   id,
   label = "Filament Type",
   required = false,
-  className = "h-8 text-xs"
+  className = "h-8 text-xs",
+  onChange
 }) => {
+  const filamentTypes = [
+    { value: "PLA", label: "PLA" },
+    { value: "ABS", label: "ABS" },
+    { value: "PETG", label: "PETG" },
+    { value: "TPU", label: "TPU" },
+    { value: "WOOD", label: "Wood Fill" },
+    { value: "METAL", label: "Metal Fill" },
+    { value: "CARBON", label: "Carbon Fiber" },
+    { value: "NYLON", label: "Nylon" },
+    { value: "PC", label: "Polycarbonate" },
+    { value: "ASA", label: "ASA" }
+  ];
+
   return (
     <div className="space-y-1">
       <Label htmlFor={id} className="text-xs">
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
-      <Select required={required}>
-        <SelectTrigger className={className}>
-          <SelectValue placeholder="Select filament" />
+      <Select onValueChange={onChange}>
+        <SelectTrigger className={className} id={id}>
+          <SelectValue placeholder="Select filament type" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="pla">PLA</SelectItem>
-          <SelectItem value="abs">ABS</SelectItem>
-          <SelectItem value="petg">PETG</SelectItem>
-          <SelectItem value="tpu">TPU</SelectItem>
-          <SelectItem value="wood">Wood</SelectItem>
-          <SelectItem value="metal">Metal Fill</SelectItem>
-          <SelectItem value="carbon">Carbon Fiber</SelectItem>
-          <SelectItem value="other">Other</SelectItem>
+          {filamentTypes.map((type) => (
+            <SelectItem key={type.value} value={type.value}>
+              {type.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

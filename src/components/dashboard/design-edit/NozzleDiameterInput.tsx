@@ -8,14 +8,22 @@ interface NozzleDiameterInputProps {
   label?: string;
   required?: boolean;
   className?: string;
+  onChange?: (value: string) => void;
 }
 
 const NozzleDiameterInput: React.FC<NozzleDiameterInputProps> = ({
   id,
   label = "Nozzle Diameter (mm)",
   required = false,
-  className = "h-8 text-xs"
+  className = "h-8 text-xs",
+  onChange
 }) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (onChange) {
+      onChange(event.target.value);
+    }
+  };
+
   return (
     <div className="space-y-1">
       <Label htmlFor={id} className="text-xs">
@@ -30,6 +38,7 @@ const NozzleDiameterInput: React.FC<NozzleDiameterInputProps> = ({
         max="2.0"
         className={className}
         required={required}
+        onChange={handleChange}
       />
     </div>
   );

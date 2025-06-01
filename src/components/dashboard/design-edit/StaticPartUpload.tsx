@@ -10,6 +10,7 @@ interface StaticPartUploadProps {
   uploading: boolean;
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   uploadedFiles: any[];
+  onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
 }
 
 const StaticPartUpload: React.FC<StaticPartUploadProps> = ({
@@ -17,8 +18,21 @@ const StaticPartUpload: React.FC<StaticPartUploadProps> = ({
   partId,
   uploading,
   onFileUpload,
-  uploadedFiles
+  uploadedFiles,
+  onPartSpecificationChange
 }) => {
+  const handleNozzleDiameterChange = (value: string) => {
+    if (onPartSpecificationChange) {
+      onPartSpecificationChange(partId, 'nozzleDiameter', value);
+    }
+  };
+
+  const handleFilamentTypeChange = (value: string) => {
+    if (onPartSpecificationChange) {
+      onPartSpecificationChange(partId, 'filamentType', value);
+    }
+  };
+
   return (
     <div className="space-y-2">
       <FileUploadSection
@@ -38,10 +52,12 @@ const StaticPartUpload: React.FC<StaticPartUploadProps> = ({
         <NozzleDiameterInput
           id={`staticNozzleDiameter-${partId}`}
           required={true}
+          onChange={handleNozzleDiameterChange}
         />
         <FilamentSelector
           id={`staticFilamentType-${partId}`}
           required={true}
+          onChange={handleFilamentTypeChange}
         />
       </div>
     </div>

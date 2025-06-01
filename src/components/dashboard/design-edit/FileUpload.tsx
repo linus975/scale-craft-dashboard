@@ -10,6 +10,7 @@ interface FileUploadProps {
   partType?: 'static' | 'personalized';
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   uploadedFiles?: any[];
+  onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -18,7 +19,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
   uploading,
   partType = 'static',
   onFileUpload,
-  uploadedFiles = []
+  uploadedFiles = [],
+  onPartSpecificationChange
 }) => {
   if (partType === 'personalized') {
     return (
@@ -28,6 +30,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         uploading={uploading}
         onFileUpload={onFileUpload}
         uploadedFiles={uploadedFiles}
+        onPartSpecificationChange={onPartSpecificationChange}
       />
     );
   }
@@ -39,6 +42,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       uploading={uploading}
       onFileUpload={onFileUpload}
       uploadedFiles={uploadedFiles}
+      onPartSpecificationChange={onPartSpecificationChange}
     />
   );
 };

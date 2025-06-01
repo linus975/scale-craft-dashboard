@@ -13,6 +13,8 @@ interface DesignPart {
   };
   cadSoftware?: string;
   slicer?: string;
+  nozzleDiameter?: string;
+  filamentType?: string;
 }
 
 export const useDesignParts = () => {
@@ -24,7 +26,9 @@ export const useDesignParts = () => {
       files: [], 
       partType: 'static',
       cadSoftware: '',
-      slicer: ''
+      slicer: '',
+      nozzleDiameter: '',
+      filamentType: ''
     }
   ]);
   const [activePart, setActivePart] = useState<string>('main');
@@ -56,10 +60,11 @@ export const useDesignParts = () => {
       files: [],
       partType: 'static',
       cadSoftware: '',
-      slicer: ''
+      slicer: '',
+      nozzleDiameter: '',
+      filamentType: ''
     };
     setDesignParts(prev => [...prev, newPart]);
-    // Automatically switch to the new part
     setActivePart(newPart.id);
     setSelectedPartId(newPart.id);
   };
@@ -96,6 +101,12 @@ export const useDesignParts = () => {
     ));
   };
 
+  const handlePartSpecificationChange = (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => {
+    setDesignParts(prev => prev.map(part =>
+      part.id === partId ? { ...part, [field]: value } : part
+    ));
+  };
+
   const validatePartFiles = (part: DesignPart, uploadedFiles: any[]) => {
     const partFiles = uploadedFiles.filter(file => file.partId === part.id);
     const hasF3D = partFiles.some(file => file.name.toLowerCase().endsWith('.f3d'));
@@ -119,6 +130,7 @@ export const useDesignParts = () => {
     handleRenamePart,
     handlePartTypeChange,
     handlePartSoftwareChange,
+    handlePartSpecificationChange,
     validatePartFiles
   };
 };
