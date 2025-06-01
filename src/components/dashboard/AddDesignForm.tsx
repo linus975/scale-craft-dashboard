@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Plus, Pencil, Trash2, Upload, Check } from 'lucide-react';
+import { MoreHorizontal, Plus, Pencil, Trash2, Upload, Check, Settings, File } from 'lucide-react';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useMachines } from '@/hooks/useMachines';
@@ -389,7 +390,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           {/* Basic Design Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Design Information</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Design Information
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -656,7 +660,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           {/* File Management */}
           <Card>
             <CardHeader>
-              <CardTitle>Manage Files</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <File className="h-5 w-5" />
+                Manage Files
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {/* MultiPartFileManager component with Color and Machine fields */}

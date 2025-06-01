@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -165,18 +164,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
                 <FormItem>
                   <FormLabel>Machine</FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <Input 
-                        placeholder="Maschine eingeben oder auswählen"
-                        {...field}
-                        list="machines-list"
-                      />
-                      <datalist id="machines-list">
-                        {machines.map((machine) => (
-                          <option key={machine.id} value={machine.name} />
-                        ))}
-                      </datalist>
-                    </div>
+                    <Input placeholder="Maschine eingeben" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
