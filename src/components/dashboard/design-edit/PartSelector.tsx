@@ -74,9 +74,9 @@ const PartSelector: React.FC<PartSelectorProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-end gap-2">
-        {/* Part Type Selection */}
-        <div className="flex-1">
+      <div className="grid grid-cols-12 gap-2 items-end">
+        {/* Part Type Selection - spans 6 columns */}
+        <div className="col-span-6">
           <Label>Teilart</Label>
           <Select 
             value={currentPart?.partType || 'static'} 
@@ -93,8 +93,8 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           </Select>
         </div>
 
-        {/* Part Selection */}
-        <div className="flex-1">
+        {/* Part Selection - spans 3 columns */}
+        <div className="col-span-3">
           <Label>Teil auswählen</Label>
           {isEditing ? (
             <Input
@@ -139,8 +139,8 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           )}
         </div>
         
-        {/* Control Buttons */}
-        <div className="flex items-end gap-1">
+        {/* Control Buttons - spans 3 columns */}
+        <div className="col-span-3 flex gap-1">
           {/* Edit Part Name */}
           {isEditing ? (
             <Button
