@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Filter, Download, Upload, Trash2, Edit, Package, FileCode, Calendar, User } from 'lucide-react';
+import { Plus, Search, Filter, Download, Upload, Trash2, Edit, Package, FileCode, Calendar, User, Settings } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
@@ -23,7 +23,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [designType, setDesignType] = useState<'static' | 'personalized'>('static');
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
 
   const filteredDesigns = designs.filter(design => {
@@ -54,11 +53,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
     }
   };
 
-  const handleAddDesign = () => {
-    setShowAddDialog(false);
-    setSelectedDesigns([]);
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('de-DE', {
       day: '2-digit',
@@ -87,7 +81,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
               Design hinzufügen
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Design-Typ auswählen</DialogTitle>
               <DialogDescription>
@@ -95,28 +89,34 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <Button
-                onClick={() => {
-                  setDesignType('static');
-                  setShowAddDialog(false);
-                }}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <FileCode className="h-4 w-4 mr-2" />
-                Statisches Design (G-Code)
-              </Button>
-              <Button
-                onClick={() => {
-                  setDesignType('personalized');
-                  setShowAddDialog(false);
-                }}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Package className="h-4 w-4 mr-2" />
-                Personalisierbares Design
-              </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2 flex items-center">
+                    <FileCode className="h-4 w-4 mr-2" />
+                    Statisches Design (G-Code)
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Laden Sie eine fertige G-Code Datei hoch für direktes Drucken
+                  </p>
+                  <StaticDesignForm
+                    onCancel={() => setShowAddDialog(false)}
+                    onSave={() => setShowAddDialog(false)}
+                  />
+                </div>
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2 flex items-center">
+                    <Package className="h-4 w-4 mr-2" />
+                    Personalisierbares Design
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Erstellen Sie ein Design mit anpassbaren Parametern
+                  </p>
+                  <PersonalizedDesignForm
+                    onCancel={() => setShowAddDialog(false)}
+                    onSave={() => setShowAddDialog(false)}
+                  />
+                </div>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -201,9 +201,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">
-                  <Edit className="h-4 w-4" />
-                </Button>
               </div>
             </CardHeader>
             
@@ -255,6 +252,18 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
                   <span>Version {design.version || 'v1.0'}</span>
                 </div>
               </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Download className="h-4 w-4 mr-1" />
+                  Download
+                </Button>
+                <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <Settings className="h-4 w-4 mr-1" />
+                  Configure
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -277,21 +286,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
         />
         <span className="text-sm text-gray-600">Alle auswählen</span>
       </div>
-
-      {/* Add Design Forms */}
-      {!showAddDialog && designType === 'static' && (
-        <StaticDesignForm
-          onCancel={() => setDesignType('static')}
-          onSave={handleAddDesign}
-        />
-      )}
-
-      {!showAddDialog && designType === 'personalized' && (
-        <PersonalizedDesignForm
-          onCancel={() => setDesignType('personalized')}
-          onSave={handleAddDesign}
-        />
-      )}
     </div>
   );
 };
