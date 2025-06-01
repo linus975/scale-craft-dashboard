@@ -77,30 +77,30 @@ const PartSelector: React.FC<PartSelectorProps> = ({
       <div className="grid grid-cols-12 gap-4 items-end">
         {/* Part Type Selection - spans 6 columns */}
         <div className="col-span-6">
-          <Label>Teilart</Label>
+          <Label>Part Type</Label>
           <Select 
             value={currentPart?.partType || 'static'} 
             onValueChange={(value) => onPartTypeChange(activePart, value as 'static' | 'personalized')}
             disabled={isEditing}
           >
             <SelectTrigger className="h-10">
-              <SelectValue placeholder="Teilart auswählen" />
+              <SelectValue placeholder="Select part type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="static">Statisch</SelectItem>
-              <SelectItem value="personalized">Personalisierbar</SelectItem>
+              <SelectItem value="static">Static</SelectItem>
+              <SelectItem value="personalized">Personalizable</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Part Selection - spans 3 columns */}
         <div className="col-span-3">
-          <Label>Teil auswählen</Label>
+          <Label>Select Part</Label>
           {isEditing ? (
             <Input
               value={editPartName}
               onChange={(e) => setEditPartName(e.target.value)}
-              placeholder="Teilname eingeben"
+              placeholder="Enter part name"
               className="h-10"
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
@@ -111,7 +111,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           ) : (
             <Select value={activePart} onValueChange={onPartChange}>
               <SelectTrigger className="h-10">
-                <SelectValue placeholder="Teil auswählen" />
+                <SelectValue placeholder="Select part" />
               </SelectTrigger>
               <SelectContent>
                 {designParts.map((part) => {
@@ -159,7 +159,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
               size="sm"
               onClick={() => startEditingPart(activePart, currentPart?.name || '')}
               className="h-10 w-10 p-0"
-              title="Teil bearbeiten"
+              title="Edit part"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -173,7 +173,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
                 variant="outline"
                 size="sm"
                 className={`h-10 w-10 p-0 ${isEditing ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
-                title="Neues Teil hinzufügen"
+                title="Add new part"
                 disabled={isEditing}
               >
                 <Plus className="h-4 w-4" />
@@ -181,13 +181,13 @@ const PartSelector: React.FC<PartSelectorProps> = ({
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Neues Teil hinzufügen</DialogTitle>
+                <DialogTitle>Add New Part</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label>Teilname</Label>
+                  <Label>Part Name</Label>
                   <Input
-                    placeholder="Name des neuen Teils..."
+                    placeholder="Name of the new part..."
                     value={newPartName}
                     onChange={(e) => setNewPartName(e.target.value)}
                     onKeyPress={(e) => {
@@ -199,10 +199,10 @@ const PartSelector: React.FC<PartSelectorProps> = ({
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowAddPartDialog(false)}>
-                    Abbrechen
+                    Cancel
                   </Button>
                   <Button onClick={addNewPart} disabled={!newPartName.trim()}>
-                    Hinzufügen
+                    Add
                   </Button>
                 </div>
               </div>
@@ -217,7 +217,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
             onClick={() => designParts.length > 1 && !isEditing && onRemovePart(activePart)}
             disabled={designParts.length <= 1 || isEditing}
             className={`h-10 w-10 p-0 ${(designParts.length <= 1 || isEditing) ? 'bg-gray-100 text-gray-400' : 'text-white'}`}
-            title={designParts.length <= 1 ? "Erstes Teil kann nicht gelöscht werden" : isEditing ? "Während Bearbeitung nicht verfügbar" : "Teil löschen"}
+            title={designParts.length <= 1 ? "First part cannot be deleted" : isEditing ? "Not available during editing" : "Delete part"}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -228,14 +228,14 @@ const PartSelector: React.FC<PartSelectorProps> = ({
       {currentPart?.partType === 'personalized' && (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>CAD-Software</Label>
+            <Label>CAD Software</Label>
             <Select
               value={currentPart?.cadSoftware || undefined}
               onValueChange={(value) => onPartSoftwareChange(activePart, 'cadSoftware', value)}
               disabled={isEditing}
             >
               <SelectTrigger className="h-10">
-                <SelectValue placeholder="CAD-Software auswählen" />
+                <SelectValue placeholder="Select CAD software" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="fusion360">Fusion 360</SelectItem>
@@ -248,14 +248,14 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           </div>
 
           <div>
-            <Label>Slicer-Software</Label>
+            <Label>Slicer Software</Label>
             <Select
               value={currentPart?.slicer || undefined}
               onValueChange={(value) => onPartSoftwareChange(activePart, 'slicer', value)}
               disabled={isEditing}
             >
               <SelectTrigger className="h-10">
-                <SelectValue placeholder="Slicer-Software auswählen" />
+                <SelectValue placeholder="Select slicer software" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="cura">Ultimaker Cura</SelectItem>
