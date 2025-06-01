@@ -6,14 +6,27 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, Loader2, Image, FileCode } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Save, Loader2, Image } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useToast } from '@/hooks/use-toast';
+import MultiPartFileManager from './design-edit/MultiPartFileManager';
 
 interface StaticDesignFormProps {
   onCancel: () => void;
   onSave: (designData: any) => void;
+}
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  uploadDate: string;
+  path: string;
+  originalName?: string;
+  partId?: string;
 }
 
 const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave }) => {
@@ -22,7 +35,9 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
-  const [gcodeFile, setGcodeFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [selectedPartId, setSelectedPartId] = useState('main');
+  
   const [formData, setFormData] = useState({
     name: '',
     trackingType: 'ean' as 'ean' | 'sku',
@@ -34,10 +49,13 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.trackingNumber || !formData.category || !gcodeFile) {
+    // Check if there's at least one G-code file
+    const gcodeFiles = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.gcode') || f.name.toLowerCase().endsWith('.g'));
+    
+    if (!formData.name || !formData.trackingNumber || !formData.category || gcodeFiles.length === 0) {
       toast({
         title: "Fehlende Angaben",
-        description: "Bitte füllen Sie alle Pflichtfelder aus und laden Sie eine G-Code Datei hoch.",
+        description: "Bitte füllen Sie alle Pflichtfelder aus und laden Sie mindestens eine G-Code Datei hoch.",
         variant: "destructive",
       });
       return;
@@ -45,9 +63,9 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
 
     setLoading(true);
     try {
-      // Upload G-code file
-      const gcodeFilePath = await uploadFile(gcodeFile, 'gcode-files');
-      
+      // Use the first G-code file as the main one
+      const mainGcodeFile = gcodeFiles[0];
+
       // Upload preview image if provided
       let previewImagePath = null;
       if (previewImage) {
@@ -59,7 +77,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         description: formData.description || null,
         category: formData.category,
         design_type: 'static',
-        gcode_file_path: gcodeFilePath,
+        gcode_file_path: mainGcodeFile.path,
         ean_number: formData.trackingNumber,
         tracking_type: formData.trackingType,
         preview_image_path: previewImagePath
@@ -73,6 +91,84 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partId: string = 'main') => {
+    const files = event.target.files;
+    if (!files) return;
+
+    try {
+      for (const file of Array.from(files)) {
+        const fileName = partId === 'main' ? file.name : `part-${partId}_${file.name}`;
+        
+        const filePath = await uploadFile(
+          new File([file], fileName, { type: file.type }), 
+          `temp-designs`
+        );
+        
+        const newFile: UploadedFile = {
+          id: Date.now() + Math.random() + '',
+          name: file.name,
+          type: getFileType(file.name),
+          size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+          uploadDate: new Date().toISOString().split('T')[0],
+          path: filePath,
+          originalName: file.name,
+          partId: partId
+        };
+        
+        setUploadedFiles(prev => [...prev, newFile]);
+        
+        toast({
+          title: "Datei hochgeladen",
+          description: `${file.name} wurde erfolgreich hochgeladen.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast({
+        title: "Fehler beim Hochladen",
+        description: "Die Datei konnte nicht hochgeladen werden.",
+        variant: "destructive",
+      });
+    }
+    
+    event.target.value = '';
+  };
+
+  const getFileType = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    switch (extension) {
+      case 'gcode':
+      case 'g':
+        return 'G-Code File';
+      case 'stl':
+        return 'STL File';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return 'Image File';
+      default:
+        return 'Unknown';
+    }
+  };
+
+  const handleFileRemove = (file: UploadedFile) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
+    toast({
+      title: "Datei entfernt",
+      description: `${file.name} wurde entfernt.`,
+    });
+  };
+
+  const handleFileDownload = (file: UploadedFile) => {
+    toast({
+      title: "Download",
+      description: `Download für ${file.name} wird vorbereitet.`,
+    });
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -84,12 +180,8 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     setPreviewImage(file);
   };
 
-  const handleGcodeFileChange = (file: File | null) => {
-    setGcodeFile(file);
-  };
-
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Statisches Design hinzufügen</CardTitle>
         <CardDescription>
@@ -111,37 +203,33 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
           </div>
 
           {/* Tracking Type and Number */}
-          <div className="space-y-2">
-            <Label htmlFor="trackingType">Tracking-Typ *</Label>
-            <Select onValueChange={(value) => handleInputChange('trackingType', value)} value={formData.trackingType} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Wählen Sie den Tracking-Typ" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ean">EAN-Nummer</SelectItem>
-                <SelectItem value="sku">SKU</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="trackingType">Tracking-Typ *</Label>
+              <Select onValueChange={(value) => handleInputChange('trackingType', value)} value={formData.trackingType} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Wählen Sie den Tracking-Typ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ean">EAN-Nummer</SelectItem>
+                  <SelectItem value="sku">SKU</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="trackingNumber">
-              {formData.trackingType === 'ean' ? 'EAN-Nummer *' : 'SKU *'}
-            </Label>
-            <Input
-              id="trackingNumber"
-              placeholder={formData.trackingType === 'ean' ? '13-stellige EAN-Nummer eingeben' : 'SKU eingeben'}
-              value={formData.trackingNumber}
-              onChange={(e) => handleInputChange('trackingNumber', e.target.value)}
-              maxLength={formData.trackingType === 'ean' ? 13 : undefined}
-              required
-            />
-            <p className="text-sm text-gray-600">
-              {formData.trackingType === 'ean' 
-                ? 'Die EAN-Nummer ist das Hauptelement für das Tracking und ist verpflichtend.'
-                : 'Die SKU ist das Hauptelement für das Tracking und ist verpflichtend.'
-              }
-            </p>
+            <div className="space-y-2">
+              <Label htmlFor="trackingNumber">
+                {formData.trackingType === 'ean' ? 'EAN-Nummer *' : 'SKU *'}
+              </Label>
+              <Input
+                id="trackingNumber"
+                placeholder={formData.trackingType === 'ean' ? '13-stellige EAN-Nummer eingeben' : 'SKU eingeben'}
+                value={formData.trackingNumber}
+                onChange={(e) => handleInputChange('trackingNumber', e.target.value)}
+                maxLength={formData.trackingType === 'ean' ? 13 : undefined}
+                required
+              />
+            </div>
           </div>
 
           {/* Preview Image Upload */}
@@ -169,60 +257,45 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
             </div>
           </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Beschreibung</Label>
-            <Textarea
-              id="description"
-              placeholder="Beschreiben Sie Ihr Design..."
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              className="min-h-20"
-            />
-          </div>
-
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Kategorie *</Label>
-            <Input
-              id="category"
-              placeholder="Kategorie eingeben oder auswählen"
-              value={formData.category}
-              onChange={(e) => handleInputChange('category', e.target.value)}
-              required
-            />
-            <p className="text-sm text-gray-600">
-              Geben Sie eine neue Kategorie ein oder wählen Sie eine bestehende aus.
-            </p>
-          </div>
-
-          {/* G-code File Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="gcodeFile">G-Code Datei *</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-              <FileCode className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 mb-2">
-                {gcodeFile ? gcodeFile.name : 'G-Code Datei (.gcode, .g) hochladen'}
-              </p>
-              <Input
-                id="gcodeFile"
-                type="file"
-                accept=".gcode,.g,.txt"
-                onChange={(e) => handleGcodeFileChange(e.target.files?.[0] || null)}
-                className="hidden"
+          {/* Description and Category */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="description">Beschreibung</Label>
+              <Textarea
+                id="description"
+                placeholder="Beschreiben Sie Ihr Design..."
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                className="min-h-20"
               />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById('gcodeFile')?.click()}
-              >
-                G-Code Datei auswählen
-              </Button>
             </div>
-            <p className="text-sm text-gray-600">
-              Wählen Sie eine G-Code Datei (.gcode, .g, .txt) für das statische Design aus.
-            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Kategorie *</Label>
+              <Input
+                id="category"
+                placeholder="Kategorie eingeben oder auswählen"
+                value={formData.category}
+                onChange={(e) => handleInputChange('category', e.target.value)}
+                required
+              />
+            </div>
           </div>
+
+          <Separator />
+
+          {/* Multi-Part File Management */}
+          <MultiPartFileManager
+            uploadedFiles={uploadedFiles}
+            loadingFiles={false}
+            uploading={uploading}
+            onFileUpload={handleFileUpload}
+            onFileRemove={handleFileRemove}
+            onFileDownload={handleFileDownload}
+            isPersonalized={false}
+            selectedPartId={selectedPartId}
+            onPartSelect={setSelectedPartId}
+          />
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
