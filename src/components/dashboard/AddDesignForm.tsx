@@ -57,8 +57,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     'Accessories',
     'Other'
   ]);
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
   
   const { createDesign } = useDesigns();
   const { toast } = useToast();
@@ -235,11 +233,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   };
 
   const handleAddCategory = () => {
-    if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
+    const newCategoryName = prompt('Enter new category name:');
+    if (newCategoryName && newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
       setCategories(prev => [...prev, newCategoryName.trim()]);
       form.setValue('category', newCategoryName.trim());
-      setNewCategoryName('');
-      setIsAddingCategory(false);
       toast({
         title: "Category added",
         description: `"${newCategoryName.trim()}" was added to categories.`,
@@ -247,12 +244,21 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     }
   };
 
-  const handleRenameCategory = (oldName: string, newName: string) => {
-    if (newName.trim() && !categories.includes(newName.trim()) && newName.trim() !== oldName) {
-      setCategories(prev => prev.map(cat => cat === oldName ? newName.trim() : cat));
-      if (form.getValues('category') === oldName) {
-        form.setValue('category', newName.trim());
-      }
+  const handleRenameCategory = () => {
+    const currentCategory = form.getValues('category');
+    if (!currentCategory) {
+      toast({
+        title: "No category selected",
+        description: "Please select a category to rename.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const newName = prompt('Enter new category name:', currentCategory);
+    if (newName && newName.trim() && !categories.includes(newName.trim()) && newName.trim() !== currentCategory) {
+      setCategories(prev => prev.map(cat => cat === currentCategory ? newName.trim() : cat));
+      form.setValue('category', newName.trim());
       toast({
         title: "Category renamed",
         description: `Category renamed to "${newName.trim()}".`,
@@ -260,15 +266,32 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     }
   };
 
-  const handleDeleteCategory = (categoryName: string) => {
-    if (categories.length > 1) {
-      setCategories(prev => prev.filter(cat => cat !== categoryName));
-      if (form.getValues('category') === categoryName) {
-        form.setValue('category', '');
-      }
+  const handleDeleteCategory = () => {
+    const currentCategory = form.getValues('category');
+    if (!currentCategory) {
       toast({
-        title: "Category deleted",
-        description: `"${categoryName}" was removed from categories.`,
+        title: "No category selected",
+        description: "Please select a category to delete.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (categories.length > 1) {
+      const confirmed = confirm(`Are you sure you want to delete the category "${currentCategory}"?`);
+      if (confirmed) {
+        setCategories(prev => prev.filter(cat => cat !== currentCategory));
+        form.setValue('category', '');
+        toast({
+          title: "Category deleted",
+          description: `"${currentCategory}" was removed from categories.`,
+        });
+      }
+    } else {
+      toast({
+        title: "Cannot delete category",
+        description: "At least one category must remain.",
+        variant: "destructive",
       });
     }
   };
@@ -446,7 +469,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 )}
               />
 
-              {/* Category with Management Options */}
+              {/* Category with Icon Buttons */}
               <FormField
                 control={form.control}
                 name="category"
@@ -464,36 +487,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                           <SelectContent>
                             {categories.map((category) => (
                               <SelectItem key={category} value={category}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{category}</span>
-                                  <div className="flex gap-1 ml-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 w-6 p-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const newName = prompt('Rename category:', category);
-                                        if (newName) {
-                                          handleRenameCategory(category, newName);
-                                        }
-                                      }}
-                                    >
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteCategory(category);
-                                      }}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
+                                {category}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -503,47 +497,34 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                         type="button"
                         variant="outline"
                         size="icon"
-                        onClick={() => setIsAddingCategory(true)}
+                        onClick={handleAddCategory}
+                        title="Add category"
                       >
                         <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleRenameCategory}
+                        title="Rename category"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleDeleteCategory}
+                        title="Delete category"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Add Category Dialog */}
-              {isAddingCategory && (
-                <div className="flex gap-2 items-center">
-                  <Input
-                    placeholder="New category name"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAddCategory();
-                      } else if (e.key === 'Escape') {
-                        setIsAddingCategory(false);
-                        setNewCategoryName('');
-                      }
-                    }}
-                  />
-                  <Button onClick={handleAddCategory} size="sm">
-                    Add
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => {
-                      setIsAddingCategory(false);
-                      setNewCategoryName('');
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
 
