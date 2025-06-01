@@ -56,6 +56,7 @@ interface MultiPartFileManagerProps {
   onRenamePart?: (partId: string, newName: string) => void;
   onPartTypeChange?: (partId: string, partType: 'static' | 'personalized') => void;
   onPartSoftwareChange?: (partId: string, field: 'cadSoftware' | 'slicer', value: string) => void;
+  onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
   validatePartFiles?: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };
   // New props for Color and Machine fields
   colorValue?: string;
@@ -84,6 +85,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   onRenamePart: externalOnRenamePart,
   onPartTypeChange: externalOnPartTypeChange,
   onPartSoftwareChange: externalOnPartSoftwareChange,
+  onPartSpecificationChange,
   validatePartFiles: externalValidatePartFiles,
   colorValue,
   machineValue,
@@ -194,6 +196,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
             uploading={uploading}
             onFileUpload={handleFileUpload}
             uploadedFiles={uploadedFiles}
+            onPartSpecificationChange={onPartSpecificationChange}
           />
 
           <ParameterConfig
