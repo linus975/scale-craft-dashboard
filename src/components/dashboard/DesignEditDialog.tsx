@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Upload, Save, ListPlus, Printer, FileText, X } from 'lucide-react';
+import { useFileUpload } from '@/hooks/useFileUpload';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DesignEditDialogProps {
   design: any;
@@ -17,6 +19,16 @@ interface DesignEditDialogProps {
   onAddToQueue: (designId: number) => void;
   onPrintOnMachine: (designId: number, machineId: number) => void;
   machines: any[];
+}
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  uploadDate: string;
+  path: string;
+  originalName?: string;
 }
 
 const DesignEditDialog: React.FC<DesignEditDialogProps> = ({ 
@@ -38,13 +50,170 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   });
 
   const [selectedMachine, setSelectedMachine] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
   
-  // Mock uploaded files - in real app this would come from the design data
-  const [uploadedFiles, setUploadedFiles] = useState([
-    { id: 1, name: 'design.f3d', type: 'CAD File', size: '2.5 MB', uploadDate: '2024-01-15' },
-    { id: 2, name: 'model.stl', type: 'STL File', size: '1.8 MB', uploadDate: '2024-01-15' },
-    { id: 3, name: 'settings.ini', type: 'Settings File', size: '12 KB', uploadDate: '2024-01-15' }
-  ]);
+  const { uploadFile, getFileUrl, deleteFile, uploading } = useFileUpload();
+
+  // Load real files from database and storage when dialog opens
+  useEffect(() => {
+    if (isOpen && design?.id) {
+      loadDesignFiles();
+    }
+  }, [isOpen, design?.id]);
+
+  const loadDesignFiles = async () => {
+    if (!design?.id) return;
+    
+    setLoadingFiles(true);
+    try {
+      const files: UploadedFile[] = [];
+      
+      // Add CAD file if exists
+      if (design.cad_file_path) {
+        const cadFileUrl = getFileUrl(design.cad_file_path);
+        const fileName = extractOriginalFileName(design.cad_file_path, 'CAD File');
+        files.push({
+          id: 'cad_file',
+          name: fileName,
+          type: 'CAD File',
+          size: 'Unknown',
+          uploadDate: new Date(design.created_at).toISOString().split('T')[0],
+          path: design.cad_file_path,
+          originalName: fileName
+        });
+      }
+
+      // Add INI file if exists
+      if (design.ini_file_path) {
+        const iniFileUrl = getFileUrl(design.ini_file_path);
+        const fileName = extractOriginalFileName(design.ini_file_path, 'Settings File');
+        files.push({
+          id: 'ini_file',
+          name: fileName,
+          type: 'Settings File',
+          size: 'Unknown',
+          uploadDate: new Date(design.created_at).toISOString().split('T')[0],
+          path: design.ini_file_path,
+          originalName: fileName
+        });
+      }
+
+      // Add preview image if exists
+      if (design.preview_image_path) {
+        const previewFileUrl = getFileUrl(design.preview_image_path);
+        const fileName = extractOriginalFileName(design.preview_image_path, 'Preview Image');
+        files.push({
+          id: 'preview_image',
+          name: fileName,
+          type: 'Image File',
+          size: 'Unknown',
+          uploadDate: new Date(design.created_at).toISOString().split('T')[0],
+          path: design.preview_image_path,
+          originalName: fileName
+        });
+      }
+
+      // Load additional files from storage bucket if they exist
+      try {
+        const { data: storageFiles, error } = await supabase.storage
+          .from('design-files')
+          .list(`${design.user_id}/designs/`, {
+            limit: 100,
+            search: design.id
+          });
+
+        if (storageFiles && !error) {
+          for (const file of storageFiles) {
+            // Skip if this file is already included above
+            const fullPath = `${design.user_id}/designs/${file.name}`;
+            if (!files.find(f => f.path === fullPath)) {
+              files.push({
+                id: file.id || file.name,
+                name: file.name,
+                type: getFileType(file.name),
+                size: file.metadata?.size ? `${(file.metadata.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown',
+                uploadDate: new Date(file.created_at || design.created_at).toISOString().split('T')[0],
+                path: fullPath,
+                originalName: file.name
+              });
+            }
+          }
+        }
+      } catch (storageError) {
+        console.error('Error loading storage files:', storageError);
+      }
+
+      setUploadedFiles(files);
+    } catch (error) {
+      console.error('Error loading design files:', error);
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
+
+  // Extract original file name from storage path
+  const extractOriginalFileName = (path: string, fallbackType: string): string => {
+    if (!path) return fallbackType;
+    
+    // Extract the filename from the path
+    const parts = path.split('/');
+    const fileName = parts[parts.length - 1];
+    
+    // Try to extract original name if it follows the pattern randomString.extension
+    // You might want to adjust this based on how your files are stored
+    if (fileName.includes('.')) {
+      const extension = fileName.split('.').pop();
+      
+      // Check if it's a CAD file extension
+      if (['f3d', 'step', 'stp', 'iges', 'igs', 'dwg', 'dxf'].includes(extension?.toLowerCase() || '')) {
+        return `${design.name || 'design'}.${extension}`;
+      }
+      
+      // Check if it's an INI file
+      if (extension?.toLowerCase() === 'ini') {
+        return `${design.name || 'settings'}.ini`;
+      }
+      
+      // Check if it's an image
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension?.toLowerCase() || '')) {
+        return `${design.name || 'preview'}.${extension}`;
+      }
+      
+      return fileName;
+    }
+    
+    return fileName || fallbackType;
+  };
+
+  const getFileType = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    switch (extension) {
+      case 'f3d':
+        return 'Fusion 360 File';
+      case 'step':
+      case 'stp':
+        return 'STEP File';
+      case 'iges':
+      case 'igs':
+        return 'IGES File';
+      case 'stl':
+        return 'STL File';
+      case 'ini':
+        return 'Settings File';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return 'Image File';
+      case 'gcode':
+        return 'G-Code File';
+      default:
+        return 'Unknown';
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -78,29 +247,49 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files) {
-      Array.from(files).forEach(file => {
-        const newFile = {
-          id: Date.now() + Math.random(),
+    if (!files || !design?.id) return;
+
+    try {
+      for (const file of Array.from(files)) {
+        const filePath = await uploadFile(file, `designs`);
+        
+        // Add the new file to the list
+        const newFile: UploadedFile = {
+          id: Date.now() + Math.random() + '',
           name: file.name,
-          type: file.type || 'Unknown',
+          type: getFileType(file.name),
           size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-          uploadDate: new Date().toISOString().split('T')[0]
+          uploadDate: new Date().toISOString().split('T')[0],
+          path: filePath,
+          originalName: file.name
         };
+        
         setUploadedFiles(prev => [...prev, newFile]);
-      });
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
     }
   };
 
-  const handleFileRemove = (fileId: number) => {
-    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+  const handleFileRemove = async (file: UploadedFile) => {
+    try {
+      await deleteFile(file.path);
+      setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
   };
 
-  const handleFileDownload = (fileName: string) => {
-    console.log(`Downloading file: ${fileName}`);
-    // In real app, this would trigger actual file download
+  const handleFileDownload = (file: UploadedFile) => {
+    const fileUrl = getFileUrl(file.path);
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = file.originalName || file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (!design) return null;
@@ -224,43 +413,51 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                         multiple
                         onChange={handleFileUpload}
                         className="cursor-pointer"
+                        disabled={uploading}
                       />
+                      {uploading && <p className="text-sm text-blue-600">Uploading...</p>}
                     </div>
 
                     {/* Uploaded Files List */}
-                    {uploadedFiles.length > 0 && (
+                    {(loadingFiles || uploadedFiles.length > 0) && (
                       <div className="space-y-2">
                         <Label>Uploaded Files</Label>
                         <div className="border rounded-lg p-4 max-h-32 overflow-y-auto">
-                          {uploadedFiles.map((file) => (
-                            <div key={file.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                              <div className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-slate-500" />
-                                <div>
-                                  <p className="text-sm font-medium">{file.name}</p>
-                                  <p className="text-xs text-slate-500">{file.type} • {file.size} • {file.uploadDate}</p>
+                          {loadingFiles ? (
+                            <p className="text-sm text-gray-500">Loading files...</p>
+                          ) : uploadedFiles.length === 0 ? (
+                            <p className="text-sm text-gray-500">No files uploaded yet</p>
+                          ) : (
+                            uploadedFiles.map((file) => (
+                              <div key={file.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-slate-500" />
+                                  <div>
+                                    <p className="text-sm font-medium">{file.name}</p>
+                                    <p className="text-xs text-slate-500">{file.type} • {file.size} • {file.uploadDate}</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleFileDownload(file)}
+                                    className="h-8 px-2"
+                                  >
+                                    Download
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={() => handleFileRemove(file)}
+                                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
                                 </div>
                               </div>
-                              <div className="flex gap-1">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => handleFileDownload(file.name)}
-                                  className="h-8 px-2"
-                                >
-                                  Download
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost"
-                                  onClick={() => handleFileRemove(file.id)}
-                                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
@@ -337,7 +534,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-600">Last Modified:</span>
-                  <span>{design.lastModified}</span>
+                  <span>{design.lastModified || new Date(design.updated_at).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-600">Version:</span>
