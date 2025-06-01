@@ -290,15 +290,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
           key={design.id} 
           className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow"
         >
-          {design.preview_image_path && (
-            <div className="relative h-48 overflow-hidden rounded-t-lg">
-              <img 
-                src={getFileUrl(design.preview_image_path)} 
-                alt={design.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -373,15 +364,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
                   onCheckedChange={(checked) => handleBulkSelect(design.id, checked as boolean)}
                 />
               )}
-              {design.preview_image_path && (
-                <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded-lg">
-                  <img 
-                    src={getFileUrl(design.preview_image_path)} 
-                    alt={design.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="text-lg font-semibold truncate">{design.name}</h3>
@@ -438,16 +420,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
               </Badge>
             </div>
             
-            {design.imageUrl && (
-              <div className="relative h-36 overflow-hidden">
-                <img 
-                  src={design.imageUrl} 
-                  alt={design.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-              </div>
-            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-purple-900">{design.name}</CardTitle>

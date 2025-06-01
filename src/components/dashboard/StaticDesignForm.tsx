@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Save, Loader2, Image } from 'lucide-react';
+import { Save, Loader2, Image } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useToast } from '@/hooks/use-toast';
@@ -24,19 +24,17 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    trackingType: 'ean' as 'ean' | 'sku',
+    trackingNumber: '',
     description: '',
     category: '',
-    gcode: '',
-    nozzle_diameter: '',
-    material: '',
-    colors: '',
-    ean_number: ''
+    gcode: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.category || !formData.gcode) {
+    if (!formData.name || !formData.trackingNumber || !formData.category || !formData.gcode) {
       toast({
         title: "Fehlende Angaben",
         description: "Bitte füllen Sie alle Pflichtfelder aus.",
@@ -59,10 +57,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         category: formData.category,
         design_type: 'static',
         gcode: formData.gcode,
-        nozzle_diameter: formData.nozzle_diameter || null,
-        material: formData.material || null,
-        colors: formData.colors || null,
-        ean_number: formData.ean_number || null,
+        ean_number: formData.trackingType === 'ean' ? formData.trackingNumber : null,
         preview_image_path: previewImagePath
       });
 
@@ -107,6 +102,40 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
             />
           </div>
 
+          {/* Tracking Type and Number */}
+          <div className="space-y-2">
+            <Label htmlFor="trackingType">Tracking-Typ *</Label>
+            <Select onValueChange={(value) => handleInputChange('trackingType', value)} value={formData.trackingType} required>
+              <SelectTrigger>
+                <SelectValue placeholder="Wählen Sie den Tracking-Typ" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ean">EAN-Nummer</SelectItem>
+                <SelectItem value="sku">SKU</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="trackingNumber">
+              {formData.trackingType === 'ean' ? 'EAN-Nummer *' : 'SKU *'}
+            </Label>
+            <Input
+              id="trackingNumber"
+              placeholder={formData.trackingType === 'ean' ? '13-stellige EAN-Nummer eingeben' : 'SKU eingeben'}
+              value={formData.trackingNumber}
+              onChange={(e) => handleInputChange('trackingNumber', e.target.value)}
+              maxLength={formData.trackingType === 'ean' ? 13 : undefined}
+              required
+            />
+            <p className="text-sm text-gray-600">
+              {formData.trackingType === 'ean' 
+                ? 'Die EAN-Nummer ist das Hauptelement für das Tracking und ist verpflichtend.'
+                : 'Die SKU ist das Hauptelement für das Tracking und ist verpflichtend.'
+              }
+            </p>
+          </div>
+
           {/* Preview Image Upload */}
           <div className="space-y-2">
             <Label htmlFor="previewImage">Vorschaubild</Label>
@@ -147,19 +176,16 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
           {/* Category */}
           <div className="space-y-2">
             <Label htmlFor="category">Kategorie *</Label>
-            <Select onValueChange={(value) => handleInputChange('category', value)} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Kategorie auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mechanical">Mechanische Teile</SelectItem>
-                <SelectItem value="household">Haushalt</SelectItem>
-                <SelectItem value="toys">Spielzeug</SelectItem>
-                <SelectItem value="tools">Werkzeuge</SelectItem>
-                <SelectItem value="decorative">Dekoration</SelectItem>
-                <SelectItem value="automotive">Automotive</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              id="category"
+              placeholder="Kategorie eingeben oder auswählen"
+              value={formData.category}
+              onChange={(e) => handleInputChange('category', e.target.value)}
+              required
+            />
+            <p className="text-sm text-gray-600">
+              Geben Sie eine neue Kategorie ein oder wählen Sie eine bestehende aus.
+            </p>
           </div>
 
           {/* G-code Upload */}
@@ -172,65 +198,6 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
               onChange={(e) => handleInputChange('gcode', e.target.value)}
               className="min-h-32 font-mono text-sm"
               required
-            />
-          </div>
-
-          {/* Nozzle Diameter */}
-          <div className="space-y-2">
-            <Label htmlFor="nozzleDiameter">Düsendurchmesser</Label>
-            <Select onValueChange={(value) => handleInputChange('nozzle_diameter', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Düsendurchmesser wählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0.2">0.2 mm</SelectItem>
-                <SelectItem value="0.3">0.3 mm</SelectItem>
-                <SelectItem value="0.4">0.4 mm</SelectItem>
-                <SelectItem value="0.6">0.6 mm</SelectItem>
-                <SelectItem value="0.8">0.8 mm</SelectItem>
-                <SelectItem value="1.0">1.0 mm</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Material */}
-          <div className="space-y-2">
-            <Label htmlFor="material">Material</Label>
-            <Select onValueChange={(value) => handleInputChange('material', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Druckmaterial wählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pla">PLA</SelectItem>
-                <SelectItem value="abs">ABS</SelectItem>
-                <SelectItem value="petg">PETG</SelectItem>
-                <SelectItem value="tpu">TPU</SelectItem>
-                <SelectItem value="wood">Wood Fill</SelectItem>
-                <SelectItem value="metal">Metal Fill</SelectItem>
-                <SelectItem value="carbon">Carbon Fiber</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Colors */}
-          <div className="space-y-2">
-            <Label htmlFor="colors">Farben</Label>
-            <Input
-              id="colors"
-              placeholder="z.B. Rot, Blau, Weiß (kommagetrennt)"
-              value={formData.colors}
-              onChange={(e) => handleInputChange('colors', e.target.value)}
-            />
-          </div>
-
-          {/* EAN Number */}
-          <div className="space-y-2">
-            <Label htmlFor="eanNumber">EAN-Nummer</Label>
-            <Input
-              id="eanNumber"
-              placeholder="EAN/UPC-Code für Datenbank-Zuordnung eingeben"
-              value={formData.ean_number}
-              onChange={(e) => handleInputChange('ean_number', e.target.value)}
             />
           </div>
 

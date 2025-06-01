@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,12 +25,12 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    trackingType: 'ean' as 'ean' | 'sku',
+    trackingNumber: '',
     description: '',
     category: '',
-    eanNumber: '',
-    cadFile: null as File | null,
     cadSoftware: '',
-    slicer: '',
+    cadFile: null as File | null,
     iniFile: null as File | null,
     sketchName: '',
     replacementValue: ''
@@ -38,7 +39,8 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.category || !formData.cadFile || !formData.cadSoftware || !formData.slicer) {
+    if (!formData.name || !formData.trackingNumber || !formData.category || !formData.cadSoftware || 
+        !formData.cadFile || !formData.iniFile || !formData.sketchName || !formData.replacementValue) {
       toast({
         title: "Fehlende Angaben",
         description: "Bitte füllen Sie alle Pflichtfelder aus.",
@@ -52,11 +54,8 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
       // Upload CAD file
       const cadFilePath = await uploadFile(formData.cadFile, 'cad-files');
       
-      // Upload INI file if provided
-      let iniFilePath = null;
-      if (formData.iniFile) {
-        iniFilePath = await uploadFile(formData.iniFile, 'ini-files');
-      }
+      // Upload INI file
+      const iniFilePath = await uploadFile(formData.iniFile, 'ini-files');
 
       // Upload preview image if provided
       let previewImagePath = null;
@@ -69,11 +68,10 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
         description: formData.description || null,
         category: formData.category,
         design_type: 'personalized',
-        ean_number: formData.eanNumber || null,
+        ean_number: formData.trackingType === 'ean' ? formData.trackingNumber : null,
         cad_software: formData.cadSoftware,
-        slicer: formData.slicer,
-        sketch_name: formData.sketchName || null,
-        replacement_value: formData.replacementValue || null,
+        sketch_name: formData.sketchName,
+        replacement_value: formData.replacementValue,
         cad_file_path: cadFilePath,
         ini_file_path: iniFilePath,
         preview_image_path: previewImagePath
@@ -134,18 +132,37 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
             />
           </div>
 
-          {/* EAN Number */}
+          {/* Tracking Type and Number */}
           <div className="space-y-2">
-            <Label htmlFor="eanNumber">EAN-Nummer</Label>
+            <Label htmlFor="trackingType">Tracking-Typ *</Label>
+            <Select onValueChange={(value) => handleSelectChange('trackingType', value)} value={formData.trackingType} required>
+              <SelectTrigger>
+                <SelectValue placeholder="Wählen Sie den Tracking-Typ" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ean">EAN-Nummer</SelectItem>
+                <SelectItem value="sku">SKU</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="trackingNumber">
+              {formData.trackingType === 'ean' ? 'EAN-Nummer *' : 'SKU *'}
+            </Label>
             <Input
-              id="eanNumber"
-              placeholder="13-stellige EAN-Nummer eingeben"
-              value={formData.eanNumber}
-              onChange={(e) => handleInputChange('eanNumber', e.target.value)}
-              maxLength={13}
+              id="trackingNumber"
+              placeholder={formData.trackingType === 'ean' ? '13-stellige EAN-Nummer eingeben' : 'SKU eingeben'}
+              value={formData.trackingNumber}
+              onChange={(e) => handleInputChange('trackingNumber', e.target.value)}
+              maxLength={formData.trackingType === 'ean' ? 13 : undefined}
+              required
             />
             <p className="text-sm text-gray-600">
-              Die EAN-Nummer wird für die automatische Produkterkennung verwendet
+              {formData.trackingType === 'ean' 
+                ? 'Die EAN-Nummer ist das Hauptelement für das Tracking und ist verpflichtend.'
+                : 'Die SKU ist das Hauptelement für das Tracking und ist verpflichtend.'
+              }
             </p>
           </div>
 
@@ -189,17 +206,31 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
           {/* Category */}
           <div className="space-y-2">
             <Label htmlFor="category">Kategorie *</Label>
-            <Select onValueChange={(value) => handleSelectChange('category', value)} required>
+            <Input
+              id="category"
+              placeholder="Kategorie eingeben oder auswählen"
+              value={formData.category}
+              onChange={(e) => handleInputChange('category', e.target.value)}
+              required
+            />
+            <p className="text-sm text-gray-600">
+              Geben Sie eine neue Kategorie ein oder wählen Sie eine bestehende aus.
+            </p>
+          </div>
+
+          {/* CAD Software */}
+          <div className="space-y-2">
+            <Label htmlFor="cadSoftware">CAD-Software *</Label>
+            <Select onValueChange={(value) => handleSelectChange('cadSoftware', value)} required>
               <SelectTrigger>
-                <SelectValue placeholder="Kategorie auswählen" />
+                <SelectValue placeholder="CAD-Software auswählen" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="mechanical">Mechanische Teile</SelectItem>
-                <SelectItem value="household">Haushalt</SelectItem>
-                <SelectItem value="toys">Spielzeug</SelectItem>
-                <SelectItem value="tools">Werkzeuge</SelectItem>
-                <SelectItem value="decorative">Dekoration</SelectItem>
-                <SelectItem value="automotive">Automotive</SelectItem>
+                <SelectItem value="fusion360">Fusion 360</SelectItem>
+                <SelectItem value="solidworks">SolidWorks</SelectItem>
+                <SelectItem value="blender">Blender</SelectItem>
+                <SelectItem value="freecad">FreeCAD</SelectItem>
+                <SelectItem value="onshape">Onshape</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -230,47 +261,13 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
             </div>
           </div>
 
-          {/* CAD Software */}
-          <div className="space-y-2">
-            <Label htmlFor="cadSoftware">CAD-Software *</Label>
-            <Select onValueChange={(value) => handleSelectChange('cadSoftware', value)} required>
-              <SelectTrigger>
-                <SelectValue placeholder="CAD-Software auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="fusion360">Fusion 360</SelectItem>
-                <SelectItem value="solidworks">SolidWorks</SelectItem>
-                <SelectItem value="blender">Blender</SelectItem>
-                <SelectItem value="freecad">FreeCAD</SelectItem>
-                <SelectItem value="onshape">Onshape</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Slicer */}
-          <div className="space-y-2">
-            <Label htmlFor="slicer">Slicer *</Label>
-            <Select onValueChange={(value) => handleSelectChange('slicer', value)} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Slicer auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
-                <SelectItem value="bambuuslicer">Bambu Studio</SelectItem>
-                <SelectItem value="orcaslicer">OrcaSlicer</SelectItem>
-                <SelectItem value="cura">Cura</SelectItem>
-                <SelectItem value="superslicer">SuperSlicer</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* INI File Upload */}
           <div className="space-y-2">
-            <Label htmlFor="iniFile">Slicer-Konfiguration (INI-Datei)</Label>
+            <Label htmlFor="iniFile">INI-Datei *</Label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
               <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 mb-2">
-                {formData.iniFile ? formData.iniFile.name : 'Slicer-Konfigurationsdatei hochladen'}
+                {formData.iniFile ? formData.iniFile.name : 'INI-Datei hochladen (Pflichtfeld)'}
               </p>
               <Input
                 id="iniFile"
@@ -278,11 +275,11 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
                 accept=".ini,.3mf,.json"
                 onChange={(e) => handleFileChange('iniFile', e.target.files?.[0] || null)}
                 className="hidden"
+                required
               />
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => document.getElementById('iniFile')?.click()}
               >
                 INI-Datei auswählen
@@ -295,27 +292,29 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
           {/* Parameter Mapping Section */}
           <div className="space-y-4">
             <div>
-              <h4 className="text-lg font-medium">Parameter-Zuordnung</h4>
-              <p className="text-sm text-gray-600">Definieren Sie, welche Sketch-Parameter angepasst werden können</p>
+              <h4 className="text-lg font-medium">Parameter-Zuordnung *</h4>
+              <p className="text-sm text-gray-600">Definieren Sie, welche Sketch-Parameter angepasst werden können (Pflichtfelder)</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sketchName">Sketch-Name</Label>
+              <Label htmlFor="sketchName">Sketch-Name *</Label>
               <Input
                 id="sketchName"
                 placeholder="Geben Sie den Namen des zu ersetzenden Sketches ein"
                 value={formData.sketchName}
                 onChange={(e) => handleInputChange('sketchName', e.target.value)}
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="replacementValue">Ersetzungsparameter</Label>
+              <Label htmlFor="replacementValue">Ersetzungsparameter *</Label>
               <Input
                 id="replacementValue"
                 placeholder="Geben Sie ein, was in der Datei ersetzt werden soll"
                 value={formData.replacementValue}
                 onChange={(e) => handleInputChange('replacementValue', e.target.value)}
+                required
               />
             </div>
           </div>
