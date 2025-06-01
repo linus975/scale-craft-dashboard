@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -171,18 +172,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
           <p className="text-gray-600">Manage your 3D designs and G-Code files</p>
         </div>
         
-        <div className="flex gap-2">
-          {isSelectionMode && (
-            <Button 
-              variant={selectedDesigns.length > 0 ? "destructive" : "outline"}
-              onClick={handleToggleSelectionMode}
-              className={selectedDesigns.length > 0 ? "bg-red-600 hover:bg-red-700" : ""}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {selectedDesigns.length > 0 ? `Delete ${selectedDesigns.length}` : 'Cancel'}
-            </Button>
-          )}
-          
+        <div className="flex gap-2 relative">
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700">
@@ -268,27 +258,38 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
             </DialogContent>
           </Dialog>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleStartSelectionMode}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Designs
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Upload className="h-4 w-4 mr-2" />
-                Import Designs
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Download className="h-4 w-4 mr-2" />
-                Export All
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {isSelectionMode ? (
+            <Button 
+              variant={selectedDesigns.length > 0 ? "destructive" : "outline"}
+              onClick={handleToggleSelectionMode}
+              className={selectedDesigns.length > 0 ? "bg-red-600 hover:bg-red-700" : ""}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {selectedDesigns.length > 0 ? `Delete ${selectedDesigns.length}` : 'Cancel'}
+            </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleStartSelectionMode}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Designs
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import Designs
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export All
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 
@@ -328,7 +329,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
         </Select>
       </div>
 
-      {/* Bulk Actions */}
+      {/* Bulk Actions - Always visible when designs are selected */}
       {selectedDesigns.length > 0 && (
         <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border">
           <span className="text-sm font-medium">
@@ -338,7 +339,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
             <Download className="h-4 w-4 mr-1" />
             Export
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)}>
             <Trash2 className="h-4 w-4 mr-1" />
             Delete
           </Button>
