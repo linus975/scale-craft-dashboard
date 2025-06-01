@@ -31,6 +31,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
     category: '',
     cadSoftware: '',
     cadFile: null as File | null,
+    slicerSoftware: '',
     iniFile: null as File | null,
     sketchName: '',
     replacementValue: ''
@@ -40,7 +41,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
     e.preventDefault();
     
     if (!formData.name || !formData.trackingNumber || !formData.category || !formData.cadSoftware || 
-        !formData.cadFile || !formData.iniFile || !formData.sketchName || !formData.replacementValue) {
+        !formData.cadFile || !formData.slicerSoftware || !formData.iniFile || !formData.sketchName || !formData.replacementValue) {
       toast({
         title: "Fehlende Angaben",
         description: "Bitte füllen Sie alle Pflichtfelder aus.",
@@ -260,6 +261,28 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
                 Datei auswählen
               </Button>
             </div>
+          </div>
+
+          {/* Slicer Software */}
+          <div className="space-y-2">
+            <Label htmlFor="slicerSoftware">Slicer-Software *</Label>
+            <Select onValueChange={(value) => handleSelectChange('slicerSoftware', value)} required>
+              <SelectTrigger>
+                <SelectValue placeholder="Slicer-Software auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cura">Ultimaker Cura</SelectItem>
+                <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
+                <SelectItem value="superslicer">SuperSlicer</SelectItem>
+                <SelectItem value="bambu">Bambu Studio</SelectItem>
+                <SelectItem value="simplify3d">Simplify3D</SelectItem>
+                <SelectItem value="ideamaker">IdeaMaker</SelectItem>
+                <SelectItem value="slic3r">Slic3r</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-gray-600">
+              Wählen Sie die Slicer-Software aus, die für Ihr Design verwendet werden soll.
+            </p>
           </div>
 
           {/* INI File Upload */}
