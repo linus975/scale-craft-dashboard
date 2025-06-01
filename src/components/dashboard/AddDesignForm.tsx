@@ -678,49 +678,49 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onPartTypeChange={handlePartTypeChange}
                 onPartSoftwareChange={handlePartSoftwareChange}
                 validatePartFiles={validatePartFiles}
-                renderAdditionalFields={() => (
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <FormField
-                      control={form.control}
-                      name="color"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Farbe</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Farbe eingeben" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="machine"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Machine</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input 
-                                placeholder="Maschine eingeben oder auswählen"
-                                {...field}
-                                list="machines-list"
-                              />
-                              <datalist id="machines-list">
-                                {machines.map((machine) => (
-                                  <option key={machine.id} value={machine.name} />
-                                ))}
-                              </datalist>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
               />
+              
+              {/* Farbe and Machine fields placed after part type and before file upload */}
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <FormField
+                  control={form.control}
+                  name="color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Farbe</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Farbe eingeben" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="machine"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Machine</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            placeholder="Maschine eingeben oder auswählen"
+                            {...field}
+                            list="machines-list"
+                          />
+                          <datalist id="machines-list">
+                            {machines.map((machine) => (
+                              <option key={machine.id} value={machine.name} />
+                            ))}
+                          </datalist>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 
