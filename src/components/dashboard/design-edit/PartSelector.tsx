@@ -57,6 +57,11 @@ const PartSelector: React.FC<PartSelectorProps> = ({
     setEditPartName('');
   };
 
+  const handleAddPart = (name: string) => {
+    onAddPart(name);
+    // The parent component should handle switching to the new part
+  };
+
   const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
   const isEditing = editingPartId === activePart;
 
@@ -87,19 +92,35 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           isEditing={isEditing}
           onStartEditing={() => startEditingPart(activePart, currentPart?.name || '')}
           onSavePartName={savePartName}
-          onAddPart={onAddPart}
+          onAddPart={handleAddPart}
           onRemovePart={onRemovePart}
         />
       </div>
 
-      {currentPart?.partType === 'personalized' && (
-        <SoftwareSelectors
-          cadSoftware={currentPart?.cadSoftware}
-          slicer={currentPart?.slicer}
-          onSoftwareChange={(field, value) => onPartSoftwareChange(activePart, field, value)}
-          disabled={isEditing}
-        />
-      )}
+      {/* Required Software Selection for all parts */}
+      <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="space-y-3">
+          <h4 className="font-medium text-blue-900">CAD Software *</h4>
+          <SoftwareSelectors
+            cadSoftware={currentPart?.cadSoftware}
+            slicer={currentPart?.slicer}
+            onSoftwareChange={(field, value) => onPartSoftwareChange(activePart, field, value)}
+            disabled={isEditing}
+            showOnlyCAD={true}
+          />
+        </div>
+
+        <div className="space-y-3">
+          <h4 className="font-medium text-blue-900">Slicer Software *</h4>
+          <SoftwareSelectors
+            cadSoftware={currentPart?.cadSoftware}
+            slicer={currentPart?.slicer}
+            onSoftwareChange={(field, value) => onPartSoftwareChange(activePart, field, value)}
+            disabled={isEditing}
+            showOnlySlicer={true}
+          />
+        </div>
+      </div>
     </div>
   );
 };

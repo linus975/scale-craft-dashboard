@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -69,8 +68,14 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     if (!data.color) errors.push("Color is required");
     if (!data.machine) errors.push("Machine is required");
     
-    // Check file requirements
+    // Check current part requirements
     const currentPart = designParts.designParts.find(part => part.id === designParts.activePart) || designParts.designParts[0];
+    
+    // Check CAD and Slicer software
+    if (!currentPart?.cadSoftware) errors.push("CAD Software is required");
+    if (!currentPart?.slicer) errors.push("Slicer Software is required");
+    
+    // Check file requirements
     const partFiles = fileUpload.uploadedFiles.filter(file => file.partId === designParts.activePart);
     
     if (currentPart?.partType === 'personalized') {
@@ -79,6 +84,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       
       if (f3dFiles.length !== 1) errors.push("Exactly one CAD file (.f3d) is required");
       if (iniFiles.length !== 1) errors.push("Exactly one INI file is required");
+      
+      // Check sketch name and replacement type for personalized parts
+      if (!currentPart?.parameters?.sketchName) errors.push("Sketch Name is required for personalized parts");
+      if (!currentPart?.parameters?.replacementType) errors.push("Replacement Type is required for personalized parts");
     } else {
       const gcodeFiles = partFiles.filter(file => file.name.toLowerCase().endsWith('.gcode') || file.name.toLowerCase().endsWith('.g'));
       if (gcodeFiles.length !== 1) errors.push("Exactly one G-code file is required");

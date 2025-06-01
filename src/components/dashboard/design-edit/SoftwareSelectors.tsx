@@ -8,57 +8,71 @@ interface SoftwareSelectorsProps {
   slicer?: string;
   onSoftwareChange: (field: 'cadSoftware' | 'slicer', value: string) => void;
   disabled?: boolean;
+  showOnlyCAD?: boolean;
+  showOnlySlicer?: boolean;
 }
 
 const SoftwareSelectors: React.FC<SoftwareSelectorsProps> = ({
   cadSoftware,
   slicer,
   onSoftwareChange,
-  disabled = false
+  disabled = false,
+  showOnlyCAD = false,
+  showOnlySlicer = false
 }) => {
-  return (
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <Label>CAD Software</Label>
-        <Select
-          value={cadSoftware || undefined}
-          onValueChange={(value) => onSoftwareChange('cadSoftware', value)}
-          disabled={disabled}
-        >
-          <SelectTrigger className="h-10">
-            <SelectValue placeholder="Select CAD software" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="fusion360">Fusion 360</SelectItem>
-            <SelectItem value="solidworks">SolidWorks</SelectItem>
-            <SelectItem value="blender">Blender</SelectItem>
-            <SelectItem value="freecad">FreeCAD</SelectItem>
-            <SelectItem value="onshape">Onshape</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+  const showCAD = !showOnlySlicer;
+  const showSlicer = !showOnlyCAD;
 
-      <div>
-        <Label>Slicer Software</Label>
-        <Select
-          value={slicer || undefined}
-          onValueChange={(value) => onSoftwareChange('slicer', value)}
-          disabled={disabled}
-        >
-          <SelectTrigger className="h-10">
-            <SelectValue placeholder="Select slicer software" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="cura">Ultimaker Cura</SelectItem>
-            <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
-            <SelectItem value="superslicer">SuperSlicer</SelectItem>
-            <SelectItem value="bambu">Bambu Studio</SelectItem>
-            <SelectItem value="simplify3d">Simplify3D</SelectItem>
-            <SelectItem value="ideamaker">IdeaMaker</SelectItem>
-            <SelectItem value="slic3r">Slic3r</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+  return (
+    <div className={`${(!showOnlyCAD && !showOnlySlicer) ? 'grid grid-cols-2 gap-4' : ''}`}>
+      {showCAD && (
+        <div className="space-y-2">
+          {(!showOnlyCAD && !showOnlySlicer) && <Label>CAD Software *</Label>}
+          <Select
+            value={cadSoftware}
+            onValueChange={(value) => onSoftwareChange('cadSoftware', value)}
+            disabled={disabled}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select CAD software" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fusion360">Fusion 360</SelectItem>
+              <SelectItem value="solidworks">SolidWorks</SelectItem>
+              <SelectItem value="autocad">AutoCAD</SelectItem>
+              <SelectItem value="inventor">Inventor</SelectItem>
+              <SelectItem value="creo">Creo</SelectItem>
+              <SelectItem value="catia">CATIA</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {showSlicer && (
+        <div className="space-y-2">
+          {(!showOnlyCAD && !showOnlySlicer) && <Label>Slicer Software *</Label>}
+          <Select
+            value={slicer}
+            onValueChange={(value) => onSoftwareChange('slicer', value)}
+            disabled={disabled}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select slicer software" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="prusa">PrusaSlicer</SelectItem>
+              <SelectItem value="cura">Ultimaker Cura</SelectItem>
+              <SelectItem value="superslicer">SuperSlicer</SelectItem>
+              <SelectItem value="bambu">Bambu Studio</SelectItem>
+              <SelectItem value="simplify3d">Simplify3D</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   );
 };

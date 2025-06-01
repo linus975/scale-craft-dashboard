@@ -18,7 +18,14 @@ interface DesignPart {
 export const useDesignParts = () => {
   const [selectedPartId, setSelectedPartId] = useState<string>('');
   const [designParts, setDesignParts] = useState<DesignPart[]>([
-    { id: 'main', name: 'Main Part', files: [], partType: 'static' }
+    { 
+      id: 'main', 
+      name: 'Main Part', 
+      files: [], 
+      partType: 'static',
+      cadSoftware: '',
+      slicer: ''
+    }
   ]);
   const [activePart, setActivePart] = useState<string>('main');
 
@@ -47,10 +54,14 @@ export const useDesignParts = () => {
       id: Date.now().toString(),
       name,
       files: [],
-      partType: 'static'
+      partType: 'static',
+      cadSoftware: '',
+      slicer: ''
     };
     setDesignParts(prev => [...prev, newPart]);
+    // Automatically switch to the new part
     setActivePart(newPart.id);
+    setSelectedPartId(newPart.id);
   };
 
   const handleRemovePart = (partId: string) => {
@@ -59,7 +70,11 @@ export const useDesignParts = () => {
     setDesignParts(prev => prev.filter(part => part.id !== partId));
     
     if (activePart === partId) {
-      setActivePart(designParts[0].id);
+      const remainingParts = designParts.filter(part => part.id !== partId);
+      if (remainingParts.length > 0) {
+        setActivePart(remainingParts[0].id);
+        setSelectedPartId(remainingParts[0].id);
+      }
     }
   };
 
