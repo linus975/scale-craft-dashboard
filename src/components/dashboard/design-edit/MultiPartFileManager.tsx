@@ -26,7 +26,10 @@ interface DesignPart {
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
+    replacementType?: 'text' | 'dimension';
   };
+  cadSoftware?: string;
+  slicer?: string;
 }
 
 interface MultiPartFileManagerProps {
@@ -53,7 +56,15 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   onPartSelect,
 }) => {
   const [designParts, setDesignParts] = useState<DesignPart[]>([
-    { id: 'part1', name: 'Teil 1', files: [], partType: 'static', parameters: { sketchName: '', replacementValue: '' } }
+    { 
+      id: 'part1', 
+      name: 'Teil 1', 
+      files: [], 
+      partType: 'static', 
+      parameters: { sketchName: '', replacementValue: '', replacementType: 'text' },
+      cadSoftware: '',
+      slicer: ''
+    }
   ]);
   const [activePart, setActivePart] = useState(selectedPartId || 'part1');
 
@@ -77,7 +88,9 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       name: name,
       files: [],
       partType: 'static',
-      parameters: { sketchName: '', replacementValue: '' }
+      parameters: { sketchName: '', replacementValue: '', replacementType: 'text' },
+      cadSoftware: '',
+      slicer: ''
     };
     setDesignParts(prev => [...prev, newPart]);
     setActivePart(newPart.id);
@@ -114,6 +127,12 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     ));
   };
 
+  const handlePartSoftwareChange = (partId: string, field: 'cadSoftware' | 'slicer', value: string) => {
+    setDesignParts(prev => prev.map(part => 
+      part.id === partId ? { ...part, [field]: value } : part
+    ));
+  };
+
   const handlePartParametersChange = (partId: string, field: string, value: string) => {
     setDesignParts(prev => prev.map(part => 
       part.id === partId 
@@ -121,12 +140,12 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         : part
     ));
     
-    if (onPartParametersChange) {
+    if (onPartParametersChange && (field === 'sketchName' || field === 'replacementValue')) {
       const part = designParts.find(p => p.id === partId);
       if (part?.parameters) {
         onPartParametersChange(partId, {
-          sketchName: part.parameters.sketchName || '',
-          replacementValue: part.parameters.replacementValue || ''
+          sketchName: field === 'sketchName' ? value : (part.parameters.sketchName || ''),
+          replacementValue: field === 'replacementValue' ? value : (part.parameters.replacementValue || '')
         });
       }
     }
@@ -166,6 +185,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         onRemovePart={removePart}
         onRenamePart={renamePart}
         onPartTypeChange={handlePartTypeChange}
+        onPartSoftwareChange={handlePartSoftwareChange}
         validatePartFiles={validatePartFiles}
       />
 
@@ -179,19 +199,19 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
             hasINI={validation.hasINI}
           />
 
-          {/* Parameter Configuration for Personalized Files */}
-          <ParameterConfig
-            currentPart={currentPart}
-            hasPersonalizedFiles={validation.hasPersonalizedFiles}
-            onPartParametersChange={handlePartParametersChange}
-          />
-
           {/* File Upload */}
           <FileUpload
             partName={currentPart.name}
             partId={currentPart.id}
             uploading={uploading}
             onFileUpload={handleFileUpload}
+          />
+
+          {/* Parameter Configuration for Personalized Files */}
+          <ParameterConfig
+            currentPart={currentPart}
+            hasPersonalizedFiles={validation.hasPersonalizedFiles}
+            onPartParametersChange={handlePartParametersChange}
           />
 
           {/* Files for current part */}

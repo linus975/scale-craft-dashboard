@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Pencil, Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { Pencil, Plus, Trash2, AlertTriangle, Check } from 'lucide-react';
 
 interface DesignPart {
   id: string;
@@ -16,6 +16,8 @@ interface DesignPart {
     sketchName?: string;
     replacementValue?: string;
   };
+  cadSoftware?: string;
+  slicer?: string;
 }
 
 interface PartSelectorProps {
@@ -26,6 +28,7 @@ interface PartSelectorProps {
   onRemovePart: (partId: string) => void;
   onRenamePart: (partId: string, newName: string) => void;
   onPartTypeChange: (partId: string, partType: 'static' | 'personalized') => void;
+  onPartSoftwareChange: (partId: string, field: 'cadSoftware' | 'slicer', value: string) => void;
   validatePartFiles: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };
 }
 
@@ -37,6 +40,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
   onRemovePart,
   onRenamePart,
   onPartTypeChange,
+  onPartSoftwareChange,
   validatePartFiles
 }) => {
   const [editingPartId, setEditingPartId] = useState<string | null>(null);
@@ -57,11 +61,6 @@ const PartSelector: React.FC<PartSelectorProps> = ({
     setEditPartName('');
   };
 
-  const cancelEditingPart = () => {
-    setEditingPartId(null);
-    setEditPartName('');
-  };
-
   const addNewPart = () => {
     if (newPartName.trim()) {
       onAddPart(newPartName.trim());
@@ -71,6 +70,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
   };
 
   const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
+  const isEditing = editingPartId === activePart;
 
   return (
     <div className="space-y-4">
@@ -81,6 +81,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           <Select 
             value={currentPart?.partType || 'static'} 
             onValueChange={(value) => onPartTypeChange(activePart, value as 'static' | 'personalized')}
+            disabled={isEditing}
           >
             <SelectTrigger className="h-10">
               <SelectValue placeholder="Teilart auswählen" />
@@ -95,7 +96,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
         {/* Part Selection */}
         <div className="flex-1">
           <Label>Teil auswählen</Label>
-          {editingPartId === activePart ? (
+          {isEditing ? (
             <Input
               value={editPartName}
               onChange={(e) => setEditPartName(e.target.value)}
@@ -136,27 +137,16 @@ const PartSelector: React.FC<PartSelectorProps> = ({
         {/* Control Buttons */}
         <div className="flex items-end gap-1">
           {/* Edit Part Name */}
-          {editingPartId === activePart ? (
-            <div className="flex gap-1">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={savePartName}
-                className="h-10"
-              >
-                ✓
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={cancelEditingPart}
-                className="h-10"
-              >
-                ✗
-              </Button>
-            </div>
+          {isEditing ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={savePartName}
+              className="h-10 w-10 p-0"
+            >
+              <Check className="h-4 w-4 text-green-600" />
+            </Button>
           ) : (
             <Button
               type="button"
@@ -177,8 +167,9 @@ const PartSelector: React.FC<PartSelectorProps> = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-10 w-10 p-0"
+                className={`h-10 w-10 p-0 ${isEditing ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
                 title="Neues Teil hinzufügen"
+                disabled={isEditing}
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -216,17 +207,64 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           {/* Delete Part */}
           <Button
             type="button"
-            variant={designParts.length <= 1 ? "outline" : "destructive"}
+            variant={designParts.length <= 1 || isEditing ? "outline" : "destructive"}
             size="sm"
-            onClick={() => designParts.length > 1 && onRemovePart(activePart)}
-            disabled={designParts.length <= 1}
-            className={`h-10 w-10 p-0 ${designParts.length <= 1 ? 'bg-gray-100 text-gray-400' : 'text-white'}`}
-            title={designParts.length <= 1 ? "Erstes Teil kann nicht gelöscht werden" : "Teil löschen"}
+            onClick={() => designParts.length > 1 && !isEditing && onRemovePart(activePart)}
+            disabled={designParts.length <= 1 || isEditing}
+            className={`h-10 w-10 p-0 ${(designParts.length <= 1 || isEditing) ? 'bg-gray-100 text-gray-400' : 'text-white'}`}
+            title={designParts.length <= 1 ? "Erstes Teil kann nicht gelöscht werden" : isEditing ? "Während Bearbeitung nicht verfügbar" : "Teil löschen"}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </div>
+
+      {/* CAD Software and Slicer for Personalized Parts */}
+      {currentPart?.partType === 'personalized' && (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>CAD-Software</Label>
+            <Select
+              value={currentPart?.cadSoftware || ''}
+              onValueChange={(value) => onPartSoftwareChange(activePart, 'cadSoftware', value)}
+              disabled={isEditing}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="CAD-Software auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fusion360">Fusion 360</SelectItem>
+                <SelectItem value="solidworks">SolidWorks</SelectItem>
+                <SelectItem value="blender">Blender</SelectItem>
+                <SelectItem value="freecad">FreeCAD</SelectItem>
+                <SelectItem value="onshape">Onshape</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Slicer-Software</Label>
+            <Select
+              value={currentPart?.slicer || ''}
+              onValueChange={(value) => onPartSoftwareChange(activePart, 'slicer', value)}
+              disabled={isEditing}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Slicer-Software auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cura">Ultimaker Cura</SelectItem>
+                <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
+                <SelectItem value="superslicer">SuperSlicer</SelectItem>
+                <SelectItem value="bambu">Bambu Studio</SelectItem>
+                <SelectItem value="simplify3d">Simplify3D</SelectItem>
+                <SelectItem value="ideamaker">IdeaMaker</SelectItem>
+                <SelectItem value="slic3r">Slic3r</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
