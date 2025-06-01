@@ -139,44 +139,6 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         validatePartFiles={externalValidatePartFiles || validatePartFiles}
       />
 
-      {/* Required Fields Section */}
-      <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <div className="space-y-3">
-          <h4 className="font-medium text-blue-900">CAD Software *</h4>
-          <Select required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select CAD software" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fusion360">Fusion 360</SelectItem>
-              <SelectItem value="solidworks">SolidWorks</SelectItem>
-              <SelectItem value="autocad">AutoCAD</SelectItem>
-              <SelectItem value="inventor">Inventor</SelectItem>
-              <SelectItem value="creo">Creo</SelectItem>
-              <SelectItem value="catia">CATIA</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-3">
-          <h4 className="font-medium text-blue-900">Slicer Software *</h4>
-          <Select required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select slicer software" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="prusa">PrusaSlicer</SelectItem>
-              <SelectItem value="cura">Ultimaker Cura</SelectItem>
-              <SelectItem value="superslicer">SuperSlicer</SelectItem>
-              <SelectItem value="bambu">Bambu Studio</SelectItem>
-              <SelectItem value="simplify3d">Simplify3D</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {/* Color and Machine fields */}
       {(colorValue !== undefined || machineValue !== undefined) && (
         <div className="grid grid-cols-2 gap-4">
