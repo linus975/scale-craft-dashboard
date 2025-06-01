@@ -29,6 +29,7 @@ export type Database = {
           replacement_value: string | null
           sketch_name: string | null
           slicer: string | null
+          tracking_type: string | null
           updated_at: string
           user_id: string
           version: string | null
@@ -52,6 +53,7 @@ export type Database = {
           replacement_value?: string | null
           sketch_name?: string | null
           slicer?: string | null
+          tracking_type?: string | null
           updated_at?: string
           user_id: string
           version?: string | null
@@ -75,6 +77,7 @@ export type Database = {
           replacement_value?: string | null
           sketch_name?: string | null
           slicer?: string | null
+          tracking_type?: string | null
           updated_at?: string
           user_id?: string
           version?: string | null

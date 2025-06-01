@@ -57,7 +57,8 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         category: formData.category,
         design_type: 'static',
         gcode: formData.gcode,
-        ean_number: formData.trackingType === 'ean' ? formData.trackingNumber : null,
+        ean_number: formData.trackingNumber,
+        tracking_type: formData.trackingType,
         preview_image_path: previewImagePath
       });
 

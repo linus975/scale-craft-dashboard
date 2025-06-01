@@ -49,7 +49,7 @@ export const useDesigns = () => {
       if (error) throw error;
 
       // Create EAN mapping if EAN number is provided
-      if (data.ean_number) {
+      if (data.ean_number && data.tracking_type) {
         try {
           await createMapping({
             ean_number: data.ean_number,
