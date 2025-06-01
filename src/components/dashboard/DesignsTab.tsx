@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -348,13 +347,17 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
 
       {/* Design Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredDesigns.map((design) => (
+        {filteredDesigns.map((design, index) => (
           <Card 
             key={design.id} 
             className={`hover:shadow-md transition-all cursor-pointer ${
               isSelectionMode && selectedDesigns.includes(design.id) 
                 ? 'border-2 border-red-400 bg-red-50' 
                 : 'hover:shadow-md'
+            } ${
+              isSelectionMode && index < 3 
+                ? 'animate-pulse' 
+                : ''
             }`}
             onClick={isSelectionMode ? () => handleSelectDesign(design.id) : undefined}
           >
