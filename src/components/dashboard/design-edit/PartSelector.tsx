@@ -115,6 +115,11 @@ const PartSelector: React.FC<PartSelectorProps> = ({
               </SelectTrigger>
               <SelectContent>
                 {designParts.map((part) => {
+                  // Ensure part.id is not empty string
+                  if (!part.id || part.id.trim() === '') {
+                    return null;
+                  }
+                  
                   const partValidation = validatePartFiles(part);
                   const needsValidation = partValidation.hasPersonalizedFiles && (!partValidation.hasF3D || !partValidation.hasINI);
                   
@@ -225,7 +230,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           <div>
             <Label>CAD-Software</Label>
             <Select
-              value={currentPart?.cadSoftware}
+              value={currentPart?.cadSoftware || undefined}
               onValueChange={(value) => onPartSoftwareChange(activePart, 'cadSoftware', value)}
               disabled={isEditing}
             >
@@ -245,7 +250,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           <div>
             <Label>Slicer-Software</Label>
             <Select
-              value={currentPart?.slicer}
+              value={currentPart?.slicer || undefined}
               onValueChange={(value) => onPartSoftwareChange(activePart, 'slicer', value)}
               disabled={isEditing}
             >
