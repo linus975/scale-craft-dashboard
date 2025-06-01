@@ -142,7 +142,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     );
   }
 
-  // Static part type - single G-code upload with parameters
+  // Static part type - single G-code upload with nozzle diameter
   return (
     <div className="space-y-2">
       <Label htmlFor={`fileUpload-${partId}`}>
@@ -176,40 +176,18 @@ const FileUpload: React.FC<FileUploadProps> = ({
         </Button>
       </div>
       
-      {/* Parameters for Static Design */}
-      <div className="grid grid-cols-3 gap-2 mt-3">
-        <div className="space-y-1">
-          <Label htmlFor={`staticSketchName-${partId}`} className="text-xs">Sketch Name</Label>
-          <Input
-            id={`staticSketchName-${partId}`}
-            placeholder="Enter sketch name"
-            className="h-8 text-xs"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor={`staticReplacementType-${partId}`} className="text-xs">Replacement Type</Label>
-          <Select>
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Select type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="text">Text from Marketplace</SelectItem>
-              <SelectItem value="dimension">Dimension</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor={`staticNozzleDiameter-${partId}`} className="text-xs">Nozzle Diameter (mm)</Label>
-          <Input
-            id={`staticNozzleDiameter-${partId}`}
-            placeholder="0.4"
-            type="number"
-            step="0.1"
-            min="0.1"
-            max="2.0"
-            className="h-8 text-xs"
-          />
-        </div>
+      {/* Nozzle Diameter for Static Design */}
+      <div className="mt-3">
+        <Label htmlFor={`staticNozzleDiameter-${partId}`} className="text-xs">Nozzle Diameter (mm)</Label>
+        <Input
+          id={`staticNozzleDiameter-${partId}`}
+          placeholder="0.4"
+          type="number"
+          step="0.1"
+          min="0.1"
+          max="2.0"
+          className="h-8 text-xs"
+        />
       </div>
     </div>
   );
