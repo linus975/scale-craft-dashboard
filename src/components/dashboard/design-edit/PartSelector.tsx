@@ -11,6 +11,7 @@ interface DesignPart {
   id: string;
   name: string;
   files: any[];
+  partType?: 'static' | 'personalized';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -24,6 +25,7 @@ interface PartSelectorProps {
   onAddPart: (name: string) => void;
   onRemovePart: (partId: string) => void;
   onRenamePart: (partId: string, newName: string) => void;
+  onPartTypeChange: (partId: string, partType: 'static' | 'personalized') => void;
   validatePartFiles: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };
 }
 
@@ -34,6 +36,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
   onAddPart,
   onRemovePart,
   onRenamePart,
+  onPartTypeChange,
   validatePartFiles
 }) => {
   const [editingPartId, setEditingPartId] = useState<string | null>(null);
@@ -71,31 +74,63 @@ const PartSelector: React.FC<PartSelectorProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-end gap-2">
+        {/* Part Type Selection */}
         <div className="flex-1">
-          <Label>Teil auswählen</Label>
-          <Select value={activePart} onValueChange={onPartChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Teil auswählen" />
+          <Label>Teilart</Label>
+          <Select 
+            value={currentPart?.partType || 'static'} 
+            onValueChange={(value) => onPartTypeChange(activePart, value as 'static' | 'personalized')}
+          >
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Teilart auswählen" />
             </SelectTrigger>
             <SelectContent>
-              {designParts.map((part) => {
-                const partValidation = validatePartFiles(part);
-                const needsValidation = partValidation.hasPersonalizedFiles && (!partValidation.hasF3D || !partValidation.hasINI);
-                
-                return (
-                  <SelectItem key={part.id} value={part.id}>
-                    <div className="flex items-center gap-2">
-                      {part.name}
-                      {needsValidation && (
-                        <AlertTriangle className="h-3 w-3 text-red-500" />
-                      )}
-                    </div>
-                  </SelectItem>
-                );
-              })}
+              <SelectItem value="static">Statisch</SelectItem>
+              <SelectItem value="personalized">Personalisierbar</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Part Selection */}
+        <div className="flex-1">
+          <Label>Teil auswählen</Label>
+          {editingPartId === activePart ? (
+            <Input
+              value={editPartName}
+              onChange={(e) => setEditPartName(e.target.value)}
+              placeholder="Teilname eingeben"
+              className="h-10"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  savePartName();
+                }
+              }}
+            />
+          ) : (
+            <Select value={activePart} onValueChange={onPartChange}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Teil auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                {designParts.map((part) => {
+                  const partValidation = validatePartFiles(part);
+                  const needsValidation = partValidation.hasPersonalizedFiles && (!partValidation.hasF3D || !partValidation.hasINI);
+                  
+                  return (
+                    <SelectItem key={part.id} value={part.id}>
+                      <div className="flex items-center gap-2">
+                        {part.name}
+                        {needsValidation && (
+                          <AlertTriangle className="h-3 w-3 text-red-500" />
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         
         {/* Control Buttons */}
@@ -192,23 +227,6 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           </Button>
         </div>
       </div>
-
-      {/* Part Name Editing Field */}
-      {editingPartId === activePart && (
-        <div>
-          <Label>Teilname bearbeiten</Label>
-          <Input
-            value={editPartName}
-            onChange={(e) => setEditPartName(e.target.value)}
-            placeholder="Teilname eingeben"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                savePartName();
-              }
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 };
