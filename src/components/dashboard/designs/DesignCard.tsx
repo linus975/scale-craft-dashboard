@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Download, Settings, FileCode, Calendar, User } from 'lucide-react';
 import GCodeViewer from '../GCodeViewer';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { useToast } from '@/hooks/use-toast';
 
 interface DesignCardProps {
   design: any;
@@ -27,6 +28,7 @@ const DesignCard: React.FC<DesignCardProps> = ({
   onDownloadDesign
 }) => {
   const { getFileUrl } = useFileUpload();
+  const { toast } = useToast();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -36,17 +38,43 @@ const DesignCard: React.FC<DesignCardProps> = ({
     });
   };
 
-  const handleDownloadDesign = (design: any) => {
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Download fehlgeschlagen');
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: "Download erfolgreich",
+        description: `${filename} wurde heruntergeladen.`,
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download fehlgeschlagen",
+        description: "Die Datei konnte nicht heruntergeladen werden.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadDesign = async (design: any) => {
     if (design.design_type === 'static') {
       if (design.gcode_file_path) {
         // Download G-code file from storage
         const fileUrl = getFileUrl(design.gcode_file_path);
-        const link = document.createElement('a');
-        link.href = fileUrl;
-        link.download = `${design.name}.gcode`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        await downloadFile(fileUrl, `${design.name}.gcode`);
       } else if (design.gcode) {
         // Download legacy G-code from database
         const blob = new Blob([design.gcode], { type: 'text/plain' });
@@ -58,19 +86,29 @@ const DesignCard: React.FC<DesignCardProps> = ({
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Download erfolgreich",
+          description: `${design.name}.gcode wurde heruntergeladen.`,
+        });
       }
     } else if (design.design_type === 'personalized') {
       if (design.cad_file_path) {
         // Download CAD file from storage
         const fileUrl = getFileUrl(design.cad_file_path);
-        const link = document.createElement('a');
-        link.href = fileUrl;
-        link.download = `${design.name}.f3d`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const fileExtension = design.cad_file_path.split('.').pop() || 'f3d';
+        await downloadFile(fileUrl, `${design.name}.${fileExtension}`);
       }
     }
+  };
+
+  const isDownloadAvailable = () => {
+    if (design.design_type === 'static') {
+      return design.gcode_file_path || design.gcode;
+    } else if (design.design_type === 'personalized') {
+      return design.cad_file_path;
+    }
+    return false;
   };
 
   return (
@@ -163,8 +201,11 @@ const DesignCard: React.FC<DesignCardProps> = ({
             variant="outline" 
             size="sm" 
             className="flex-1"
-            onClick={() => handleDownloadDesign(design)}
-            disabled={design.design_type === 'static' ? !design.gcode_file_path && !design.gcode : !design.cad_file_path}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownloadDesign(design);
+            }}
+            disabled={!isDownloadAvailable()}
           >
             <Download className="h-4 w-4 mr-1" />
             Download
@@ -172,7 +213,10 @@ const DesignCard: React.FC<DesignCardProps> = ({
           <Button 
             size="sm" 
             className="flex-1 bg-blue-600 hover:bg-blue-700"
-            onClick={() => onConfigureDesign(design)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onConfigureDesign(design);
+            }}
           >
             <Settings className="h-4 w-4 mr-1" />
             Configure
