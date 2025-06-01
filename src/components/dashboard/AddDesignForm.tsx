@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Plus, Edit, Trash2, Upload } from 'lucide-react';
+import { MoreHorizontal, Plus, Pencil, Trash2, Upload } from 'lucide-react';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useToast } from '@/hooks/use-toast';
@@ -60,8 +59,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   ]);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [editingCategory, setEditingCategory] = useState<string | null>(null);
-  const [editingCategoryName, setEditingCategoryName] = useState('');
   
   const { createDesign } = useDesigns();
   const { toast } = useToast();
@@ -251,13 +248,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   };
 
   const handleRenameCategory = (oldName: string, newName: string) => {
-    if (newName.trim() && !categories.includes(newName.trim())) {
+    if (newName.trim() && !categories.includes(newName.trim()) && newName.trim() !== oldName) {
       setCategories(prev => prev.map(cat => cat === oldName ? newName.trim() : cat));
       if (form.getValues('category') === oldName) {
         form.setValue('category', newName.trim());
       }
-      setEditingCategory(null);
-      setEditingCategoryName('');
       toast({
         title: "Category renamed",
         description: `Category renamed to "${newName.trim()}".`,
@@ -469,45 +464,49 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                           <SelectContent>
                             {categories.map((category) => (
                               <SelectItem key={category} value={category}>
-                                {category}
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{category}</span>
+                                  <div className="flex gap-1 ml-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const newName = prompt('Rename category:', category);
+                                        if (newName) {
+                                          handleRenameCategory(category, newName);
+                                        }
+                                      }}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteCategory(category);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => setIsAddingCategory(true)}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Category
-                          </DropdownMenuItem>
-                          {field.value && (
-                            <>
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setEditingCategory(field.value);
-                                  setEditingCategoryName(field.value);
-                                }}
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Rename Category
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteCategory(field.value)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Category
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsAddingCategory(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -539,41 +538,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                     onClick={() => {
                       setIsAddingCategory(false);
                       setNewCategoryName('');
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-
-              {/* Edit Category Dialog */}
-              {editingCategory && (
-                <div className="flex gap-2 items-center">
-                  <Input
-                    placeholder="Category name"
-                    value={editingCategoryName}
-                    onChange={(e) => setEditingCategoryName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleRenameCategory(editingCategory, editingCategoryName);
-                      } else if (e.key === 'Escape') {
-                        setEditingCategory(null);
-                        setEditingCategoryName('');
-                      }
-                    }}
-                  />
-                  <Button 
-                    onClick={() => handleRenameCategory(editingCategory, editingCategoryName)} 
-                    size="sm"
-                  >
-                    Save
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => {
-                      setEditingCategory(null);
-                      setEditingCategoryName('');
                     }}
                   >
                     Cancel
