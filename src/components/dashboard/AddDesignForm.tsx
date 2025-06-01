@@ -659,29 +659,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               <CardTitle>Manage Files</CardTitle>
             </CardHeader>
             <CardContent>
-              <MultiPartFileManager
-                uploadedFiles={uploadedFiles}
-                loadingFiles={false}
-                uploading={uploading}
-                onFileUpload={handleFileUpload}
-                onFileRemove={handleFileRemove}
-                onFileDownload={handleFileDownload}
-                onPartParametersChange={handlePartParametersChange}
-                selectedPartId={selectedPartId}
-                onPartSelect={handlePartSelect}
-                designParts={designParts}
-                activePart={activePart}
-                onPartChange={setActivePart}
-                onAddPart={handleAddPart}
-                onRemovePart={handleRemovePart}
-                onRenamePart={handleRenamePart}
-                onPartTypeChange={handlePartTypeChange}
-                onPartSoftwareChange={handlePartSoftwareChange}
-                validatePartFiles={validatePartFiles}
-              />
-              
-              {/* Farbe and Machine fields moved up to be above the file upload area */}
-              <div className="grid grid-cols-2 gap-4 mt-4 mb-4">
+              {/* Color and Machine fields placed at the top */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <FormField
                   control={form.control}
                   name="color"
@@ -721,6 +700,28 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   )}
                 />
               </div>
+
+              {/* MultiPartFileManager component placed below Color and Machine */}
+              <MultiPartFileManager
+                uploadedFiles={uploadedFiles}
+                loadingFiles={false}
+                uploading={uploading}
+                onFileUpload={handleFileUpload}
+                onFileRemove={handleFileRemove}
+                onFileDownload={handleFileDownload}
+                onPartParametersChange={handlePartParametersChange}
+                selectedPartId={selectedPartId}
+                onPartSelect={handlePartSelect}
+                designParts={designParts}
+                activePart={activePart}
+                onPartChange={setActivePart}
+                onAddPart={handleAddPart}
+                onRemovePart={handleRemovePart}
+                onRenamePart={handleRenamePart}
+                onPartTypeChange={handlePartTypeChange}
+                onPartSoftwareChange={handlePartSoftwareChange}
+                validatePartFiles={validatePartFiles}
+              />
             </CardContent>
           </Card>
 
