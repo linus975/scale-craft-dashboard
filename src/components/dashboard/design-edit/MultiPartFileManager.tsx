@@ -1,5 +1,8 @@
 
 import React from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import PartSelector from './PartSelector';
 import FileUpload from './FileUpload';
 import FileList from './FileList';
@@ -53,6 +56,13 @@ interface MultiPartFileManagerProps {
   onPartTypeChange?: (partId: string, partType: 'static' | 'personalized') => void;
   onPartSoftwareChange?: (partId: string, field: 'cadSoftware' | 'slicer', value: string) => void;
   validatePartFiles?: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };
+  // New props for Color and Machine fields
+  colorValue?: string;
+  machineValue?: string;
+  onColorChange?: (value: string) => void;
+  onMachineChange?: (value: string) => void;
+  machines?: Array<{ id: string; name: string }>;
+  formControl?: any;
 }
 
 const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
@@ -74,6 +84,12 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   onPartTypeChange: externalOnPartTypeChange,
   onPartSoftwareChange: externalOnPartSoftwareChange,
   validatePartFiles: externalValidatePartFiles,
+  colorValue,
+  machineValue,
+  onColorChange,
+  onMachineChange,
+  machines = [],
+  formControl,
 }) => {
   const {
     designParts,
@@ -121,6 +137,54 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         onPartSoftwareChange={(partId, field, value) => handlePartSoftwareChange(partId, field, value, externalOnPartSoftwareChange)}
         validatePartFiles={externalValidatePartFiles || validatePartFiles}
       />
+
+      {/* Color and Machine fields placed between PartSelector and file operations */}
+      {(colorValue !== undefined || machineValue !== undefined) && (
+        <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border">
+          {colorValue !== undefined && formControl && (
+            <FormField
+              control={formControl}
+              name="color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Farbe</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Farbe eingeben" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {machineValue !== undefined && formControl && (
+            <FormField
+              control={formControl}
+              name="machine"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Machine</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input 
+                        placeholder="Maschine eingeben oder auswählen"
+                        {...field}
+                        list="machines-list"
+                      />
+                      <datalist id="machines-list">
+                        {machines.map((machine) => (
+                          <option key={machine.id} value={machine.name} />
+                        ))}
+                      </datalist>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+        </div>
+      )}
 
       {currentPart && (
         <>

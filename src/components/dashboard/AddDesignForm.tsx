@@ -659,49 +659,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               <CardTitle>Manage Files</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Color and Machine fields placed at the top */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <FormField
-                  control={form.control}
-                  name="color"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Farbe</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Farbe eingeben" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="machine"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Machine</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input 
-                            placeholder="Maschine eingeben oder auswählen"
-                            {...field}
-                            list="machines-list"
-                          />
-                          <datalist id="machines-list">
-                            {machines.map((machine) => (
-                              <option key={machine.id} value={machine.name} />
-                            ))}
-                          </datalist>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* MultiPartFileManager component placed below Color and Machine */}
+              {/* MultiPartFileManager component with Color and Machine fields */}
               <MultiPartFileManager
                 uploadedFiles={uploadedFiles}
                 loadingFiles={false}
@@ -721,6 +679,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onPartTypeChange={handlePartTypeChange}
                 onPartSoftwareChange={handlePartSoftwareChange}
                 validatePartFiles={validatePartFiles}
+                colorValue={form.watch('color')}
+                machineValue={form.watch('machine')}
+                machines={machines}
+                formControl={form.control}
               />
             </CardContent>
           </Card>
