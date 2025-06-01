@@ -276,7 +276,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   };
 
   const handlePrintOnMachine = () => {
-    if (selectedMachine) {
+    if (selectedMachine && selectedMachine !== 'no-machines') {
       onPrintOnMachine(design.id, parseInt(selectedMachine));
       console.log(`Printing design ${design.name} on machine ${selectedMachine}`);
     }
@@ -571,7 +571,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       {idleMachines.length === 0 ? (
-                        <SelectItem value="" disabled>No idle machines available</SelectItem>
+                        <SelectItem value="no-machines" disabled>No idle machines available</SelectItem>
                       ) : (
                         idleMachines.map((machine) => (
                           <SelectItem key={machine.id} value={machine.id.toString()}>
@@ -584,7 +584,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                 </div>
                 <Button 
                   onClick={handlePrintOnMachine} 
-                  disabled={!selectedMachine || idleMachines.length === 0}
+                  disabled={!selectedMachine || selectedMachine === 'no-machines' || idleMachines.length === 0}
                   className="w-full"
                 >
                   <Printer className="h-4 w-4 mr-2" />
