@@ -62,6 +62,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategoryValue, setEditingCategoryValue] = useState('');
   
   const { createDesign } = useDesigns();
   const { toast } = useToast();
@@ -248,22 +249,25 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       return;
     }
     setEditingCategory(currentCategory);
+    setEditingCategoryValue(currentCategory);
   };
 
   const handleSaveEditCategory = () => {
-    const currentCategory = form.getValues('category');
-    if (editingCategory && currentCategory && editingCategory !== currentCategory) {
-      setCategories(prev => prev.map(cat => cat === editingCategory ? currentCategory : cat));
+    if (editingCategory && editingCategoryValue && editingCategory !== editingCategoryValue) {
+      setCategories(prev => prev.map(cat => cat === editingCategory ? editingCategoryValue : cat));
+      form.setValue('category', editingCategoryValue);
       toast({
         title: "Category renamed",
-        description: `Category renamed to "${currentCategory}".`,
+        description: `Category renamed to "${editingCategoryValue}".`,
       });
     }
     setEditingCategory(null);
+    setEditingCategoryValue('');
   };
 
   const handleCancelEditCategory = () => {
     setEditingCategory(null);
+    setEditingCategoryValue('');
   };
 
   const handleAddCategory = () => {
@@ -494,20 +498,37 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                     <FormLabel>Category</FormLabel>
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {editingCategory ? (
+                          <Input
+                            value={editingCategoryValue}
+                            onChange={(e) => setEditingCategoryValue(e.target.value)}
+                            placeholder="Category name"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSaveEditCategory();
+                              }
+                              if (e.key === 'Escape') {
+                                handleCancelEditCategory();
+                              }
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories.map((category) => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
                       
                       <div className="flex gap-1">
@@ -536,7 +557,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                               onClick={handleAddCategory}
                               title="Add category"
                               disabled={editingCategory !== null}
-                              className={editingCategory ? 'opacity-30 cursor-not-allowed' : 'opacity-60'}
+                              className={editingCategory ? 'opacity-50 cursor-not-allowed text-gray-400' : ''}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -590,7 +611,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                               type="button"
                               variant="outline"
                               size="icon"
-                              className={`border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 ${editingCategory ? 'opacity-30 cursor-not-allowed' : 'opacity-60'}`}
+                              className={`border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 ${editingCategory ? 'opacity-50 cursor-not-allowed text-gray-400' : ''}`}
                               title="Delete category"
                               disabled={editingCategory !== null}
                             >
