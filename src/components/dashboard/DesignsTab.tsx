@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
-import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Image, Package, Check, Crown, Lock, Printer, ChevronRight, PlayCircle, Clock, Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { FileText, Layers, Plus, Download, User, Search, Grid2X2, LayoutList, Package, Check, Crown, Lock, Printer, ChevronRight, PlayCircle, Clock, Loader2, Trash2, Upload, FileSpreadsheet } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import StaticDesignForm from './StaticDesignForm';
@@ -17,12 +17,11 @@ import { useDesigns } from '@/hooks/useDesigns';
 import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface DesignsTabProps {
-  onNavigateToDesignDetail?: (designId: string) => void;
   onNavigateToWhitelabelCatalog?: () => void;
 }
 
-const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNavigateToWhitelabelCatalog }) => {
-  const { designs, loading } = useDesigns();
+const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }) => {
+  const { designs, loading, deleteDesign } = useDesigns();
   const { getFileUrl } = useFileUpload();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
@@ -30,7 +29,8 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [showImages, setShowImages] = useState(false);
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
+  const [selectedDesigns, setSelectedDesigns] = useState<Set<string>>(new Set());
   const [showAllLibraryDesigns, setShowAllLibraryDesigns] = useState(false);
   
   const libraryDesigns = [
@@ -148,11 +148,80 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
     setIsDialogOpen(false);
   };
 
-  const handleDesignClick = (designId: string) => {
-    console.log(`Navigating to design detail for design ${designId}`);
-    if (onNavigateToDesignDetail) {
-      onNavigateToDesignDetail(designId);
+  const handleDesignDelete = async (designId: string) => {
+    if (window.confirm('Sind Sie sicher, dass Sie dieses Design löschen möchten?')) {
+      try {
+        await deleteDesign(designId);
+      } catch (error) {
+        console.error('Error deleting design:', error);
+      }
     }
+  };
+
+  const handleBulkSelect = (designId: string, checked: boolean) => {
+    const newSelected = new Set(selectedDesigns);
+    if (checked) {
+      newSelected.add(designId);
+    } else {
+      newSelected.delete(designId);
+    }
+    setSelectedDesigns(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(filteredOwnDesigns.map(d => d.id));
+      setSelectedDesigns(allIds);
+    } else {
+      setSelectedDesigns(new Set());
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedDesigns.size === 0) return;
+    
+    if (window.confirm(`Sind Sie sicher, dass Sie ${selectedDesigns.size} Design(s) löschen möchten?`)) {
+      try {
+        await Promise.all(Array.from(selectedDesigns).map(id => deleteDesign(id)));
+        setSelectedDesigns(new Set());
+        setBulkSelectMode(false);
+      } catch (error) {
+        console.error('Error bulk deleting designs:', error);
+      }
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (selectedDesigns.size === 0) return;
+    
+    const selectedDesignData = filteredOwnDesigns.filter(d => selectedDesigns.has(d.id));
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "Name,Version,Category,Created At,CAD Software,Slicer\n" +
+      selectedDesignData.map(d => 
+        `"${d.name}","${d.version}","${d.category}","${d.created_at}","${d.cad_software || ''}","${d.slicer || ''}"`
+      ).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "designs_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      console.log('Imported file content:', text);
+      // TODO: Implement CSV parsing and bulk design creation
+      alert('Import-Funktion wird implementiert. Datei wurde gelesen.');
+    };
+    reader.readAsText(file);
   };
 
   const renderDialogContent = () => {
@@ -219,10 +288,9 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       {filteredOwnDesigns.map((design) => (
         <Card 
           key={design.id} 
-          className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => handleDesignClick(design.id)}
+          className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow"
         >
-          {showImages && design.preview_image_path && (
+          {design.preview_image_path && (
             <div className="relative h-48 overflow-hidden rounded-t-lg">
               <img 
                 src={getFileUrl(design.preview_image_path)} 
@@ -233,8 +301,26 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           )}
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">{design.name}</CardTitle>
-              <FileText className="h-5 w-5 text-slate-400" />
+              <div className="flex items-center gap-2">
+                {bulkSelectMode && (
+                  <Checkbox
+                    checked={selectedDesigns.has(design.id)}
+                    onCheckedChange={(checked) => handleBulkSelect(design.id, checked as boolean)}
+                  />
+                )}
+                <CardTitle className="text-lg">{design.name}</CardTitle>
+              </div>
+              <div className="flex gap-1">
+                <FileText className="h-5 w-5 text-slate-400" />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                  onClick={() => handleDesignDelete(design.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <CardDescription>
               {design.version} • {new Date(design.created_at).toLocaleDateString('de-DE')}
@@ -253,9 +339,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                   size="sm" 
                   variant="outline" 
                   className="flex-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
                 >
                   <Download className="h-4 w-4 mr-1" />
                   Download
@@ -263,10 +346,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                 <Button 
                   size="sm" 
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedDesign(design);
-                  }}
+                  onClick={() => setSelectedDesign(design)}
                 >
                   Bearbeiten
                 </Button>
@@ -283,12 +363,17 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       {filteredOwnDesigns.map((design) => (
         <Card 
           key={design.id} 
-          className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => handleDesignClick(design.id)}
+          className="bg-white/60 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-shadow"
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
-              {showImages && design.preview_image_path && (
+              {bulkSelectMode && (
+                <Checkbox
+                  checked={selectedDesigns.has(design.id)}
+                  onCheckedChange={(checked) => handleBulkSelect(design.id, checked as boolean)}
+                />
+              )}
+              {design.preview_image_path && (
                 <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded-lg">
                   <img 
                     src={getFileUrl(design.preview_image_path)} 
@@ -310,9 +395,6 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                 <Button 
                   size="sm" 
                   variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
                 >
                   <Download className="h-4 w-4 mr-1" />
                   Download
@@ -320,12 +402,17 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                 <Button 
                   size="sm" 
                   className="bg-blue-600 hover:bg-blue-700"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedDesign(design);
-                  }}
+                  onClick={() => setSelectedDesign(design)}
                 >
                   Bearbeiten
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-500 hover:text-red-700"
+                  onClick={() => handleDesignDelete(design.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -342,7 +429,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           <Card 
             key={design.id} 
             className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
-            onClick={() => handleDesignClick(design.id)}
+            onClick={() => setSelectedDesign(design)}
           >
             <div className="absolute top-2 right-2 z-10">
               <Badge className="bg-purple-600 text-white">
@@ -351,7 +438,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
               </Badge>
             </div>
             
-            {showImages && (
+            {design.imageUrl && (
               <div className="relative h-36 overflow-hidden">
                 <img 
                   src={design.imageUrl} 
@@ -404,7 +491,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                   className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDesignClick(design.id);
+                    setSelectedDesign(design);
                   }}
                 >
                   <Printer className="h-3 w-3 mr-1" />
@@ -450,11 +537,11 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           <Card 
             key={design.id} 
             className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all cursor-pointer"
-            onClick={() => handleDesignClick(design.id)}
+            onClick={() => setSelectedDesign(design)}
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
-                {showImages && (
+                {design.imageUrl && (
                   <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg">
                     <img 
                       src={design.imageUrl} 
@@ -494,7 +581,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
                     className="bg-purple-600 hover:bg-purple-700"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDesignClick(design.id);
+                      setSelectedDesign(design);
                     }}
                   >
                     <Printer className="h-3 w-3 mr-1" />
@@ -541,17 +628,34 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           <h2 className="text-2xl font-bold text-slate-900">Design Library</h2>
           <p className="text-slate-600">Verwalten Sie Ihre CAD-Dateien und Vorlagen</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Design hinzufügen
+        <div className="flex gap-2">
+          <div className="relative">
+            <Input
+              type="file"
+              accept=".csv,.json,.xlsx"
+              onChange={handleImport}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              id="import-file"
+            />
+            <Button variant="outline" asChild>
+              <label htmlFor="import-file" className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </label>
             </Button>
-          </DialogTrigger>
-          <DialogContent className={selectedDesignType ? "max-w-4xl max-h-[90vh]" : "sm:max-w-md"}>
-            {renderDialogContent()}
-          </DialogContent>
-        </Dialog>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Design hinzufügen
+              </Button>
+            </DialogTrigger>
+            <DialogContent className={selectedDesignType ? "max-w-4xl max-h-[90vh]" : "sm:max-w-md"}>
+              {renderDialogContent()}
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -593,17 +697,50 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
           >
             <LayoutList className="h-4 w-4" />
           </Button>
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
-            showImages ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-300'
-          }`}>
-            <Image className="h-4 w-4" />
-            <Switch
-              checked={showImages}
-              onCheckedChange={setShowImages}
-            />
-          </div>
+          <Button
+            variant={bulkSelectMode ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setBulkSelectMode(!bulkSelectMode);
+              setSelectedDesigns(new Set());
+            }}
+          >
+            <Checkbox className="h-4 w-4" />
+          </Button>
         </div>
       </div>
+
+      {bulkSelectMode && (
+        <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <Checkbox
+            checked={selectedDesigns.size === filteredOwnDesigns.length && filteredOwnDesigns.length > 0}
+            onCheckedChange={handleSelectAll}
+          />
+          <span className="text-sm text-blue-900">
+            {selectedDesigns.size} von {filteredOwnDesigns.length} ausgewählt
+          </span>
+          <div className="flex gap-2 ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleBulkExport}
+              disabled={selectedDesigns.size === 0}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Exportieren
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={selectedDesigns.size === 0}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Löschen
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">
@@ -647,7 +784,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToDesignDetail, onNav
       </div>
 
       <div className="mt-12 pt-8 border-t border-slate-200">
-        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onNavigateToWhitelabelCatalog()}>
+        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onNavigateToWhitelabelCatalog && onNavigateToWhitelabelCatalog()}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
