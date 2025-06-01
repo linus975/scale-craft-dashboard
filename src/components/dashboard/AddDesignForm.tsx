@@ -680,8 +680,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 validatePartFiles={validatePartFiles}
               />
               
-              {/* Farbe and Machine fields placed after part type and before file upload */}
-              <div className="grid grid-cols-2 gap-4 mt-4">
+              {/* Farbe and Machine fields moved up to be above the file upload area */}
+              <div className="grid grid-cols-2 gap-4 mt-4 mb-4">
                 <FormField
                   control={form.control}
                   name="color"
