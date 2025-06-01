@@ -659,85 +659,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               <CardTitle>Manage Files</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* CAD Software and Slicer Software */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="space-y-2">
-                  <Label>CAD-Software</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="CAD-Software auswählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fusion360">Fusion 360</SelectItem>
-                      <SelectItem value="solidworks">SolidWorks</SelectItem>
-                      <SelectItem value="blender">Blender</SelectItem>
-                      <SelectItem value="freecad">FreeCAD</SelectItem>
-                      <SelectItem value="onshape">Onshape</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Slicer-Software</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Slicer-Software auswählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cura">Ultimaker Cura</SelectItem>
-                      <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
-                      <SelectItem value="superslicer">SuperSlicer</SelectItem>
-                      <SelectItem value="bambu">Bambu Studio</SelectItem>
-                      <SelectItem value="simplify3d">Simplify3D</SelectItem>
-                      <SelectItem value="ideamaker">IdeaMaker</SelectItem>
-                      <SelectItem value="slic3r">Slic3r</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Farbe and Machine */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <FormField
-                  control={form.control}
-                  name="color"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Farbe</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Farbe eingeben" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="machine"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Machine</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input 
-                            placeholder="Maschine eingeben oder auswählen"
-                            {...field}
-                            list="machines-list"
-                          />
-                          <datalist id="machines-list">
-                            {machines.map((machine) => (
-                              <option key={machine.id} value={machine.name} />
-                            ))}
-                          </datalist>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               <MultiPartFileManager
                 uploadedFiles={uploadedFiles}
                 loadingFiles={false}
@@ -757,6 +678,48 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onPartTypeChange={handlePartTypeChange}
                 onPartSoftwareChange={handlePartSoftwareChange}
                 validatePartFiles={validatePartFiles}
+                renderAdditionalFields={() => (
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <FormField
+                      control={form.control}
+                      name="color"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Farbe</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Farbe eingeben" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="machine"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Machine</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                placeholder="Maschine eingeben oder auswählen"
+                                {...field}
+                                list="machines-list"
+                              />
+                              <datalist id="machines-list">
+                                {machines.map((machine) => (
+                                  <option key={machine.id} value={machine.name} />
+                                ))}
+                              </datalist>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
               />
             </CardContent>
           </Card>
