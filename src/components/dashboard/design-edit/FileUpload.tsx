@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload } from 'lucide-react';
 
 interface FileUploadProps {
@@ -62,6 +63,30 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 {uploading ? 'Uploading...' : 'Select CAD files'}
               </Button>
             </div>
+            
+            {/* CAD Parameters */}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="space-y-1">
+                <Label htmlFor={`sketchName-${partId}`} className="text-xs">Sketch Name</Label>
+                <Input
+                  id={`sketchName-${partId}`}
+                  placeholder="Enter sketch name"
+                  className="h-8 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor={`replacementType-${partId}`} className="text-xs">Replacement Type</Label>
+                <Select>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Text from Marketplace</SelectItem>
+                    <SelectItem value="dimension">Dimension</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           {/* Slicer INI Upload */}
@@ -96,6 +121,20 @@ const FileUpload: React.FC<FileUploadProps> = ({
               >
                 {uploading ? 'Uploading...' : 'Select INI files'}
               </Button>
+            </div>
+            
+            {/* Nozzle Diameter */}
+            <div className="mt-3">
+              <Label htmlFor={`nozzleDiameter-${partId}`} className="text-xs">Nozzle Diameter (mm)</Label>
+              <Input
+                id={`nozzleDiameter-${partId}`}
+                placeholder="0.4"
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="2.0"
+                className="h-8 text-xs mt-1"
+              />
             </div>
           </div>
         </div>
