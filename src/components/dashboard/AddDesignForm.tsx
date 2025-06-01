@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Plus, Pencil, Trash2, Upload } from 'lucide-react';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
@@ -278,15 +279,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     }
     
     if (categories.length > 1) {
-      const confirmed = confirm(`Are you sure you want to delete the category "${currentCategory}"?`);
-      if (confirmed) {
-        setCategories(prev => prev.filter(cat => cat !== currentCategory));
-        form.setValue('category', '');
-        toast({
-          title: "Category deleted",
-          description: `"${currentCategory}" was removed from categories.`,
-        });
-      }
+      setCategories(prev => prev.filter(cat => cat !== currentCategory));
+      form.setValue('category', '');
+      toast({
+        title: "Category deleted",
+        description: `"${currentCategory}" was removed from categories.`,
+      });
     } else {
       toast({
         title: "Cannot delete category",
@@ -497,15 +495,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                         type="button"
                         variant="outline"
                         size="icon"
-                        onClick={handleAddCategory}
-                        title="Add category"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
                         onClick={handleRenameCategory}
                         title="Rename category"
                       >
@@ -515,11 +504,41 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                         type="button"
                         variant="outline"
                         size="icon"
-                        onClick={handleDeleteCategory}
-                        title="Delete category"
+                        onClick={handleAddCategory}
+                        title="Add category"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Plus className="h-4 w-4" />
                       </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                            title="Delete category"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action will permanently delete the category "{form.getValues('category')}" for all products. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={handleDeleteCategory}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                     <FormMessage />
                   </FormItem>
