@@ -108,8 +108,8 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       const part = designParts.find(p => p.id === partId);
       if (part?.parameters) {
         onPartParametersChange(partId, {
-          ...part.parameters,
-          [field]: value
+          sketchName: part.parameters.sketchName || '',
+          replacementValue: part.parameters.replacementValue || ''
         });
       }
     }
