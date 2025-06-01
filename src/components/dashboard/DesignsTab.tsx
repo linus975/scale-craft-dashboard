@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, Filter, Download, Upload, Trash2, Edit, Package, FileCode, Calendar, User, Settings } from 'lucide-react';
 import { useDesigns } from '@/hooks/useDesigns';
+import { useMachines } from '@/hooks/useMachines';
 import StaticDesignForm from './StaticDesignForm';
 import PersonalizedDesignForm from './PersonalizedDesignForm';
 import GCodeViewer from './GCodeViewer';
@@ -19,6 +21,7 @@ interface DesignsTabProps {
 
 const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }) => {
   const { designs, loading } = useDesigns();
+  const { machines } = useMachines();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -27,19 +30,11 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
   const [selectedDesignType, setSelectedDesignType] = useState<'static' | 'personalized' | null>(null);
   const [editingDesign, setEditingDesign] = useState<any>(null);
 
-  // Mock machines data for the edit dialog
-  const mockMachines = [
-    { id: 1, name: "Prusa i3 MK3S+", status: "idle" },
-    { id: 2, name: "Bambu Lab X1 Carbon", status: "printing" },
-    { id: 3, name: "Ender 3 V2", status: "offline" },
-    { id: 4, name: "Ultimaker S3", status: "idle" },
-    { id: 5, name: "Creality CR-10", status: "maintenance" }
-  ];
-
   const filteredDesigns = designs.filter(design => {
     const matchesSearch = design.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          design.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         design.ean_number?.toLowerCase().includes(searchTerm.toLowerCase());
+                         design.ean_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         design.cad_software?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || design.category === selectedCategory;
     const matchesType = selectedType === 'all' || design.design_type === selectedType;
     
@@ -206,7 +201,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Nach Designs suchen..."
+            placeholder="Search designs by name, EAN, SKU, or CAD software..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -215,10 +210,10 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
         
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Kategorie" />
+            <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Kategorien</SelectItem>
+            <SelectItem value="all">All Categories</SelectItem>
             {categories.map(category => (
               <SelectItem key={category} value={category}>{category}</SelectItem>
             ))}
@@ -227,12 +222,12 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
 
         <Select value={selectedType} onValueChange={setSelectedType}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Typ" />
+            <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Typen</SelectItem>
-            <SelectItem value="static">Statisch</SelectItem>
-            <SelectItem value="personalized">Personalisierbar</SelectItem>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="static">Static</SelectItem>
+            <SelectItem value="personalized">Personalized</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -241,15 +236,15 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
       {selectedDesigns.length > 0 && (
         <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border">
           <span className="text-sm font-medium">
-            {selectedDesigns.length} Design(s) ausgewählt
+            {selectedDesigns.length} Design(s) selected
           </span>
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-1" />
-            Exportieren
+            Export
           </Button>
           <Button variant="outline" size="sm">
             <Trash2 className="h-4 w-4 mr-1" />
-            Löschen
+            Delete
           </Button>
         </div>
       )}
@@ -269,7 +264,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
                     <CardTitle className="text-lg">{design.name}</CardTitle>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant={design.design_type === 'static' ? 'default' : 'secondary'}>
-                        {design.design_type === 'static' ? 'Statisch' : 'Personalisierbar'}
+                        {design.design_type === 'static' ? 'Static' : 'Personalized'}
                       </Badge>
                       <Badge variant="outline">{design.category}</Badge>
                       {design.tracking_type && (
@@ -309,14 +304,14 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
               {design.design_type === 'static' && design.gcode && !design.gcode_file_path && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <FileCode className="h-4 w-4" />
-                  <span>G-Code verfügbar ({design.gcode.split('\n').length} Zeilen)</span>
+                  <span>G-Code available ({design.gcode.split('\n').length} lines)</span>
                 </div>
               )}
 
               {/* CAD Software for Personalized Designs */}
               {design.design_type === 'personalized' && design.cad_software && (
                 <div className="text-sm">
-                  <span className="font-medium">CAD-Software:</span>
+                  <span className="font-medium">CAD Software:</span>
                   <span className="ml-1">{design.cad_software}</span>
                 </div>
               )}
@@ -356,18 +351,18 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
       <div className="flex justify-center gap-3 pt-6 border-t">
         <Button variant="outline">
           <Upload className="h-4 w-4 mr-2" />
-          Designs importieren
+          Import Designs
         </Button>
         <Button variant="outline">
           <Download className="h-4 w-4 mr-2" />
-          Alle exportieren
+          Export All
         </Button>
         <Checkbox
           checked={selectedDesigns.length === filteredDesigns.length && filteredDesigns.length > 0}
           onCheckedChange={handleSelectAll}
           className="ml-4"
         />
-        <span className="text-sm text-gray-600">Alle auswählen</span>
+        <span className="text-sm text-gray-600">Select All</span>
       </div>
 
       {/* Design Edit Dialog */}
@@ -379,7 +374,7 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
           onSave={handleSaveDesign}
           onAddToQueue={handleAddToQueue}
           onPrintOnMachine={handlePrintOnMachine}
-          machines={mockMachines}
+          machines={machines}
         />
       )}
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Upload, Save, ListPlus, Printer, FileText, X } from 'lucide-react';
+import { Upload, Save, ListPlus, Printer, FileText, X, FileCode } from 'lucide-react';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -55,6 +54,9 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   
   const { uploadFile, getFileUrl, deleteFile, uploading } = useFileUpload();
 
+  // Filter machines to only show idle ones
+  const idleMachines = machines.filter(machine => machine.status === 'idle');
+
   // Load real files from database and storage when dialog opens
   useEffect(() => {
     if (isOpen && design?.id) {
@@ -69,8 +71,36 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
     try {
       const files: UploadedFile[] = [];
       
-      // Add CAD file if exists
-      if (design.cad_file_path) {
+      // Add G-Code file if exists (for static designs)
+      if (design.design_type === 'static' && design.gcode_file_path) {
+        const gcodeFileUrl = getFileUrl(design.gcode_file_path);
+        const fileName = extractOriginalFileName(design.gcode_file_path, 'G-Code File');
+        files.push({
+          id: 'gcode_file',
+          name: fileName,
+          type: 'G-Code File',
+          size: 'Unknown',
+          uploadDate: new Date(design.created_at).toISOString().split('T')[0],
+          path: design.gcode_file_path,
+          originalName: fileName
+        });
+      }
+
+      // Add legacy G-Code if exists and no file path
+      if (design.design_type === 'static' && design.gcode && !design.gcode_file_path) {
+        files.push({
+          id: 'legacy_gcode',
+          name: `${design.name || 'design'}.gcode`,
+          type: 'G-Code (Legacy)',
+          size: `${(design.gcode.length / 1024).toFixed(1)} KB`,
+          uploadDate: new Date(design.created_at).toISOString().split('T')[0],
+          path: '',
+          originalName: `${design.name || 'design'}.gcode`
+        });
+      }
+      
+      // Add CAD file if exists (for personalized designs)
+      if (design.design_type === 'personalized' && design.cad_file_path) {
         const cadFileUrl = getFileUrl(design.cad_file_path);
         const fileName = extractOriginalFileName(design.cad_file_path, 'CAD File');
         files.push({
@@ -168,6 +198,11 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
       // Check if it's a CAD file extension
       if (['f3d', 'step', 'stp', 'iges', 'igs', 'dwg', 'dxf'].includes(extension?.toLowerCase() || '')) {
         return `${design.name || 'design'}.${extension}`;
+      }
+      
+      // Check if it's a G-Code file
+      if (extension?.toLowerCase() === 'gcode') {
+        return `${design.name || 'design'}.gcode`;
       }
       
       // Check if it's an INI file
@@ -274,6 +309,11 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   };
 
   const handleFileRemove = async (file: UploadedFile) => {
+    if (file.id === 'legacy_gcode') {
+      // Can't delete legacy G-Code stored in database
+      return;
+    }
+    
     try {
       await deleteFile(file.path);
       setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
@@ -283,13 +323,26 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   };
 
   const handleFileDownload = (file: UploadedFile) => {
-    const fileUrl = getFileUrl(file.path);
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = file.originalName || file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (file.id === 'legacy_gcode') {
+      // Create blob for legacy G-Code
+      const blob = new Blob([design.gcode], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.originalName || file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      const fileUrl = getFileUrl(file.path);
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = file.originalName || file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   if (!design) return null;
@@ -333,42 +386,47 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="cadSoftware">CAD Software</Label>
-                    <Select onValueChange={(value) => handleSelectChange('cadSoftware', value)} value={formData.cadSoftware}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select CAD software" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fusion360">Fusion 360</SelectItem>
-                        <SelectItem value="solidworks">SolidWorks</SelectItem>
-                        <SelectItem value="blender">Blender</SelectItem>
-                        <SelectItem value="freecad">FreeCAD</SelectItem>
-                        <SelectItem value="onshape">Onshape</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Only show CAD Software and Slicer for personalized designs */}
+                  {design.design_type === 'personalized' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="cadSoftware">CAD Software</Label>
+                        <Select onValueChange={(value) => handleSelectChange('cadSoftware', value)} value={formData.cadSoftware}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select CAD software" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fusion360">Fusion 360</SelectItem>
+                            <SelectItem value="solidworks">SolidWorks</SelectItem>
+                            <SelectItem value="blender">Blender</SelectItem>
+                            <SelectItem value="freecad">FreeCAD</SelectItem>
+                            <SelectItem value="onshape">Onshape</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="slicer">Slicer</Label>
-                    <Select onValueChange={(value) => handleSelectChange('slicer', value)} value={formData.slicer}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select slicer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
-                        <SelectItem value="bambuuslicer">Bambu Studio</SelectItem>
-                        <SelectItem value="orcaslicer">OrcaSlicer</SelectItem>
-                        <SelectItem value="cura">Cura</SelectItem>
-                        <SelectItem value="superslicer">SuperSlicer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="slicer">Slicer</Label>
+                        <Select onValueChange={(value) => handleSelectChange('slicer', value)} value={formData.slicer}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select slicer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
+                            <SelectItem value="bambuuslicer">Bambu Studio</SelectItem>
+                            <SelectItem value="orcaslicer">OrcaSlicer</SelectItem>
+                            <SelectItem value="cura">Cura</SelectItem>
+                            <SelectItem value="superslicer">SuperSlicer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
 
                   <Separator />
 
-                  {/* Parameter Mapping (if it's a personalized design) */}
-                  {formData.sketchName && (
+                  {/* Parameter Mapping (only for personalized designs) */}
+                  {design.design_type === 'personalized' && formData.sketchName && (
                     <div className="space-y-4">
                       <div>
                         <h4 className="text-lg font-medium">Parameter Mapping</h4>
@@ -431,7 +489,10 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                             uploadedFiles.map((file) => (
                               <div key={file.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
                                 <div className="flex items-center gap-2">
-                                  <FileText className="h-4 w-4 text-slate-500" />
+                                  {file.type.includes('G-Code') ? 
+                                    <FileCode className="h-4 w-4 text-green-500" /> : 
+                                    <FileText className="h-4 w-4 text-slate-500" />
+                                  }
                                   <div>
                                     <p className="text-sm font-medium">{file.name}</p>
                                     <p className="text-xs text-slate-500">{file.type} • {file.size} • {file.uploadDate}</p>
@@ -446,14 +507,16 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                                   >
                                     Download
                                   </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    onClick={() => handleFileRemove(file)}
-                                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
+                                  {file.id !== 'legacy_gcode' && (
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost"
+                                      onClick={() => handleFileRemove(file)}
+                                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             ))
@@ -501,23 +564,27 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2">
-                  <Label>Select Machine</Label>
+                  <Label>Select Machine (Idle Only)</Label>
                   <Select onValueChange={setSelectedMachine} value={selectedMachine}>
                     <SelectTrigger>
                       <SelectValue placeholder="Choose machine" />
                     </SelectTrigger>
                     <SelectContent>
-                      {machines.map((machine) => (
-                        <SelectItem key={machine.id} value={machine.id.toString()}>
-                          {machine.name} ({machine.status})
-                        </SelectItem>
-                      ))}
+                      {idleMachines.length === 0 ? (
+                        <SelectItem value="" disabled>No idle machines available</SelectItem>
+                      ) : (
+                        idleMachines.map((machine) => (
+                          <SelectItem key={machine.id} value={machine.id.toString()}>
+                            {machine.name} (idle)
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
                 <Button 
                   onClick={handlePrintOnMachine} 
-                  disabled={!selectedMachine}
+                  disabled={!selectedMachine || idleMachines.length === 0}
                   className="w-full"
                 >
                   <Printer className="h-4 w-4 mr-2" />
@@ -542,7 +609,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-600">Type:</span>
-                  <span>{formData.sketchName ? 'Personalized' : 'Static'}</span>
+                  <span>{design.design_type === 'static' ? 'Static' : 'Personalized'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-600">Files:</span>
