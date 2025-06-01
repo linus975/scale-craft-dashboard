@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useFileUpload } from '@/hooks/useFileUpload';
@@ -162,19 +161,22 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
         });
       }
 
-      // Load additional files from storage bucket if they exist
+      // Load additional files from storage bucket that are specific to this design
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // Look for files in a design-specific folder
+          const designFolderPath = `${user.id}/designs/${design.id}/`;
           const { data: storageFiles, error } = await supabase.storage
             .from('design-files')
-            .list(`${user.id}/designs/`, {
+            .list(designFolderPath, {
               limit: 100
             });
 
           if (storageFiles && !error) {
             for (const file of storageFiles) {
-              const fullPath = `${user.id}/designs/${file.name}`;
+              const fullPath = `${designFolderPath}${file.name}`;
+              // Only add if not already in the list
               if (!files.find(f => f.path === fullPath)) {
                 files.push({
                   id: file.id || file.name,
@@ -207,7 +209,8 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
 
     try {
       for (const file of Array.from(files)) {
-        const filePath = await uploadFile(file, 'designs');
+        // Upload files to a design-specific folder
+        const filePath = await uploadFile(file, `designs/${design.id}`);
         
         const newFile: UploadedFile = {
           id: Date.now() + Math.random() + '',
