@@ -27,7 +27,7 @@ const JobsTab: React.FC = () => {
   const [currentView, setCurrentView] = useState<'main' | 'currentJobs' | 'allHigh' | 'allNormal' | 'allCompleted' | 'allFailed'>('main');
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [isJobDetailOpen, setIsJobDetailOpen] = useState(false);
-  const [loadingJobs, setLoadingJobs] = useState<Set<string>>(new Set()); // Changed from Set<number> to Set<string>
+  const [loadingJobs, setLoadingJobs] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Use the new print jobs system
@@ -140,6 +140,9 @@ const JobsTab: React.FC = () => {
       job_number: job.job_number
     }));
   };
+
+  // Filter for only actually printing jobs (not dummy data)
+  const actuallyPrintingJobs = printing.filter(job => job.status === 'printing');
 
   // Handle different views
   if (currentView === 'allHigh') {
@@ -256,10 +259,10 @@ const JobsTab: React.FC = () => {
         </Button>
       </div>
 
-      <div className="space-y-4">
-        {/* Currently Printing - Pure Link */}
+      <div className="space-y-6">
+        {/* Currently Printing - with equal spacing top and bottom */}
         <Card className="bg-green-50/50 border border-green-200 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCurrentView('currentJobs')}>
-          <CardHeader className="pb-3">
+          <CardHeader className="py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Play className="h-5 w-5 text-green-500" />
@@ -268,7 +271,7 @@ const JobsTab: React.FC = () => {
                   <CardDescription className="text-sm">Jobs currently being printed</CardDescription>
                 </div>
                 <Badge variant="outline" className="bg-white">
-                  {printing.length}
+                  {actuallyPrintingJobs.length}
                 </Badge>
               </div>
               <Button 
