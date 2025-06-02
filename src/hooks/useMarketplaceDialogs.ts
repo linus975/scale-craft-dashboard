@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,8 +31,8 @@ export const useMarketplaceDialogs = () => {
           return;
         }
 
-        // Construct eBay OAuth URL with user ID as state parameter
-        const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&response_type=code&redirect_uri=FloatCraft_UG-FloatCra-n8n-PR-lzkdds&state=${user.id}&scope=`;
+        // Construct eBay OAuth URL with user ID
+        const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&response_type=code&redirect_uri=FloatCraft_UG-FloatCra-n8n-PR-lzkdds&scope=&user_id=${user.id}`;
         
         // Open eBay auth in new tab
         window.open(ebayAuthUrl, '_blank');
