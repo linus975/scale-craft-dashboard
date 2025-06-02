@@ -38,7 +38,6 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
     selectedMarketplace,
     editingIntegration,
     credentials,
-    loadingMarketplaces,
     setCredentials,
     handleMarketplaceSelect,
     handleCredentialsSubmit,
@@ -68,7 +67,6 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
           isOpen={isIntegrationDialogOpen}
           onOpenChange={setIsIntegrationDialogOpen}
           onMarketplaceSelect={handleMarketplaceSelect}
-          loadingMarketplaces={loadingMarketplaces}
         />
 
         <CredentialsDialog
