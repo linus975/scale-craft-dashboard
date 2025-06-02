@@ -1,6 +1,6 @@
-
 import { useState } from 'react';
 import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useMarketplaceDialogs = () => {
   const { createIntegration, updateIntegration, deleteIntegration } = useMarketplaceIntegrations();
@@ -10,6 +10,7 @@ export const useMarketplaceDialogs = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMarketplace, setSelectedMarketplace] = useState<any>(null);
   const [editingIntegration, setEditingIntegration] = useState<any>(null);
+  const [loadingMarketplaces, setLoadingMarketplaces] = useState<Record<string, boolean>>({});
   const [credentials, setCredentials] = useState({
     clientId: '',
     apiKey: '',
@@ -17,10 +18,41 @@ export const useMarketplaceDialogs = () => {
     syncFrequency: ''
   });
 
-  const handleMarketplaceSelect = (marketplace: any) => {
-    setSelectedMarketplace(marketplace);
-    setIsIntegrationDialogOpen(false);
-    setIsCredentialsDialogOpen(true);
+  const handleMarketplaceSelect = async (marketplace: any) => {
+    // Handle eBay OAuth flow
+    if (marketplace.id === 'ebay') {
+      setLoadingMarketplaces(prev => ({ ...prev, ebay: true }));
+      
+      try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('User not authenticated');
+          return;
+        }
+
+        // Construct eBay OAuth URL with user ID
+        const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&response_type=code&redirect_uri=FloatCraft_UG-FloatCra-n8n-PR-lzkdds&scope=&user_id=${user.id}`;
+        
+        // Open eBay auth in new tab
+        window.open(ebayAuthUrl, '_blank');
+        
+        // Listen for auth completion (you can implement a message listener here if needed)
+        // For now, we'll just stop loading after a few seconds
+        setTimeout(() => {
+          setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
+        }, 30000); // 30 seconds timeout
+        
+      } catch (error) {
+        console.error('Error initiating eBay OAuth:', error);
+        setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
+      }
+    } else {
+      // Regular flow for other marketplaces
+      setSelectedMarketplace(marketplace);
+      setIsIntegrationDialogOpen(false);
+      setIsCredentialsDialogOpen(true);
+    }
   };
 
   const handleCredentialsSubmit = async () => {
@@ -99,6 +131,7 @@ export const useMarketplaceDialogs = () => {
     selectedMarketplace,
     editingIntegration,
     credentials,
+    loadingMarketplaces,
     setCredentials: handleCredentialsChange,
     handleMarketplaceSelect,
     handleCredentialsSubmit,

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Link } from 'lucide-react';
+import { Link, Loader2 } from 'lucide-react';
 
 interface Marketplace {
   id: string;
@@ -14,12 +14,14 @@ interface AddIntegrationDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onMarketplaceSelect: (marketplace: Marketplace) => void;
+  loadingMarketplaces?: Record<string, boolean>;
 }
 
 const AddIntegrationDialog: React.FC<AddIntegrationDialogProps> = ({
   isOpen,
   onOpenChange,
-  onMarketplaceSelect
+  onMarketplaceSelect,
+  loadingMarketplaces = {}
 }) => {
   const availableMarketplaces = [
     { id: 'ebay', name: 'eBay', icon: '🛒' },
@@ -50,11 +52,24 @@ const AddIntegrationDialog: React.FC<AddIntegrationDialogProps> = ({
             <Button
               key={marketplace.id}
               variant="outline"
-              className="h-16 flex flex-col gap-1"
+              className="h-16 flex flex-col gap-1 relative"
               onClick={() => onMarketplaceSelect(marketplace)}
+              disabled={loadingMarketplaces[marketplace.id]}
             >
-              <span className="text-lg">{marketplace.icon}</span>
-              <span className="text-xs">{marketplace.name}</span>
+              {loadingMarketplaces[marketplace.id] ? (
+                <div className="flex flex-col items-center gap-1">
+                  <div className="relative">
+                    <span className="text-lg opacity-50">{marketplace.icon}</span>
+                    <Loader2 className="h-4 w-4 animate-spin absolute inset-0 m-auto" />
+                  </div>
+                  <span className="text-xs">Connecting...</span>
+                </div>
+              ) : (
+                <>
+                  <span className="text-lg">{marketplace.icon}</span>
+                  <span className="text-xs">{marketplace.name}</span>
+                </>
+              )}
             </Button>
           ))}
         </div>
