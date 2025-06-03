@@ -103,15 +103,17 @@ export const useEbayOAuth = () => {
           if (event.data.tokenData) {
             createOrUpdateToken(event.data.tokenData).then(() => {
               refetchTokens();
+              // Refresh marketplace integrations to show the new eBay connection
+              refetch();
             }).catch(error => {
               console.error('Error saving eBay token:', error);
             });
+          } else {
+            // Even without token data, refresh integrations in case it was created elsewhere
+            refetch();
           }
           
           setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
-          
-          // Refresh integrations to show the new one
-          refetch();
           
           // Close the popup if still open
           if (popup && !popup.closed) {

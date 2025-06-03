@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -79,6 +78,11 @@ export const useEbayTokens = () => {
 
       if (error) throw error;
 
+      // Create or update marketplace integration for eBay
+      if (user?.id) {
+        await createOrUpdateMarketplaceIntegration(user.id, data.ebay_account_id);
+      }
+
       // Update local state
       setTokens(prev => {
         const existingIndex = prev.findIndex(t => 
@@ -108,6 +112,49 @@ export const useEbayTokens = () => {
         variant: "destructive",
       });
       throw error;
+    }
+  };
+
+  const createOrUpdateMarketplaceIntegration = async (userId: string, ebayAccountId: string | null) => {
+    try {
+      const integrationData = {
+        name: `eBay${ebayAccountId ? ` (${ebayAccountId})` : ''}`,
+        marketplace_type: 'ebay',
+        icon: '🛒',
+        status: 'connected',
+        user_id: userId,
+        sync_frequency: 'hourly',
+        orders_synced: 0
+      };
+
+      // Check if integration already exists
+      const { data: existingIntegration } = await supabase
+        .from('marketplace_integrations')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('marketplace_type', 'ebay')
+        .maybeSingle();
+
+      if (existingIntegration) {
+        // Update existing integration
+        await supabase
+          .from('marketplace_integrations')
+          .update({
+            ...integrationData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingIntegration.id);
+      } else {
+        // Create new integration
+        await supabase
+          .from('marketplace_integrations')
+          .insert(integrationData);
+      }
+
+      console.log('Marketplace integration created/updated for eBay');
+    } catch (error) {
+      console.error('Error creating marketplace integration:', error);
+      // Don't throw error here to not break the token saving process
     }
   };
 
