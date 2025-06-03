@@ -102,13 +102,17 @@ export const useEbayOAuth = () => {
           // Save token data if provided
           if (event.data.tokenData) {
             createOrUpdateToken(event.data.tokenData).then(() => {
+              console.log('Token saved, refreshing tokens and integrations...');
               refetchTokens();
-              // Refresh marketplace integrations to show the new eBay connection
-              refetch();
+              // Important: Refresh marketplace integrations to show the new eBay connection
+              setTimeout(() => {
+                refetch();
+              }, 1000); // Add small delay to ensure token is processed
             }).catch(error => {
               console.error('Error saving eBay token:', error);
             });
           } else {
+            console.log('No token data received, but refreshing integrations anyway...');
             // Even without token data, refresh integrations in case it was created elsewhere
             refetch();
           }
