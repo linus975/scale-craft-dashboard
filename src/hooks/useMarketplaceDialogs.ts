@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,8 +33,8 @@ export const useMarketplaceDialogs = () => {
           return;
         }
 
-        // Use the eBay provided redirect URI (RuName)
-        const redirectUri = 'FloatCraft_UG-FloatCra-n8n-PR-lzkdds';
+        // Use your n8n callback URL as redirect URI
+        const redirectUri = 'https://n8n.melemeng.com/webhook/ebay-callback';
         
         // All the eBay scopes from your provided URL
         const scopes = [
@@ -59,7 +60,7 @@ export const useMarketplaceDialogs = () => {
           'https://api.ebay.com/oauth/scope/sell.edelivery'
         ];
         
-        // Construct eBay OAuth URL exactly as provided by eBay
+        // Construct eBay OAuth URL with your n8n callback URL
         const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?` +
           `client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&` +
           `response_type=code&` +
@@ -68,7 +69,7 @@ export const useMarketplaceDialogs = () => {
           `state=${user.id}`;
 
         console.log('Opening eBay OAuth URL:', ebayAuthUrl);
-        console.log('Redirect URI (RuName):', redirectUri);
+        console.log('Redirect URI (n8n webhook):', redirectUri);
         
         // Open eBay auth in new popup window
         const popup = window.open(
@@ -77,7 +78,7 @@ export const useMarketplaceDialogs = () => {
           'width=600,height=700,scrollbars=yes,resizable=yes'
         );
 
-        // Listen for messages from the popup (success/failure)
+        // Listen for messages from n8n or manual integration creation
         const handleMessage = (event: MessageEvent) => {
           if (event.data.type === 'EBAY_OAUTH_SUCCESS') {
             console.log('eBay OAuth successful:', event.data.integration);
