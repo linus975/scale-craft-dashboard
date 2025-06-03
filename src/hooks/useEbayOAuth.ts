@@ -19,8 +19,8 @@ export const useEbayOAuth = () => {
         return;
       }
 
-      // Use Supabase Edge Function as redirect URI
-      const redirectUri = `https://xuxgxkemywnyranlhsjh.supabase.co/functions/v1/ebay-oauth-callback`;
+      // Use n8n callback URL as redirect URI
+      const redirectUri = 'https://n8n.melemeng.com/webhook/ebay-callback';
       
       // All the eBay scopes
       const scopes = [
@@ -61,7 +61,7 @@ export const useEbayOAuth = () => {
         `access_type=offline`;  // Request offline access
 
       console.log('Opening eBay OAuth URL with forced login:', ebayAuthUrl);
-      console.log('Redirect URI (Supabase Edge Function):', redirectUri);
+      console.log('Redirect URI (n8n webhook):', redirectUri);
       console.log('Unique state for this authorization:', uniqueState);
       
       // Clear any existing eBay cookies/session in the popup to ensure fresh login
@@ -93,12 +93,7 @@ export const useEbayOAuth = () => {
         `);
       }
 
-      // Reset loading state function
-      const resetLoadingState = () => {
-        setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
-      };
-
-      // Listen for messages from the Edge Function
+      // Listen for messages from n8n or manual integration creation
       const handleMessage = (event: MessageEvent) => {
         if (event.data.type === 'EBAY_OAUTH_SUCCESS') {
           console.log('eBay OAuth successful:', event.data);
@@ -112,7 +107,7 @@ export const useEbayOAuth = () => {
             });
           }
           
-          resetLoadingState();
+          setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
           
           // Refresh integrations to show the new one
           refetch();
@@ -126,7 +121,7 @@ export const useEbayOAuth = () => {
           window.removeEventListener('message', handleMessage);
         } else if (event.data.type === 'EBAY_OAUTH_ERROR') {
           console.error('eBay OAuth error:', event.data.error);
-          resetLoadingState();
+          setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
           
           // Close the popup if still open
           if (popup && !popup.closed) {
@@ -140,40 +135,24 @@ export const useEbayOAuth = () => {
 
       window.addEventListener('message', handleMessage);
       
-      // Check if popup was closed manually - this is the key fix!
+      // Also check if popup was closed manually
       const checkClosed = setInterval(() => {
         if (popup && popup.closed) {
-          console.log('eBay OAuth popup was closed manually');
-          resetLoadingState();
+          setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
           window.removeEventListener('message', handleMessage);
           clearInterval(checkClosed);
         }
       }, 1000);
       
       // Timeout after 5 minutes
-      const timeout = setTimeout(() => {
-        console.log('eBay OAuth timeout after 5 minutes');
-        resetLoadingState();
+      setTimeout(() => {
+        setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
         window.removeEventListener('message', handleMessage);
         clearInterval(checkClosed);
         if (popup && !popup.closed) {
           popup.close();
         }
       }, 300000); // 5 minutes
-
-      // Clean up function for immediate errors
-      const cleanup = () => {
-        resetLoadingState();
-        window.removeEventListener('message', handleMessage);
-        clearInterval(checkClosed);
-        clearTimeout(timeout);
-      };
-
-      // If popup couldn't be opened
-      if (!popup) {
-        cleanup();
-        return;
-      }
       
     } catch (error) {
       console.error('Error initiating eBay OAuth:', error);
