@@ -32,16 +32,19 @@ export const useMarketplaceDialogs = () => {
           return;
         }
 
-        // Construct eBay OAuth URL with user ID as state parameter
+        // Use the Lovable project URL for the redirect URI
         const redirectUri = `${window.location.origin}/functions/v1/ebay-oauth-callback`;
+        
+        // Construct eBay OAuth URL with correct parameters
         const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?` +
           `client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&` +
           `response_type=code&` +
           `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-          `scope=https://api.ebay.com/oauth/api_scope&` +
+          `scope=https%3A//api.ebay.com/oauth/api_scope&` +
           `state=${user.id}`;
 
         console.log('Opening eBay OAuth URL:', ebayAuthUrl);
+        console.log('Redirect URI:', redirectUri);
         
         // Open eBay auth in new popup window
         const popup = window.open(
@@ -58,6 +61,17 @@ export const useMarketplaceDialogs = () => {
             
             // Refresh integrations to show the new one
             refetch();
+            
+            // Close the popup if still open
+            if (popup && !popup.closed) {
+              popup.close();
+            }
+            
+            // Remove event listener
+            window.removeEventListener('message', handleMessage);
+          } else if (event.data.type === 'EBAY_OAUTH_ERROR') {
+            console.error('eBay OAuth error:', event.data.error);
+            setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
             
             // Close the popup if still open
             if (popup && !popup.closed) {

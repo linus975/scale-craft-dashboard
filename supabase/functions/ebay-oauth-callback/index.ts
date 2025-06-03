@@ -19,7 +19,12 @@ serve(async (req) => {
     const state = url.searchParams.get('state'); // This should contain the user_id
     const error = url.searchParams.get('error');
 
-    console.log('eBay OAuth callback received:', { code: !!code, state, error });
+    console.log('eBay OAuth callback received:', { 
+      code: !!code, 
+      state, 
+      error,
+      allParams: Object.fromEntries(url.searchParams.entries())
+    });
 
     if (error) {
       console.error('eBay OAuth error:', error);
@@ -32,6 +37,16 @@ serve(async (req) => {
             <p>Error: ${error}</p>
             <p>Please close this window and try again.</p>
             <script>
+              try {
+                if (window.opener) {
+                  window.opener.postMessage({ 
+                    type: 'EBAY_OAUTH_ERROR', 
+                    error: '${error}' 
+                  }, '*');
+                }
+              } catch (e) {
+                console.log('Could not communicate with parent window');
+              }
               setTimeout(() => window.close(), 3000);
             </script>
           </body>
@@ -53,6 +68,16 @@ serve(async (req) => {
             <p>Missing required parameters (code or state)</p>
             <p>Please close this window and try again.</p>
             <script>
+              try {
+                if (window.opener) {
+                  window.opener.postMessage({ 
+                    type: 'EBAY_OAUTH_ERROR', 
+                    error: 'Missing required parameters' 
+                  }, '*');
+                }
+              } catch (e) {
+                console.log('Could not communicate with parent window');
+              }
               setTimeout(() => window.close(), 3000);
             </script>
           </body>
@@ -76,8 +101,17 @@ serve(async (req) => {
           <body>
             <h2>eBay Integration Failed</h2>
             <p>Server configuration error. Please contact support.</p>
-            <p>Please close this window and try again.</p>
             <script>
+              try {
+                if (window.opener) {
+                  window.opener.postMessage({ 
+                    type: 'EBAY_OAUTH_ERROR', 
+                    error: 'Server configuration error' 
+                  }, '*');
+                }
+              } catch (e) {
+                console.log('Could not communicate with parent window');
+              }
               setTimeout(() => window.close(), 3000);
             </script>
           </body>
@@ -93,6 +127,7 @@ serve(async (req) => {
     const redirectUri = `${url.origin}/functions/v1/ebay-oauth-callback`;
 
     console.log('Exchanging code for token with redirect_uri:', redirectUri);
+    console.log('Using client_id:', clientId);
 
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
@@ -109,6 +144,7 @@ serve(async (req) => {
 
     const tokenData = await tokenResponse.json();
     console.log('Token response status:', tokenResponse.status);
+    console.log('Token response data:', tokenData);
 
     if (!tokenResponse.ok) {
       console.error('Token exchange failed:', tokenData);
@@ -120,8 +156,17 @@ serve(async (req) => {
             <h2>eBay Integration Failed</h2>
             <p>Failed to exchange authorization code for access token.</p>
             <p>Error: ${tokenData.error_description || tokenData.error || 'Unknown error'}</p>
-            <p>Please close this window and try again.</p>
             <script>
+              try {
+                if (window.opener) {
+                  window.opener.postMessage({ 
+                    type: 'EBAY_OAUTH_ERROR', 
+                    error: '${tokenData.error_description || tokenData.error || 'Unknown error'}' 
+                  }, '*');
+                }
+              } catch (e) {
+                console.log('Could not communicate with parent window');
+              }
               setTimeout(() => window.close(), 3000);
             </script>
           </body>
@@ -166,8 +211,17 @@ serve(async (req) => {
           <body>
             <h2>eBay Integration Failed</h2>
             <p>Failed to save integration to database.</p>
-            <p>Please close this window and try again.</p>
             <script>
+              try {
+                if (window.opener) {
+                  window.opener.postMessage({ 
+                    type: 'EBAY_OAUTH_ERROR', 
+                    error: 'Database error' 
+                  }, '*');
+                }
+              } catch (e) {
+                console.log('Could not communicate with parent window');
+              }
               setTimeout(() => window.close(), 3000);
             </script>
           </body>
@@ -197,6 +251,19 @@ serve(async (req) => {
           <p>Your eBay account has been successfully connected.</p>
           <p class="info">You can now close this window and return to the application.</p>
           <script>
+            // Try to communicate with parent window if this is a popup
+            try {
+              if (window.opener) {
+                window.opener.postMessage({ 
+                  type: 'EBAY_OAUTH_SUCCESS', 
+                  integration: ${JSON.stringify(integration)} 
+                }, '*');
+                setTimeout(() => window.close(), 1000);
+              }
+            } catch (e) {
+              console.log('Could not communicate with parent window');
+            }
+            
             // Try to close the window after 3 seconds
             setTimeout(() => {
               try {
@@ -205,19 +272,6 @@ serve(async (req) => {
                 console.log('Could not close window automatically');
               }
             }, 3000);
-            
-            // Try to communicate with parent window if this is a popup
-            try {
-              if (window.opener) {
-                window.opener.postMessage({ 
-                  type: 'EBAY_OAUTH_SUCCESS', 
-                  integration: ${JSON.stringify(integration)} 
-                }, '*');
-                window.close();
-              }
-            } catch (e) {
-              console.log('Could not communicate with parent window');
-            }
           </script>
         </body>
       </html>
@@ -235,8 +289,17 @@ serve(async (req) => {
         <body>
           <h2>eBay Integration Failed</h2>
           <p>An unexpected error occurred. Please try again.</p>
-          <p>Please close this window and try again.</p>
           <script>
+            try {
+              if (window.opener) {
+                window.opener.postMessage({ 
+                  type: 'EBAY_OAUTH_ERROR', 
+                  error: 'Unexpected error' 
+                }, '*');
+              }
+            } catch (e) {
+              console.log('Could not communicate with parent window');
+            }
             setTimeout(() => window.close(), 3000);
           </script>
         </body>
