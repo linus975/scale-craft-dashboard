@@ -49,17 +49,17 @@ export const useEbayOAuth = () => {
       // Generate unique state to force new authorization and track user
       const uniqueState = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Construct eBay OAuth URL with parameters to force consent prompt
+      // Construct eBay OAuth URL with parameters to force login prompt
       const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?` +
         `client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&` +
         `response_type=code&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `scope=${encodeURIComponent(scopes.join(' '))}&` +
         `state=${encodeURIComponent(uniqueState)}&` +
-        `prompt=consent&` +  // Force consent prompt - always show permission screen
+        `prompt=login&` +  // Force login prompt - always show login screen
         `approval_prompt=force`;  // Force approval prompt for additional security
 
-      console.log('Opening eBay OAuth URL with forced consent:', ebayAuthUrl);
+      console.log('Opening eBay OAuth URL with forced login:', ebayAuthUrl);
       console.log('Redirect URI (n8n webhook):', redirectUri);
       console.log('Unique state for this authorization:', uniqueState);
       
