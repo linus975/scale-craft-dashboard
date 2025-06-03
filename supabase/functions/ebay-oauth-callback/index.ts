@@ -183,12 +183,84 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Store the integration in the database
+    // Get eBay user info to get the eBay account ID
+    let ebayAccountId = 'unknown';
+    try {
+      const userResponse = await fetch('https://apiz.ebay.com/commerce/identity/v1/user/', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        ebayAccountId = userData.userId || userData.username || 'unknown';
+        console.log('eBay user data:', userData);
+      }
+    } catch (error) {
+      console.error('Failed to get eBay user info:', error);
+    }
+
+    // Calculate expiration dates
+    const accessTokenExpires = new Date(Date.now() + (tokenData.expires_in * 1000));
+    const refreshTokenExpires = new Date(Date.now() + (tokenData.refresh_token_expires_in * 1000));
+
+    // Store the OAuth token in ebay_oauth_tokens table
+    const { data: oauthToken, error: oauthError } = await supabase
+      .from('ebay_oauth_tokens')
+      .upsert({
+        user_id: state,
+        ebay_account_id: ebayAccountId,
+        access_token: tokenData.access_token,
+        access_token_expires: accessTokenExpires.toISOString(),
+        refresh_token: tokenData.refresh_token,
+        refresh_token_expires: refreshTokenExpires.toISOString(),
+        scope: tokenData.scope || 'https://api.ebay.com/oauth/api_scope'
+      }, {
+        onConflict: 'user_id,ebay_account_id'
+      })
+      .select()
+      .single();
+
+    if (oauthError) {
+      console.error('OAuth token storage error:', oauthError);
+      return new Response(`
+        <!DOCTYPE html>
+        <html>
+          <head><title>eBay Integration Error</title></head>
+          <body>
+            <h2>eBay Integration Failed</h2>
+            <p>Failed to save OAuth token to database.</p>
+            <script>
+              try {
+                if (window.opener) {
+                  window.opener.postMessage({ 
+                    type: 'EBAY_OAUTH_ERROR', 
+                    error: 'OAuth token storage error' 
+                  }, '*');
+                }
+              } catch (e) {
+                console.log('Could not communicate with parent window');
+              }
+              setTimeout(() => window.close(), 3000);
+            </script>
+          </body>
+        </html>
+      `, {
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+        status: 500
+      });
+    }
+
+    console.log('eBay OAuth token stored successfully:', oauthToken.id);
+
+    // Store the integration in the marketplace_integrations table
     const { data: integration, error: dbError } = await supabase
       .from('marketplace_integrations')
       .insert({
-        user_id: state, // user_id was passed as state parameter
-        name: 'eBay',
+        user_id: state,
+        name: `eBay - ${ebayAccountId}`,
         marketplace_type: 'ebay',
         client_id: clientId,
         api_key: tokenData.access_token,
@@ -198,7 +270,7 @@ serve(async (req) => {
         icon: '🛒',
         status: 'connected',
         last_sync: new Date().toISOString(),
-        token_expires_at: new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString()
+        token_expires_at: accessTokenExpires.toISOString()
       })
       .select()
       .single();
@@ -249,7 +321,7 @@ serve(async (req) => {
         </head>
         <body>
           <h2 class="success">🎉 eBay Integration Successful!</h2>
-          <p>Your eBay account has been successfully connected.</p>
+          <p>Your eBay account "${ebayAccountId}" has been successfully connected.</p>
           <p class="info">You can now close this window and return to the application.</p>
           <script>
             // Try to communicate with parent window if this is a popup
@@ -257,7 +329,8 @@ serve(async (req) => {
               if (window.opener) {
                 window.opener.postMessage({ 
                   type: 'EBAY_OAUTH_SUCCESS', 
-                  integration: ${JSON.stringify(integration)} 
+                  integration: ${JSON.stringify(integration)},
+                  tokenData: ${JSON.stringify(oauthToken)}
                 }, '*');
                 setTimeout(() => window.close(), 1000);
               }
