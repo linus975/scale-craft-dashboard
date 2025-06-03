@@ -90,39 +90,45 @@ export type Database = {
       ebay_oauth_tokens: {
         Row: {
           access_token: string
-          access_token_expires: string
+          access_token_expires: string | null
           created_at: string
           ebay_account_id: string | null
+          expires_in: number | null
           id: string
-          refresh_token: string
-          refresh_token_expires: string
-          scope: string
+          refresh_token: string | null
+          refresh_token_expires: string | null
+          refresh_token_expires_in: number | null
+          scope: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           access_token: string
-          access_token_expires: string
+          access_token_expires?: string | null
           created_at?: string
           ebay_account_id?: string | null
+          expires_in?: number | null
           id?: string
-          refresh_token: string
-          refresh_token_expires: string
-          scope: string
+          refresh_token?: string | null
+          refresh_token_expires?: string | null
+          refresh_token_expires_in?: number | null
+          scope?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           access_token?: string
-          access_token_expires?: string
+          access_token_expires?: string | null
           created_at?: string
           ebay_account_id?: string | null
+          expires_in?: number | null
           id?: string
-          refresh_token?: string
-          refresh_token_expires?: string
-          scope?: string
+          refresh_token?: string | null
+          refresh_token_expires?: string | null
+          refresh_token_expires_in?: number | null
+          scope?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }

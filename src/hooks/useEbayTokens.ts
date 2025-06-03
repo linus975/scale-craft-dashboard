@@ -5,13 +5,15 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface EbayToken {
   id: string;
-  user_id: string;
-  ebay_account_id: string | null;
+  user_id?: string | null;
+  ebay_account_id?: string | null;
   access_token: string;
-  access_token_expires: string;
-  refresh_token: string;
-  refresh_token_expires: string;
-  scope: string;
+  access_token_expires?: string | null;
+  refresh_token?: string | null;
+  refresh_token_expires?: string | null;
+  scope?: string | null;
+  expires_in?: number | null;
+  refresh_token_expires_in?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -49,22 +51,27 @@ export const useEbayTokens = () => {
     }
   };
 
-  const createOrUpdateToken = async (tokenData: Omit<EbayToken, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const createOrUpdateToken = async (tokenData: Omit<EbayToken, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      
+      const insertData: any = {
+        access_token: tokenData.access_token,
+      };
+
+      // Only include fields that are provided
+      if (user?.id) insertData.user_id = user.id;
+      if (tokenData.ebay_account_id) insertData.ebay_account_id = tokenData.ebay_account_id;
+      if (tokenData.access_token_expires) insertData.access_token_expires = tokenData.access_token_expires;
+      if (tokenData.refresh_token) insertData.refresh_token = tokenData.refresh_token;
+      if (tokenData.refresh_token_expires) insertData.refresh_token_expires = tokenData.refresh_token_expires;
+      if (tokenData.scope) insertData.scope = tokenData.scope;
+      if (tokenData.expires_in) insertData.expires_in = tokenData.expires_in;
+      if (tokenData.refresh_token_expires_in) insertData.refresh_token_expires_in = tokenData.refresh_token_expires_in;
 
       const { data, error } = await supabase
         .from('ebay_oauth_tokens')
-        .upsert({
-          user_id: user.id,
-          ebay_account_id: tokenData.ebay_account_id || null,
-          access_token: tokenData.access_token,
-          access_token_expires: tokenData.access_token_expires,
-          refresh_token: tokenData.refresh_token,
-          refresh_token_expires: tokenData.refresh_token_expires,
-          scope: tokenData.scope
-        }, {
+        .upsert(insertData, {
           onConflict: 'user_id,ebay_account_id'
         })
         .select()
@@ -138,21 +145,46 @@ export const useEbayTokens = () => {
     
     if (!token) return null;
 
-    const now = new Date();
-    const expiresAt = new Date(token.access_token_expires);
+    // Check if token is still valid
+    if (token.expires_in && token.updated_at) {
+      const tokenAge = Date.now() - new Date(token.updated_at).getTime();
+      const tokenAgeInSeconds = Math.floor(tokenAge / 1000);
+      
+      // Return token if it's still valid (with 5 minute buffer)
+      if (tokenAgeInSeconds < (token.expires_in - 300)) {
+        return token;
+      }
+    }
     
-    // Return token if it's still valid (with 5 minute buffer)
-    if (expiresAt.getTime() > now.getTime() + 5 * 60 * 1000) {
-      return token;
+    // Fallback to timestamp-based check if available
+    if (token.access_token_expires) {
+      const now = new Date();
+      const expiresAt = new Date(token.access_token_expires);
+      
+      if (expiresAt.getTime() > now.getTime() + 5 * 60 * 1000) {
+        return token;
+      }
     }
     
     return null;
   };
 
   const isTokenExpiringSoon = (token: EbayToken, minutesBuffer = 30) => {
-    const now = new Date();
-    const expiresAt = new Date(token.access_token_expires);
-    return expiresAt.getTime() <= now.getTime() + minutesBuffer * 60 * 1000;
+    // Check using expires_in if available
+    if (token.expires_in && token.updated_at) {
+      const tokenAge = Date.now() - new Date(token.updated_at).getTime();
+      const tokenAgeInSeconds = Math.floor(tokenAge / 1000);
+      return tokenAgeInSeconds >= (token.expires_in - minutesBuffer * 60);
+    }
+    
+    // Fallback to timestamp-based check
+    if (token.access_token_expires) {
+      const now = new Date();
+      const expiresAt = new Date(token.access_token_expires);
+      return expiresAt.getTime() <= now.getTime() + minutesBuffer * 60 * 1000;
+    }
+    
+    return false;
   };
 
   useEffect(() => {
