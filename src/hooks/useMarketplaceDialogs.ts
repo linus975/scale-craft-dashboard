@@ -19,32 +19,34 @@ export const useMarketplaceDialogs = () => {
   });
 
   const handleMarketplaceSelect = async (marketplace: any) => {
-    // Handle eBay OAuth flow
+    // Handle eBay webhook call
     if (marketplace.id === 'ebay') {
       setLoadingMarketplaces(prev => ({ ...prev, ebay: true }));
       
       try {
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.error('User not authenticated');
-          return;
-        }
+        console.log('Sending eBay sync request to n8n webhook...');
+        
+        const response = await fetch('https://n8n.melemeng.com/webhook/Ebay_Sync', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'ebay_integration',
+            timestamp: new Date().toISOString(),
+          }),
+        });
 
-        // Construct eBay OAuth URL with user ID
-        const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&response_type=code&redirect_uri=FloatCraft_UG-FloatCra-n8n-PR-lzkdds&scope=&user_id=${user.id}`;
+        console.log('eBay sync request sent successfully');
         
-        // Open eBay auth in new tab
-        window.open(ebayAuthUrl, '_blank');
-        
-        // Listen for auth completion (you can implement a message listener here if needed)
-        // For now, we'll just stop loading after a few seconds
+        // Stop loading after request is sent
         setTimeout(() => {
           setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
-        }, 30000); // 30 seconds timeout
+        }, 3000); // 3 seconds timeout
         
       } catch (error) {
-        console.error('Error initiating eBay OAuth:', error);
+        console.error('Error sending eBay sync request:', error);
         setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
       }
     } else {
