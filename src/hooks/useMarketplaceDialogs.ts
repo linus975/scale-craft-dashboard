@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,23 +59,52 @@ export const useMarketplaceDialogs = () => {
           'https://api.ebay.com/oauth/scope/sell.edelivery'
         ];
         
-        // Construct eBay OAuth URL with your n8n callback URL
+        // Generate unique state to force new authorization and track user
+        const uniqueState = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Construct eBay OAuth URL with parameters to force login prompt
         const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?` +
           `client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&` +
           `response_type=code&` +
           `redirect_uri=${encodeURIComponent(redirectUri)}&` +
           `scope=${encodeURIComponent(scopes.join(' '))}&` +
-          `state=${user.id}`;
+          `state=${encodeURIComponent(uniqueState)}&` +
+          `prompt=login&` +  // Force login prompt
+          `approval_prompt=force&` +  // Force approval prompt
+          `access_type=offline`;  // Request offline access
 
-        console.log('Opening eBay OAuth URL:', ebayAuthUrl);
+        console.log('Opening eBay OAuth URL with forced login:', ebayAuthUrl);
         console.log('Redirect URI (n8n webhook):', redirectUri);
+        console.log('Unique state for this authorization:', uniqueState);
         
-        // Open eBay auth in new popup window
+        // Clear any existing eBay cookies/session in the popup to ensure fresh login
         const popup = window.open(
-          ebayAuthUrl, 
+          'about:blank',  // Start with blank page
           'ebayAuth', 
           'width=600,height=700,scrollbars=yes,resizable=yes'
         );
+
+        if (popup) {
+          // Clear storage and navigate to eBay auth
+          popup.document.write(`
+            <html>
+              <head><title>Redirecting to eBay...</title></head>
+              <body>
+                <p>Redirecting to eBay login...</p>
+                <script>
+                  // Clear any potential cached data
+                  if (window.localStorage) window.localStorage.clear();
+                  if (window.sessionStorage) window.sessionStorage.clear();
+                  
+                  // Navigate to eBay OAuth
+                  setTimeout(() => {
+                    window.location.href = '${ebayAuthUrl}';
+                  }, 100);
+                </script>
+              </body>
+            </html>
+          `);
+        }
 
         // Listen for messages from n8n or manual integration creation
         const handleMessage = (event: MessageEvent) => {
