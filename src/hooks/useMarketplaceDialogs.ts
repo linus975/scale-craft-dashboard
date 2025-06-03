@@ -32,19 +32,43 @@ export const useMarketplaceDialogs = () => {
           return;
         }
 
-        // Use the Lovable project URL for the redirect URI
-        const redirectUri = `${window.location.origin}/functions/v1/ebay-oauth-callback`;
+        // Use the eBay provided redirect URI (RuName)
+        const redirectUri = 'FloatCraft_UG-FloatCra-n8n-PR-lzkdds';
         
-        // Construct eBay OAuth URL with correct parameters
+        // All the eBay scopes from your provided URL
+        const scopes = [
+          'https://api.ebay.com/oauth/api_scope',
+          'https://api.ebay.com/oauth/api_scope/sell.marketing.readonly',
+          'https://api.ebay.com/oauth/api_scope/sell.marketing',
+          'https://api.ebay.com/oauth/api_scope/sell.inventory.readonly',
+          'https://api.ebay.com/oauth/api_scope/sell.inventory',
+          'https://api.ebay.com/oauth/api_scope/sell.account.readonly',
+          'https://api.ebay.com/oauth/api_scope/sell.account',
+          'https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly',
+          'https://api.ebay.com/oauth/api_scope/sell.fulfillment',
+          'https://api.ebay.com/oauth/api_scope/sell.analytics.readonly',
+          'https://api.ebay.com/oauth/api_scope/sell.finances',
+          'https://api.ebay.com/oauth/api_scope/sell.payment.dispute',
+          'https://api.ebay.com/oauth/api_scope/commerce.identity.readonly',
+          'https://api.ebay.com/oauth/api_scope/sell.reputation',
+          'https://api.ebay.com/oauth/api_scope/sell.reputation.readonly',
+          'https://api.ebay.com/oauth/api_scope/commerce.notification.subscription',
+          'https://api.ebay.com/oauth/api_scope/commerce.notification.subscription.readonly',
+          'https://api.ebay.com/oauth/api_scope/sell.stores',
+          'https://api.ebay.com/oauth/api_scope/sell.stores.readonly',
+          'https://api.ebay.com/oauth/scope/sell.edelivery'
+        ];
+        
+        // Construct eBay OAuth URL exactly as provided by eBay
         const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?` +
           `client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&` +
           `response_type=code&` +
           `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-          `scope=https%3A//api.ebay.com/oauth/api_scope&` +
+          `scope=${encodeURIComponent(scopes.join(' '))}&` +
           `state=${user.id}`;
 
         console.log('Opening eBay OAuth URL:', ebayAuthUrl);
-        console.log('Redirect URI:', redirectUri);
+        console.log('Redirect URI (RuName):', redirectUri);
         
         // Open eBay auth in new popup window
         const popup = window.open(

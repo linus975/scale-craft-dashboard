@@ -124,9 +124,10 @@ serve(async (req) => {
 
     // Exchange authorization code for access token
     const tokenUrl = 'https://api.ebay.com/identity/v1/oauth2/token';
-    const redirectUri = `${url.origin}/functions/v1/ebay-oauth-callback`;
+    // Use the eBay RuName as redirect_uri for token exchange
+    const redirectUri = 'FloatCraft_UG-FloatCra-n8n-PR-lzkdds';
 
-    console.log('Exchanging code for token with redirect_uri:', redirectUri);
+    console.log('Exchanging code for token with redirect_uri (RuName):', redirectUri);
     console.log('Using client_id:', clientId);
 
     const tokenResponse = await fetch(tokenUrl, {
@@ -303,7 +304,7 @@ serve(async (req) => {
             setTimeout(() => window.close(), 3000);
           </script>
         </body>
-      </html>
+        </html>
     `, {
       headers: { ...corsHeaders, 'Content-Type': 'text/html' },
       status: 500
