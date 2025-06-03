@@ -3,7 +3,7 @@ import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useMarketplaceDialogs = () => {
-  const { createIntegration, updateIntegration, deleteIntegration } = useMarketplaceIntegrations();
+  const { createIntegration, updateIntegration, deleteIntegration, refetch } = useMarketplaceIntegrations();
   
   const [isIntegrationDialogOpen, setIsIntegrationDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
@@ -19,34 +19,79 @@ export const useMarketplaceDialogs = () => {
   });
 
   const handleMarketplaceSelect = async (marketplace: any) => {
-    // Handle eBay webhook call
+    // Handle eBay OAuth flow
     if (marketplace.id === 'ebay') {
       setLoadingMarketplaces(prev => ({ ...prev, ebay: true }));
       
       try {
-        console.log('Sending eBay sync request to n8n webhook...');
-        
-        const response = await fetch('https://n8n.melemeng.com/webhook/Ebay_Sync', {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'ebay_integration',
-            timestamp: new Date().toISOString(),
-          }),
-        });
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('User not authenticated');
+          setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
+          return;
+        }
 
-        console.log('eBay sync request sent successfully');
+        // Construct eBay OAuth URL with user ID as state parameter
+        const redirectUri = `${window.location.origin}/functions/v1/ebay-oauth-callback`;
+        const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?` +
+          `client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&` +
+          `response_type=code&` +
+          `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+          `scope=https://api.ebay.com/oauth/api_scope&` +
+          `state=${user.id}`;
+
+        console.log('Opening eBay OAuth URL:', ebayAuthUrl);
         
-        // Stop loading after request is sent
+        // Open eBay auth in new popup window
+        const popup = window.open(
+          ebayAuthUrl, 
+          'ebayAuth', 
+          'width=600,height=700,scrollbars=yes,resizable=yes'
+        );
+
+        // Listen for messages from the popup (success/failure)
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.type === 'EBAY_OAUTH_SUCCESS') {
+            console.log('eBay OAuth successful:', event.data.integration);
+            setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
+            
+            // Refresh integrations to show the new one
+            refetch();
+            
+            // Close the popup if still open
+            if (popup && !popup.closed) {
+              popup.close();
+            }
+            
+            // Remove event listener
+            window.removeEventListener('message', handleMessage);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+        
+        // Also check if popup was closed manually
+        const checkClosed = setInterval(() => {
+          if (popup && popup.closed) {
+            setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
+            window.removeEventListener('message', handleMessage);
+            clearInterval(checkClosed);
+          }
+        }, 1000);
+        
+        // Timeout after 5 minutes
         setTimeout(() => {
           setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
-        }, 3000); // 3 seconds timeout
+          window.removeEventListener('message', handleMessage);
+          clearInterval(checkClosed);
+          if (popup && !popup.closed) {
+            popup.close();
+          }
+        }, 300000); // 5 minutes
         
       } catch (error) {
-        console.error('Error sending eBay sync request:', error);
+        console.error('Error initiating eBay OAuth:', error);
         setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
       }
     } else {
