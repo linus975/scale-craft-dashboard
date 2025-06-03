@@ -3,9 +3,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { EbayToken, EbayTokenInsert } from '@/types/ebayTypes';
 import { getValidToken, isTokenExpiringSoon } from '@/utils/ebayTokenValidation';
-import { createOrUpdateMarketplaceIntegration } from '@/services/ebayMarketplaceService';
 import { fetchEbayTokens, saveEbayToken, deleteEbayToken } from '@/services/ebayTokenService';
-import { supabase } from '@/integrations/supabase/client';
 
 export const useEbayTokens = () => {
   const [tokens, setTokens] = useState<EbayToken[]>([]);
@@ -32,13 +30,6 @@ export const useEbayTokens = () => {
     try {
       const data = await saveEbayToken(tokenData);
       console.log('eBay token saved successfully:', data);
-
-      // Create or update marketplace integration for eBay - this is crucial!
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.id) {
-        console.log('Creating marketplace integration for user:', user.id);
-        await createOrUpdateMarketplaceIntegration(user.id, data.ebay_account_id, toast);
-      }
 
       // Update local state
       setTokens(prev => {

@@ -50,24 +50,20 @@ export const useEbayOAuth = () => {
       const uniqueState = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       // Construct eBay OAuth URL with parameters to force both login and consent
-      // Note: eBay doesn't support multiple prompt values, so we use prompt=consent 
-      // which typically forces both login and consent, combined with approval_prompt=force
       const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?` +
         `client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&` +
         `response_type=code&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `scope=${encodeURIComponent(scopes.join(' '))}&` +
         `state=${encodeURIComponent(uniqueState)}&` +
-        `prompt=consent&` +  // Force consent prompt - typically includes login if needed
-        `approval_prompt=force`;  // Force approval prompt for additional security
+        `prompt=consent&` +
+        `approval_prompt=force`;
 
       console.log('Opening eBay OAuth URL with forced login and consent:', ebayAuthUrl);
-      console.log('Redirect URI (n8n webhook):', redirectUri);
-      console.log('Unique state for this authorization:', uniqueState);
       
       // Clear any existing eBay cookies/session in the popup to ensure fresh login
       const popup = window.open(
-        'about:blank',  // Start with blank page
+        'about:blank',
         'ebayAuth', 
         'width=600,height=700,scrollbars=yes,resizable=yes'
       );
@@ -80,11 +76,9 @@ export const useEbayOAuth = () => {
             <body>
               <p>Redirecting to eBay login...</p>
               <script>
-                // Clear any potential cached data
                 if (window.localStorage) window.localStorage.clear();
                 if (window.sessionStorage) window.sessionStorage.clear();
                 
-                // Navigate to eBay OAuth
                 setTimeout(() => {
                   window.location.href = '${ebayAuthUrl}';
                 }, 100);
@@ -104,38 +98,33 @@ export const useEbayOAuth = () => {
             createOrUpdateToken(event.data.tokenData).then(() => {
               console.log('Token saved, refreshing tokens and integrations...');
               refetchTokens();
-              // Important: Refresh marketplace integrations to show the new eBay connection
+              // Refresh marketplace integrations
               setTimeout(() => {
                 refetch();
-              }, 1000); // Add small delay to ensure token is processed
+              }, 2000); // Longer delay to ensure marketplace integration is created
             }).catch(error => {
               console.error('Error saving eBay token:', error);
             });
           } else {
             console.log('No token data received, but refreshing integrations anyway...');
-            // Even without token data, refresh integrations in case it was created elsewhere
             refetch();
           }
           
           setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
           
-          // Close the popup if still open
           if (popup && !popup.closed) {
             popup.close();
           }
           
-          // Remove event listener
           window.removeEventListener('message', handleMessage);
         } else if (event.data.type === 'EBAY_OAUTH_ERROR') {
           console.error('eBay OAuth error:', event.data.error);
           setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
           
-          // Close the popup if still open
           if (popup && !popup.closed) {
             popup.close();
           }
           
-          // Remove event listener
           window.removeEventListener('message', handleMessage);
         }
       };
@@ -159,7 +148,7 @@ export const useEbayOAuth = () => {
         if (popup && !popup.closed) {
           popup.close();
         }
-      }, 300000); // 5 minutes
+      }, 300000);
       
     } catch (error) {
       console.error('Error initiating eBay OAuth:', error);

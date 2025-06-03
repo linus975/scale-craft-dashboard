@@ -43,7 +43,66 @@ export const saveEbayToken = async (tokenData: EbayTokenInsert): Promise<EbayTok
     .single();
 
   if (error) throw error;
+
+  // Automatically create/update marketplace integration entry
+  if (user?.id) {
+    console.log('Creating marketplace integration for eBay token...');
+    await createMarketplaceIntegration(user.id, data.ebay_account_id);
+  }
+
   return data;
+};
+
+const createMarketplaceIntegration = async (userId: string, ebayAccountId: string | null) => {
+  try {
+    const integrationData = {
+      name: `eBay${ebayAccountId ? ` (${ebayAccountId})` : ''}`,
+      marketplace_type: 'ebay',
+      icon: '🛒',
+      status: 'connected',
+      user_id: userId,
+      sync_frequency: 'hourly',
+      orders_synced: 0
+    };
+
+    // Check if integration already exists
+    const { data: existingIntegration } = await supabase
+      .from('marketplace_integrations')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('marketplace_type', 'ebay')
+      .maybeSingle();
+
+    if (existingIntegration) {
+      // Update existing integration
+      const { error: updateError } = await supabase
+        .from('marketplace_integrations')
+        .update({
+          ...integrationData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingIntegration.id);
+
+      if (updateError) {
+        console.error('Error updating marketplace integration:', updateError);
+      } else {
+        console.log('eBay marketplace integration updated successfully');
+      }
+    } else {
+      // Create new integration
+      const { error: insertError } = await supabase
+        .from('marketplace_integrations')
+        .insert(integrationData);
+
+      if (insertError) {
+        console.error('Error creating marketplace integration:', insertError);
+      } else {
+        console.log('eBay marketplace integration created successfully');
+      }
+    }
+  } catch (error) {
+    console.error('Error in createMarketplaceIntegration:', error);
+  }
 };
 
 export const deleteEbayToken = async (tokenId: string): Promise<void> => {
