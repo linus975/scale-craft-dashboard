@@ -87,6 +87,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ebay_oauth_tokens: {
+        Row: {
+          access_token: string
+          access_token_expires: string
+          created_at: string
+          ebay_account_id: string
+          id: string
+          refresh_token: string
+          refresh_token_expires: string
+          scope: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          access_token_expires: string
+          created_at?: string
+          ebay_account_id: string
+          id?: string
+          refresh_token: string
+          refresh_token_expires: string
+          scope: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          access_token_expires?: string
+          created_at?: string
+          ebay_account_id?: string
+          id?: string
+          refresh_token?: string
+          refresh_token_expires?: string
+          scope?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       machines: {
         Row: {
           api_key: string | null

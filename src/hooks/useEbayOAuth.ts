@@ -1,9 +1,11 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useEbayTokens } from './useEbayTokens';
 
 export const useEbayOAuth = () => {
   const [loadingMarketplaces, setLoadingMarketplaces] = useState<Record<string, boolean>>({});
+  const { createOrUpdateToken, refetch: refetchTokens } = useEbayTokens();
 
   const initiateEbayAuth = async (refetch: () => void) => {
     setLoadingMarketplaces(prev => ({ ...prev, ebay: true }));
@@ -94,7 +96,17 @@ export const useEbayOAuth = () => {
       // Listen for messages from n8n or manual integration creation
       const handleMessage = (event: MessageEvent) => {
         if (event.data.type === 'EBAY_OAUTH_SUCCESS') {
-          console.log('eBay OAuth successful:', event.data.integration);
+          console.log('eBay OAuth successful:', event.data);
+          
+          // Save token data if provided
+          if (event.data.tokenData) {
+            createOrUpdateToken(event.data.tokenData).then(() => {
+              refetchTokens();
+            }).catch(error => {
+              console.error('Error saving eBay token:', error);
+            });
+          }
+          
           setLoadingMarketplaces(prev => ({ ...prev, ebay: false }));
           
           // Refresh integrations to show the new one
