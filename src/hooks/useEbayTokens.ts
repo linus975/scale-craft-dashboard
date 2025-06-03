@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface EbayToken {
   id: string;
   user_id: string;
-  ebay_account_id: string;
+  ebay_account_id: string | null;
   access_token: string;
   access_token_expires: string;
   refresh_token: string;
@@ -58,7 +58,7 @@ export const useEbayTokens = () => {
         .from('ebay_oauth_tokens')
         .upsert({
           user_id: user.id,
-          ebay_account_id: tokenData.ebay_account_id,
+          ebay_account_id: tokenData.ebay_account_id || null,
           access_token: tokenData.access_token,
           access_token_expires: tokenData.access_token_expires,
           refresh_token: tokenData.refresh_token,
@@ -74,7 +74,10 @@ export const useEbayTokens = () => {
 
       // Update local state
       setTokens(prev => {
-        const existingIndex = prev.findIndex(t => t.ebay_account_id === data.ebay_account_id);
+        const existingIndex = prev.findIndex(t => 
+          (t.ebay_account_id === data.ebay_account_id) || 
+          (t.ebay_account_id === null && data.ebay_account_id === null)
+        );
         if (existingIndex >= 0) {
           const updated = [...prev];
           updated[existingIndex] = data;
@@ -86,7 +89,7 @@ export const useEbayTokens = () => {
 
       toast({
         title: "eBay token saved",
-        description: `Token for eBay account ${data.ebay_account_id} has been saved successfully.`,
+        description: `Token for eBay account ${data.ebay_account_id || 'unknown'} has been saved successfully.`,
       });
 
       return data;
@@ -115,7 +118,7 @@ export const useEbayTokens = () => {
       setTokens(prev => prev.filter(t => t.id !== tokenId));
       toast({
         title: "eBay token deleted",
-        description: `Token for eBay account ${token?.ebay_account_id} has been removed.`,
+        description: `Token for eBay account ${token?.ebay_account_id || 'unknown'} has been removed.`,
       });
     } catch (error: any) {
       console.error('Error deleting eBay token:', error);
@@ -128,8 +131,11 @@ export const useEbayTokens = () => {
     }
   };
 
-  const getValidToken = (ebayAccountId: string) => {
-    const token = tokens.find(t => t.ebay_account_id === ebayAccountId);
+  const getValidToken = (ebayAccountId?: string | null) => {
+    const token = tokens.find(t => 
+      ebayAccountId ? t.ebay_account_id === ebayAccountId : t.ebay_account_id === null
+    ) || tokens[0]; // Fallback to first token if no specific account ID match
+    
     if (!token) return null;
 
     const now = new Date();
