@@ -8,6 +8,8 @@ interface FormData {
   eanNumber: string;
   description: string;
   category: string;
+  color?: string;
+  machine?: string;
 }
 
 export const useDesignDataCreation = (
@@ -42,6 +44,8 @@ export const useDesignDataCreation = (
       replacement_value: mainPart?.parameters?.replacementValue || null,
       nozzle_diameter: mainPart?.nozzleDiameter || null,
       material: mainPart?.filamentType || null,
+      color: data.color || null,
+      machine: data.machine || null,
       version: 'v1.0'
     };
 

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
@@ -28,12 +28,18 @@ interface FormData {
   eanNumber: string;
   description: string;
   category: string;
+  color: string;
+  machine: string;
 }
 
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { createDesign } = useDesigns();
   const { machines } = useMachines();
   const { toast } = useToast();
+  
+  // State for color and machine
+  const [colorValue, setColorValue] = useState('');
+  const [machineValue, setMachineValue] = useState('');
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -41,7 +47,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       trackingType: '',
       eanNumber: '',
       description: '',
-      category: ''
+      category: '',
+      color: '',
+      machine: ''
     }
   });
 
@@ -61,6 +69,16 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     fileUpload.setUploadedFiles(prev => prev.filter(file => file.partId !== partId));
   };
 
+  const handleColorChange = (value: string) => {
+    setColorValue(value);
+    form.setValue('color', value);
+  };
+
+  const handleMachineChange = (value: string) => {
+    setMachineValue(value);
+    form.setValue('machine', value);
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
       // Make files optional in validation - only validate basic required fields
@@ -78,17 +96,25 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         return;
       }
 
-      const designData = createDesignData(data);
+      // Include color and machine in the data
+      const designDataWithColorMachine = {
+        ...data,
+        color: colorValue,
+        machine: machineValue
+      };
+
+      const designData = createDesignData(designDataWithColorMachine);
 
       console.log('Saving design with data:', designData);
       console.log('Design Parts:', designParts.designParts);
       console.log('Uploaded files:', fileUpload.uploadedFiles);
+      console.log('Color:', colorValue, 'Machine:', machineValue);
 
       const savedDesign = await createDesign(designData);
       
       // Only create print jobs if files are present
       if (fileUpload.uploadedFiles.length > 0) {
-        const createdJobs = await createPrintJobsFromDesign(designData, savedDesign);
+        const createdJobs = await createPrintJobsFromDesign(designDataWithColorMachine, savedDesign);
         
         toast({
           title: "Design and Jobs successfully created",
@@ -170,12 +196,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onPartSoftwareChange={designParts.handlePartSoftwareChange}
                 onPartSpecificationChange={designParts.handlePartSpecificationChange}
                 validatePartFiles={(part) => designParts.validatePartFiles(part, fileUpload.uploadedFiles)}
-                colorValue=""
-                machineValue=""
+                colorValue={colorValue}
+                machineValue={machineValue}
                 machines={machines}
                 formControl={form.control}
-                onColorChange={(value) => console.log('Color changed:', value)}
-                onMachineChange={(value) => console.log('Machine changed:', value)}
+                onColorChange={handleColorChange}
+                onMachineChange={handleMachineChange}
               />
             </CardContent>
           </Card>
