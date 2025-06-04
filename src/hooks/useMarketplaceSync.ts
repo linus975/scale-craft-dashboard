@@ -32,8 +32,8 @@ export const useMarketplaceSync = () => {
       let requestBody: any;
 
       if (isEbayIntegration) {
-        // For eBay integrations, use the specific webhook URL
-        webhookUrl = 'http://n8n.melemeng.com/webhook-test/Ebay_Orders';
+        // For eBay integrations, use the specific webhook URL with HTTPS
+        webhookUrl = 'https://n8n.melemeng.com/webhook-test/Ebay_Orders';
         
         // Get current user ID
         const { data: { user } } = await supabase.auth.getUser();
@@ -95,18 +95,21 @@ export const useMarketplaceSync = () => {
         });
       }
 
-      // Call the webhook URL with no-cors to ensure it reaches the endpoint
+      // Call the webhook URL with CORS enabled (no no-cors mode)
       console.log('Making fetch request to webhook...');
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
       });
 
-      // With no-cors mode, we can't check response status, so we assume success
+      // Check response status since CORS is now enabled
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       console.log('Webhook request sent successfully');
 
       toast({
