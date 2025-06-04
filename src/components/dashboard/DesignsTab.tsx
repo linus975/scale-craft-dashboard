@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useMachines } from '@/hooks/useMachines';
@@ -14,7 +14,7 @@ interface DesignsTabProps {
 }
 
 const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }) => {
-  const { designs, loading, deleteDesign } = useDesigns();
+  const { designs, loading, deleteDesign, refetch } = useDesigns();
   const { machines } = useMachines();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -26,6 +26,13 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('DesignsTab: designs count:', designs.length);
+    console.log('DesignsTab: loading state:', loading);
+    console.log('DesignsTab: designs data:', designs);
+  }, [designs, loading]);
+
   const filteredDesigns = designs.filter(design => {
     const matchesSearch = design.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          design.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,6 +43,8 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
     
     return matchesSearch && matchesCategory && matchesType;
   });
+
+  console.log('DesignsTab: filteredDesigns count:', filteredDesigns.length);
 
   const categories = [...new Set(designs.map(design => design.category))];
 
@@ -96,7 +105,11 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading designs...</div>;
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="text-lg">Loading designs...</div>
+      </div>
+    );
   }
 
   return (
@@ -122,14 +135,27 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
         categories={categories}
       />
 
-      <DesignsGrid
-        filteredDesigns={filteredDesigns}
-        isSelectionMode={isSelectionMode}
-        selectedDesigns={selectedDesigns}
-        onSelectDesign={handleSelectDesign}
-        onConfigureDesign={handleConfigureDesign}
-        onDownloadDesign={handleDownloadDesign}
-      />
+      {designs.length === 0 ? (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No designs found</h3>
+          <p className="text-gray-500 mb-4">Create your first design to get started.</p>
+          <button 
+            onClick={() => setShowAddDialog(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+          >
+            Add Design
+          </button>
+        </div>
+      ) : (
+        <DesignsGrid
+          filteredDesigns={filteredDesigns}
+          isSelectionMode={isSelectionMode}
+          selectedDesigns={selectedDesigns}
+          onSelectDesign={handleSelectDesign}
+          onConfigureDesign={handleConfigureDesign}
+          onDownloadDesign={handleDownloadDesign}
+        />
+      )}
 
       <WhitelabelPromoCard onNavigateToWhitelabelCatalog={onNavigateToWhitelabelCatalog} />
 
