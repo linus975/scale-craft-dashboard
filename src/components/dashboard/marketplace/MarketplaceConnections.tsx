@@ -92,6 +92,21 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
     return integration.marketplace_type || integration.name;
   };
 
+  const getMarketplaceIcon = (integration: Integration) => {
+    // For eBay tokens, show the eBay logo
+    if (integration.ebay_username) {
+      return (
+        <img 
+          src="/lovable-uploads/8c476811-2af8-437a-9f0e-c124bda23526.png" 
+          alt="eBay" 
+          className="w-6 h-6 object-contain"
+        />
+      );
+    }
+    // For other integrations, show the emoji icon
+    return <span className="text-xl">{integration.icon}</span>;
+  };
+
   return (
     <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
       <CardHeader>
@@ -114,7 +129,7 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
               <div key={integration.id} className="p-4 bg-slate-50 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">{integration.icon}</span>
+                    {getMarketplaceIcon(integration)}
                     <div>
                       <h4 className="font-medium text-slate-900">{getDisplayName(integration)}</h4>
                       <p className="text-sm text-slate-600">{getMarketplaceName(integration)}</p>

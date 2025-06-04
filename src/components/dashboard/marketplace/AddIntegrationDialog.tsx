@@ -32,6 +32,19 @@ const AddIntegrationDialog: React.FC<AddIntegrationDialogProps> = ({
     { id: 'custom', name: 'Custom API', icon: '🔌' }
   ];
 
+  const getMarketplaceIcon = (marketplace: Marketplace) => {
+    if (marketplace.id === 'ebay') {
+      return (
+        <img 
+          src="/lovable-uploads/8c476811-2af8-437a-9f0e-c124bda23526.png" 
+          alt="eBay" 
+          className="w-6 h-6 object-contain"
+        />
+      );
+    }
+    return <span className="text-lg">{marketplace.icon}</span>;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
@@ -66,7 +79,7 @@ const AddIntegrationDialog: React.FC<AddIntegrationDialogProps> = ({
                 </div>
               ) : (
                 <>
-                  <span className="text-lg">{marketplace.icon}</span>
+                  {getMarketplaceIcon(marketplace)}
                   <span className="text-xs">{marketplace.name}</span>
                 </>
               )}
