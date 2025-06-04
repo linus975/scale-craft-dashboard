@@ -82,6 +82,8 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   validatePartFiles: externalValidatePartFiles,
   colorValue,
   machineValue,
+  onColorChange,
+  onMachineChange,
   machines = [],
   formControl,
 }) => {
@@ -132,6 +134,9 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         colorValue={colorValue}
         machineValue={machineValue}
         formControl={formControl}
+        machines={machines}
+        onColorChange={onColorChange}
+        onMachineChange={onMachineChange}
       />
 
       {currentPart && (
