@@ -6,9 +6,11 @@ import { useMarketplaceOrders } from '@/hooks/useMarketplaceOrders';
 import { useMarketplaceSync } from '@/hooks/useMarketplaceSync';
 import { useMarketplaceDialogs } from '@/hooks/useMarketplaceDialogs';
 import { useAutomationSettings } from '@/hooks/useAutomationSettings';
+import { useEbayTokens } from '@/hooks/useEbayTokens';
 import AddIntegrationDialog from './marketplace/AddIntegrationDialog';
 import CredentialsDialog from './marketplace/CredentialsDialog';
 import MarketplaceConnections from './marketplace/MarketplaceConnections';
+import EbayTokensCard from './marketplace/EbayTokensCard';
 import RecentOrdersCard from './marketplace/RecentOrdersCard';
 import AutomationSettings from './marketplace/AutomationSettings';
 
@@ -19,6 +21,7 @@ interface MarketplaceTabProps {
 const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }) => {
   const { integrations, loading } = useMarketplaceIntegrations();
   const { orders: recentOrders, loading: ordersLoading, upsertOrder } = useMarketplaceOrders();
+  const { tokens, loading: tokensLoading, deleteToken, refetch: refetchTokens } = useEbayTokens();
   
   const {
     syncFrequencies,
@@ -100,6 +103,13 @@ const MarketplaceTab: React.FC<MarketplaceTabProps> = ({ onNavigateToAllOrders }
         onFrequencySync={handleFrequencySync}
         onEditIntegration={handleEditIntegration}
         onDeleteIntegration={handleDeleteIntegration}
+      />
+
+      <EbayTokensCard
+        tokens={tokens}
+        loading={tokensLoading}
+        onDeleteToken={deleteToken}
+        onRefreshTokens={refetchTokens}
       />
 
       <RecentOrdersCard
