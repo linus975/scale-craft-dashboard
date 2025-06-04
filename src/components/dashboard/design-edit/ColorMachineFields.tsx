@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ColorMachineFieldsProps {
   colorValue?: string;
@@ -19,16 +20,6 @@ const ColorMachineFields: React.FC<ColorMachineFieldsProps> = ({
   onColorChange,
   onMachineChange
 }) => {
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    onColorChange?.(value);
-  };
-
-  const handleMachineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    onMachineChange?.(value);
-  };
-
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">
@@ -36,7 +27,7 @@ const ColorMachineFields: React.FC<ColorMachineFieldsProps> = ({
         <Input
           placeholder="Farbe eingeben"
           value={colorValue}
-          onChange={handleColorChange}
+          onChange={(e) => onColorChange?.(e.target.value)}
         />
       </div>
 
@@ -45,7 +36,7 @@ const ColorMachineFields: React.FC<ColorMachineFieldsProps> = ({
         <Input
           placeholder="Maschine eingeben"
           value={machineValue}
-          onChange={handleMachineChange}
+          onChange={(e) => onMachineChange?.(e.target.value)}
         />
       </div>
     </div>
