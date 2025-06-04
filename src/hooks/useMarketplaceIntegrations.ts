@@ -8,20 +8,73 @@ type MarketplaceIntegration = Database['public']['Tables']['marketplace_integrat
 type MarketplaceIntegrationInsert = Database['public']['Tables']['marketplace_integrations']['Insert'];
 type MarketplaceIntegrationUpdate = Database['public']['Tables']['marketplace_integrations']['Update'];
 
+// Extended type that includes eBay token data
+type EnhancedMarketplaceIntegration = MarketplaceIntegration & {
+  ebay_username?: string;
+  token_status?: 'active' | 'expired';
+  token_expires?: string;
+};
+
 export const useMarketplaceIntegrations = () => {
-  const [integrations, setIntegrations] = useState<MarketplaceIntegration[]>([]);
+  const [integrations, setIntegrations] = useState<EnhancedMarketplaceIntegration[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchIntegrations = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch marketplace integrations
+      const { data: marketplaceData, error: marketplaceError } = await supabase
         .from('marketplace_integrations')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setIntegrations(data || []);
+      if (marketplaceError) throw marketplaceError;
+
+      // Fetch eBay tokens
+      const { data: ebayTokens, error: ebayError } = await supabase
+        .from('ebay_oauth_tokens')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (ebayError) throw ebayError;
+
+      // Combine data: merge eBay tokens with marketplace integrations
+      const combinedData: EnhancedMarketplaceIntegration[] = [];
+      
+      // Add existing marketplace integrations
+      if (marketplaceData) {
+        combinedData.push(...marketplaceData);
+      }
+
+      // Add eBay tokens as virtual marketplace integrations
+      if (ebayTokens) {
+        ebayTokens.forEach(token => {
+          const isExpired = token.access_token_expires ? 
+            new Date(token.access_token_expires) < new Date() : false;
+
+          combinedData.push({
+            id: `ebay-token-${token.id}`,
+            user_id: token.user_id,
+            name: `eBay (${token.ebay_username})`,
+            marketplace_type: 'ebay',
+            client_id: null,
+            api_key: token.access_token,
+            webhook_url: 'https://n8n.melemeng.com/webhook/Ebay_Sync',
+            sync_frequency: 'hourly',
+            icon: '🛒',
+            status: isExpired ? 'disconnected' : 'connected',
+            last_sync: null,
+            orders_synced: 0,
+            created_at: token.created_at,
+            updated_at: token.updated_at,
+            ebay_username: token.ebay_username,
+            token_status: isExpired ? 'expired' : 'active',
+            token_expires: token.access_token_expires
+          });
+        });
+      }
+
+      setIntegrations(combinedData);
     } catch (error: any) {
       console.error('Error fetching marketplace integrations:', error);
       toast({
@@ -47,7 +100,9 @@ export const useMarketplaceIntegrations = () => {
 
       if (error) throw error;
 
-      setIntegrations(prev => [data, ...prev]);
+      // Refresh data to include the new integration
+      await fetchIntegrations();
+      
       toast({
         title: "Integration created successfully",
         description: `${data.name} has been successfully connected.`,
@@ -76,9 +131,8 @@ export const useMarketplaceIntegrations = () => {
 
       if (error) throw error;
 
-      setIntegrations(prev => prev.map(integration => 
-        integration.id === id ? data : integration
-      ));
+      // Refresh data
+      await fetchIntegrations();
 
       toast({
         title: "Integration updated",
@@ -101,14 +155,28 @@ export const useMarketplaceIntegrations = () => {
     try {
       const integration = integrations.find(i => i.id === id);
       
-      const { error } = await supabase
-        .from('marketplace_integrations')
-        .delete()
-        .eq('id', id);
+      // Check if this is an eBay token (virtual integration)
+      if (id.startsWith('ebay-token-')) {
+        const tokenId = id.replace('ebay-token-', '');
+        const { error } = await supabase
+          .from('ebay_oauth_tokens')
+          .delete()
+          .eq('id', tokenId);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Regular marketplace integration
+        const { error } = await supabase
+          .from('marketplace_integrations')
+          .delete()
+          .eq('id', id);
 
-      setIntegrations(prev => prev.filter(integration => integration.id !== id));
+        if (error) throw error;
+      }
+
+      // Refresh data
+      await fetchIntegrations();
+      
       toast({
         title: "Integration deleted",
         description: `${integration?.name} has been successfully removed.`,
@@ -129,13 +197,15 @@ export const useMarketplaceIntegrations = () => {
       const integration = integrations.find(i => i.id === id);
       if (!integration) throw new Error('Integration not found');
 
-      // Update last sync time
-      await updateIntegration(id, {
-        last_sync: new Date().toISOString(),
-        status: 'connected'
-      });
+      // For eBay tokens, we can't update the last_sync in marketplace_integrations
+      // since they are virtual integrations, but we can still trigger the webhook
+      if (!id.startsWith('ebay-token-')) {
+        await updateIntegration(id, {
+          last_sync: new Date().toISOString(),
+          status: 'connected'
+        });
+      }
 
-      // TODO: Replace with actual webhook URL from configuration
       const webhookUrl = integration.webhook_url || 'https://hooks.zapier.com/hooks/catch/your-webhook-id/';
       
       await fetch(webhookUrl, {

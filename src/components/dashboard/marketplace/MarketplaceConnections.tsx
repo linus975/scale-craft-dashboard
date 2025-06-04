@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Globe, RefreshCw, Edit, Trash2, Clock } from 'lucide-react';
+import { Globe, RefreshCw, Edit, Trash2, Clock, User } from 'lucide-react';
 
 interface Integration {
   id: string;
@@ -14,6 +14,9 @@ interface Integration {
   orders_synced: number;
   webhook_url?: string;
   sync_frequency?: string | null;
+  ebay_username?: string;
+  token_status?: 'active' | 'expired';
+  token_expires?: string;
 }
 
 interface MarketplaceConnectionsProps {
@@ -64,6 +67,12 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
     }
   };
 
+  const formatTokenExpiry = (expires: string | null) => {
+    if (!expires) return "No expiry date";
+    const date = new Date(expires);
+    return date.toLocaleString('de-DE');
+  };
+
   return (
     <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
       <CardHeader>
@@ -89,19 +98,37 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
                     <span className="text-xl">{integration.icon}</span>
                     <div>
                       <h4 className="font-medium text-slate-900">{integration.name}</h4>
+                      {integration.ebay_username && (
+                        <div className="flex items-center gap-1 text-sm text-slate-600">
+                          <User className="h-3 w-3" />
+                          <span>{integration.ebay_username}</span>
+                        </div>
+                      )}
                       <p className="text-sm text-slate-500">Last sync: {formatLastSync(integration.last_sync)}</p>
                     </div>
                   </div>
-                  <Badge className={getMarketplaceStatusColor(integration.status)}>
-                    {integration.status}
-                  </Badge>
+                  <div className="flex flex-col gap-1">
+                    <Badge className={getMarketplaceStatusColor(integration.status)}>
+                      {integration.status}
+                    </Badge>
+                    {integration.token_status && (
+                      <Badge className={integration.token_status === 'expired' ? 'bg-red-100 text-red-800 border-red-200' : 'bg-green-100 text-green-800 border-green-200'}>
+                        Token: {integration.token_status}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
-                <div className="mb-3">
+                <div className="mb-3 space-y-1">
                   <div className="flex items-center gap-2 text-sm text-slate-600">
                     <Clock className="h-3 w-3" />
                     <span>Auto sync: {formatSyncFrequency(integration.sync_frequency)}</span>
                   </div>
+                  {integration.token_expires && (
+                    <div className="text-xs text-slate-500">
+                      Token expires: {formatTokenExpiry(integration.token_expires)}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -115,17 +142,20 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
                       <RefreshCw className="h-3 w-3 mr-1" />
                       Sync Now
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => onEditIntegration(integration)}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
+                    {!integration.id.startsWith('ebay-token-') && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => onEditIntegration(integration)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    )}
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => onDeleteIntegration(integration.id)}
+                      className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
