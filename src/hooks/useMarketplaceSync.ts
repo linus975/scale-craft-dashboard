@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useMarketplaceIntegrations } from '@/hooks/useMarketplaceIntegrations';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useMarketplaceSync = () => {
   const { integrations, updateIntegration } = useMarketplaceIntegrations();
@@ -20,50 +20,82 @@ export const useMarketplaceSync = () => {
       return;
     }
 
-    const webhookUrl = integration.webhook_url;
+    // Check if this is an eBay integration
+    const isEbayIntegration = integration.ebay_username || integration.marketplace_type === 'ebay';
     
-    if (!webhookUrl) {
-      toast({
-        title: "Error",
-        description: "No webhook URL configured for this integration. Please edit the integration and add a webhook URL.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       console.log('Starting webhook call...');
       console.log('Integration:', integration.name);
-      console.log('Webhook URL:', webhookUrl);
-      console.log('Request method: POST');
-      
-      const requestBody = {
-        marketplace: integration.name,
-        marketplace_id: integrationId,
-        action: 'sync',
-        timestamp: new Date().toISOString(),
-        client_id: integration.client_id,
-        api_key: integration.api_key,
-        sync_fields: {
-          ean_number: true,
-          product_id: true,
-          order_id: true,
-          customer_email: true,
-          amount: true,
-          quantity: true,
-          material: true,
-          design_file: true
+      console.log('Is eBay integration:', isEbayIntegration);
+
+      let webhookUrl: string;
+      let requestBody: any;
+
+      if (isEbayIntegration) {
+        // For eBay integrations, use the specific webhook URL
+        webhookUrl = 'http://n8n.melemeng.com/webhook-test/Ebay_Orders';
+        
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error('User not logged in');
         }
-      };
-      console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
-      // Update last sync time in database first
-      await updateIntegration(integrationId, {
-        last_sync: new Date().toISOString(),
-        status: 'connected'
-      });
+        requestBody = {
+          user_id: user.id,
+          shop_name: integration.ebay_username || integration.name,
+          marketplace: 'eBay',
+          timestamp: new Date().toISOString(),
+          action: 'sync'
+        };
+        
+        console.log('eBay webhook URL:', webhookUrl);
+        console.log('eBay request body:', JSON.stringify(requestBody, null, 2));
+      } else {
+        // For other integrations, use the existing logic
+        webhookUrl = integration.webhook_url;
+        
+        if (!webhookUrl) {
+          toast({
+            title: "Error",
+            description: "No webhook URL configured for this integration. Please edit the integration and add a webhook URL.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      // Call the webhook URL with no-cors to ensure it reaches n8n
+        requestBody = {
+          marketplace: integration.name,
+          marketplace_id: integrationId,
+          action: 'sync',
+          timestamp: new Date().toISOString(),
+          client_id: integration.client_id,
+          api_key: integration.api_key,
+          sync_fields: {
+            ean_number: true,
+            product_id: true,
+            order_id: true,
+            customer_email: true,
+            amount: true,
+            quantity: true,
+            material: true,
+            design_file: true
+          }
+        };
+        
+        console.log('Standard webhook URL:', webhookUrl);
+        console.log('Standard request body:', JSON.stringify(requestBody, null, 2));
+      }
+
+      // Update last sync time in database first (only for non-eBay virtual integrations)
+      if (!integrationId.startsWith('ebay-token-')) {
+        await updateIntegration(integrationId, {
+          last_sync: new Date().toISOString(),
+          status: 'connected'
+        });
+      }
+
+      // Call the webhook URL with no-cors to ensure it reaches the endpoint
       console.log('Making fetch request to webhook...');
       const response = await fetch(webhookUrl, {
         method: 'POST',
