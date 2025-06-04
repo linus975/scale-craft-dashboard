@@ -206,7 +206,12 @@ export const useMarketplaceIntegrations = () => {
         });
       }
 
-      const webhookUrl = integration.webhook_url || 'https://n8n.melemeng.com/webhook/Ebay_Sync';
+      // Use the integration's configured webhook URL, not a default eBay URL
+      const webhookUrl = integration.webhook_url;
+      
+      if (!webhookUrl) {
+        throw new Error('No webhook URL configured for this integration');
+      }
       
       await fetch(webhookUrl, {
         method: 'POST',
