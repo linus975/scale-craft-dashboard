@@ -16,7 +16,7 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state'); // This should contain the user_id
+    const state = url.searchParams.get('state'); // This contains the eBay username from n8n
     const error = url.searchParams.get('error');
 
     console.log('eBay OAuth callback received:', { 
@@ -183,35 +183,21 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get eBay user info to get the eBay username
-    let ebayUsername = 'unknown';
-    try {
-      const userResponse = await fetch('https://apiz.ebay.com/commerce/identity/v1/user/', {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        ebayUsername = userData.userId || userData.username || 'unknown';
-        console.log('eBay user data:', userData);
-      }
-    } catch (error) {
-      console.error('Failed to get eBay user info:', error);
-    }
+    // Use the state parameter as the eBay username (from n8n)
+    const ebayUsername = state;
+    console.log('Using eBay username from state parameter:', ebayUsername);
 
     // Calculate expiration dates
     const accessTokenExpires = new Date(Date.now() + (tokenData.expires_in * 1000));
     const refreshTokenExpires = new Date(Date.now() + (tokenData.refresh_token_expires_in * 1000));
 
-    // Store the OAuth token in ebay_oauth_tokens table using ebay_username instead of ebay_account_id
+    // Store the OAuth token in ebay_oauth_tokens table
+    // Note: user_id will be null since we don't have a Supabase user context from n8n
     const { data: oauthToken, error: oauthError } = await supabase
       .from('ebay_oauth_tokens')
       .upsert({
-        user_id: state,
-        ebay_username: ebayUsername, // Changed from ebay_account_id to ebay_username
+        user_id: null, // No Supabase user context from n8n
+        ebay_username: ebayUsername,
         access_token: tokenData.access_token,
         access_token_expires: accessTokenExpires.toISOString(),
         refresh_token: tokenData.refresh_token,
@@ -220,7 +206,7 @@ serve(async (req) => {
         expires_in: tokenData.expires_in,
         refresh_token_expires_in: tokenData.refresh_token_expires_in
       }, {
-        onConflict: 'user_id,ebay_username' // Updated conflict resolution
+        onConflict: 'ebay_username' // Only conflict on ebay_username since user_id is null
       })
       .select()
       .single();
@@ -258,11 +244,12 @@ serve(async (req) => {
     console.log('eBay OAuth token stored successfully:', oauthToken.id);
 
     // Store the integration in the marketplace_integrations table
+    // Note: user_id will be null since we don't have a Supabase user context from n8n
     const { data: integration, error: dbError } = await supabase
       .from('marketplace_integrations')
       .insert({
-        user_id: state,
-        name: `eBay (${ebayUsername})`, // Use ebayUsername here
+        user_id: null, // No Supabase user context from n8n
+        name: `eBay (${ebayUsername})`,
         marketplace_type: 'ebay',
         client_id: clientId,
         api_key: tokenData.access_token,
