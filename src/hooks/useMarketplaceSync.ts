@@ -28,31 +28,40 @@ export const useMarketplaceSync = () => {
       console.log('Integration:', integration.name);
       console.log('Is eBay integration:', isEbayIntegration);
 
-      let webhookUrl: string;
-      let requestBody: any;
-
       if (isEbayIntegration) {
-        // For eBay integrations, use the specific webhook URL with HTTPS
-        webhookUrl = 'https://n8n.melemeng.com/webhook-test/Ebay_Orders';
-        
-        // Get current user ID
+        // For eBay integrations, use GET request with query parameters
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           throw new Error('User not logged in');
         }
 
-        // Simple payload with just shop name, platform and user ID
-        requestBody = {
-          user_id: user.id,
-          shop_name: integration.ebay_username || integration.name,
-          platform: 'ebay'
-        };
+        const shopName = integration.ebay_username || integration.name;
+        const webhookUrl = `https://n8n.melemeng.com/webhook-test/Ebay_Orders?user_id=${encodeURIComponent(user.id)}&shop_name=${encodeURIComponent(shopName)}&platform=ebay`;
         
         console.log('eBay webhook URL:', webhookUrl);
-        console.log('eBay request body:', JSON.stringify(requestBody, null, 2));
+
+        // Update last sync time in database first (only for non-eBay virtual integrations)
+        if (!integrationId.startsWith('ebay-token-')) {
+          await updateIntegration(integrationId, {
+            last_sync: new Date().toISOString(),
+            status: 'connected'
+          });
+        }
+
+        // Make GET request to the webhook URL
+        console.log('Making GET request to webhook...');
+        const response = await fetch(webhookUrl, {
+          method: 'GET',
+        });
+
+        // Check response status
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        console.log('Webhook GET request sent successfully');
       } else {
-        // For other integrations, use the existing logic
-        webhookUrl = integration.webhook_url;
+        const webhookUrl = integration.webhook_url;
         
         if (!webhookUrl) {
           toast({
@@ -63,7 +72,7 @@ export const useMarketplaceSync = () => {
           return;
         }
 
-        requestBody = {
+        const requestBody = {
           marketplace: integration.name,
           marketplace_id: integrationId,
           action: 'sync',
@@ -84,32 +93,32 @@ export const useMarketplaceSync = () => {
         
         console.log('Standard webhook URL:', webhookUrl);
         console.log('Standard request body:', JSON.stringify(requestBody, null, 2));
-      }
 
-      // Update last sync time in database first (only for non-eBay virtual integrations)
-      if (!integrationId.startsWith('ebay-token-')) {
-        await updateIntegration(integrationId, {
-          last_sync: new Date().toISOString(),
-          status: 'connected'
+        // Update last sync time in database first (only for non-eBay virtual integrations)
+        if (!integrationId.startsWith('ebay-token-')) {
+          await updateIntegration(integrationId, {
+            last_sync: new Date().toISOString(),
+            status: 'connected'
+          });
+        }
+
+        // Call the webhook URL with CORS enabled (no no-cors mode)
+        console.log('Making fetch request to webhook...');
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
         });
+
+        // Check response status since CORS is now enabled
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        console.log('Webhook request sent successfully');
       }
-
-      // Call the webhook URL with CORS enabled (no no-cors mode)
-      console.log('Making fetch request to webhook...');
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      // Check response status since CORS is now enabled
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      console.log('Webhook request sent successfully');
 
       toast({
         title: "Sync started",
