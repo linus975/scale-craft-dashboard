@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { usePrintJobs } from './usePrintJobs';
 import { useToast } from '@/hooks/use-toast';
@@ -10,16 +9,16 @@ export const useJobsIntegration = () => {
   const { printJobs, loading, createPrintJob, updatePrintJob, duplicatePrintJob, deletePrintJob, refetch } = usePrintJobs();
   const { toast } = useToast();
 
-  // Filter jobs by status and priority
+  // Filter jobs by status and priority - only show ready_to_print jobs in queues
   const printing = printJobs.filter(job => job.status === 'printing');
-  const highPriorityJobs = printJobs.filter(job => 
-    (job.priority || 5) > 5 && 
-    !['printing', 'done', 'failed'].includes(job.status)
-  );
-  const normalPriorityJobs = printJobs.filter(job => 
-    (job.priority || 5) <= 5 && 
-    !['printing', 'done', 'failed'].includes(job.status)
-  );
+  
+  // Only show ready_to_print jobs in the priority queues
+  const readyToPrintJobs = printJobs.filter(job => job.status === 'ready_to_print');
+  
+  const highPriorityJobs = readyToPrintJobs.filter(job => (job.priority || 5) > 5);
+  const normalPriorityJobs = readyToPrintJobs.filter(job => (job.priority || 5) <= 5);
+  
+  // Keep completed and failed jobs as they were
   const completedJobs = printJobs.filter(job => job.status === 'done');
   const failedJobs = printJobs.filter(job => job.status === 'failed');
 
