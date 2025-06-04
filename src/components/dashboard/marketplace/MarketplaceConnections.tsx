@@ -99,7 +99,7 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
         <img 
           src="/lovable-uploads/8c476811-2af8-437a-9f0e-c124bda23526.png" 
           alt="eBay" 
-          className="w-6 h-6 object-contain"
+          className="w-8 h-8 object-contain"
         />
       );
     }
