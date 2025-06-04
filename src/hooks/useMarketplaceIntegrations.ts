@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -205,7 +206,7 @@ export const useMarketplaceIntegrations = () => {
         });
       }
 
-      const webhookUrl = integration.webhook_url || 'https://hooks.zapier.com/hooks/catch/your-webhook-id/';
+      const webhookUrl = integration.webhook_url || 'https://n8n.melemeng.com/webhook/Ebay_Sync';
       
       await fetch(webhookUrl, {
         method: 'POST',
