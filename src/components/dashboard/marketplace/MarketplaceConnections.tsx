@@ -17,6 +17,7 @@ interface Integration {
   ebay_username?: string;
   token_status?: 'active' | 'expired';
   token_expires?: string;
+  marketplace_type?: string;
 }
 
 interface MarketplaceConnectionsProps {
@@ -73,6 +74,24 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
     return date.toLocaleString('de-DE');
   };
 
+  const getDisplayName = (integration: Integration) => {
+    // For eBay tokens, show just the username
+    if (integration.ebay_username) {
+      return integration.ebay_username;
+    }
+    // For other integrations, show the full name
+    return integration.name;
+  };
+
+  const getMarketplaceName = (integration: Integration) => {
+    // For eBay tokens, show "eBay"
+    if (integration.ebay_username) {
+      return 'eBay';
+    }
+    // For other integrations, show the marketplace type
+    return integration.marketplace_type || integration.name;
+  };
+
   return (
     <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-md">
       <CardHeader>
@@ -97,13 +116,8 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{integration.icon}</span>
                     <div>
-                      <h4 className="font-medium text-slate-900">{integration.name}</h4>
-                      {integration.ebay_username && (
-                        <div className="flex items-center gap-1 text-sm text-slate-600">
-                          <User className="h-3 w-3" />
-                          <span>{integration.ebay_username}</span>
-                        </div>
-                      )}
+                      <h4 className="font-medium text-slate-900">{getDisplayName(integration)}</h4>
+                      <p className="text-sm text-slate-600">{getMarketplaceName(integration)}</p>
                       <p className="text-sm text-slate-500">Last sync: {formatLastSync(integration.last_sync)}</p>
                     </div>
                   </div>
@@ -142,15 +156,13 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
                       <RefreshCw className="h-3 w-3 mr-1" />
                       Sync Now
                     </Button>
-                    {!integration.id.startsWith('ebay-token-') && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => onEditIntegration(integration)}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                    )}
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => onEditIntegration(integration)}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
                     <Button 
                       size="sm" 
                       variant="outline"
