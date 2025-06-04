@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -201,8 +200,7 @@ export const useMarketplaceIntegrations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not logged in');
 
-      // For eBay tokens, we can't update the last_sync in marketplace_integrations
-      // since they are virtual integrations, but we can still trigger the webhook
+      // Update last_sync for regular marketplace integrations (not eBay tokens)
       if (!id.startsWith('ebay-token-')) {
         await updateIntegration(id, {
           last_sync: new Date().toISOString(),
@@ -210,12 +208,8 @@ export const useMarketplaceIntegrations = () => {
         });
       }
 
-      // Use the integration's configured webhook URL
-      const webhookUrl = integration.webhook_url;
-      
-      if (!webhookUrl) {
-        throw new Error('No webhook URL configured for this integration');
-      }
+      // Always use the eBay webhook URL
+      const webhookUrl = 'https://n8n.melemeng.com/webhook/Ebay_Sync';
       
       // Determine shop_name and platform based on integration type
       let shopName: string;
@@ -226,7 +220,7 @@ export const useMarketplaceIntegrations = () => {
         shopName = integration.ebay_username;
         platform = 'ebay';
       } else {
-        // For other marketplace integrations
+        // For other marketplace integrations, use client_id as shop_name or fallback to name
         shopName = integration.client_id || integration.name;
         platform = integration.marketplace_type;
       }
@@ -240,13 +234,17 @@ export const useMarketplaceIntegrations = () => {
       console.log('Webhook URL:', webhookUrl);
       console.log('Request body:', JSON.stringify(requestBody, null, 2));
       
-      await fetch(webhookUrl, {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       toast({
         title: "Sync started",
