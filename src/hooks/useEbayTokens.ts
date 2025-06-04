@@ -34,8 +34,7 @@ export const useEbayTokens = () => {
       // Update local state
       setTokens(prev => {
         const existingIndex = prev.findIndex(t => 
-          (t.ebay_account_id === data.ebay_account_id) || 
-          (t.ebay_account_id === null && data.ebay_account_id === null)
+          t.ebay_username === data.ebay_username
         );
         if (existingIndex >= 0) {
           const updated = [...prev];
@@ -48,7 +47,7 @@ export const useEbayTokens = () => {
 
       toast({
         title: "eBay token saved",
-        description: `Token for eBay account ${data.ebay_account_id || 'unknown'} has been saved successfully.`,
+        description: `Token for eBay account ${data.ebay_username} has been saved successfully.`,
       });
 
       return data;
@@ -72,7 +71,7 @@ export const useEbayTokens = () => {
       setTokens(prev => prev.filter(t => t.id !== tokenId));
       toast({
         title: "eBay token deleted",
-        description: `Token for eBay account ${token?.ebay_account_id || 'unknown'} has been removed.`,
+        description: `Token for eBay account ${token?.ebay_username || 'unknown'} has been removed.`,
       });
     } catch (error: any) {
       console.error('Error deleting eBay token:', error);
@@ -94,7 +93,7 @@ export const useEbayTokens = () => {
     loading,
     createOrUpdateToken,
     deleteToken,
-    getValidToken: (ebayAccountId?: string | null) => getValidToken(tokens, ebayAccountId),
+    getValidToken: (ebayUsername?: string | null) => getValidToken(tokens, ebayUsername),
     isTokenExpiringSoon,
     refetch: fetchTokens
   };

@@ -92,7 +92,7 @@ export type Database = {
           access_token: string
           access_token_expires: string | null
           created_at: string
-          ebay_account_id: string | null
+          ebay_username: string
           expires_in: number | null
           id: string
           refresh_token: string | null
@@ -106,7 +106,7 @@ export type Database = {
           access_token: string
           access_token_expires?: string | null
           created_at?: string
-          ebay_account_id?: string | null
+          ebay_username: string
           expires_in?: number | null
           id?: string
           refresh_token?: string | null
@@ -120,7 +120,7 @@ export type Database = {
           access_token?: string
           access_token_expires?: string | null
           created_at?: string
-          ebay_account_id?: string | null
+          ebay_username?: string
           expires_in?: number | null
           id?: string
           refresh_token?: string | null

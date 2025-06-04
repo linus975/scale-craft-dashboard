@@ -2,7 +2,7 @@
 export interface EbayToken {
   id: string;
   user_id?: string | null;
-  ebay_account_id?: string | null;
+  ebay_username: string; // Changed from ebay_account_id and now required
   access_token: string;
   access_token_expires?: string | null;
   refresh_token?: string | null;

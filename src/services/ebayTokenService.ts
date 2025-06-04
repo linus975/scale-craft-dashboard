@@ -22,11 +22,11 @@ export const saveEbayToken = async (tokenData: EbayTokenInsert): Promise<EbayTok
   
   const insertData: any = {
     access_token: tokenData.access_token,
+    ebay_username: tokenData.ebay_username, // Now required field
   };
 
   // Only include fields that are provided
   if (user?.id) insertData.user_id = user.id;
-  if (tokenData.ebay_account_id) insertData.ebay_account_id = tokenData.ebay_account_id;
   if (tokenData.access_token_expires) insertData.access_token_expires = tokenData.access_token_expires;
   if (tokenData.refresh_token) insertData.refresh_token = tokenData.refresh_token;
   if (tokenData.refresh_token_expires) insertData.refresh_token_expires = tokenData.refresh_token_expires;
@@ -37,7 +37,7 @@ export const saveEbayToken = async (tokenData: EbayTokenInsert): Promise<EbayTok
   const { data, error } = await supabase
     .from('ebay_oauth_tokens')
     .upsert(insertData, {
-      onConflict: 'user_id,ebay_account_id'
+      onConflict: 'user_id,ebay_username'
     })
     .select()
     .single();
@@ -47,16 +47,16 @@ export const saveEbayToken = async (tokenData: EbayTokenInsert): Promise<EbayTok
   // Automatically create/update marketplace integration entry
   if (user?.id) {
     console.log('Creating marketplace integration for eBay token...');
-    await createMarketplaceIntegration(user.id, data.ebay_account_id);
+    await createMarketplaceIntegration(user.id, data.ebay_username);
   }
 
   return data;
 };
 
-const createMarketplaceIntegration = async (userId: string, ebayAccountId: string | null) => {
+const createMarketplaceIntegration = async (userId: string, ebayUsername: string) => {
   try {
     const integrationData = {
-      name: `eBay${ebayAccountId ? ` (${ebayAccountId})` : ''}`,
+      name: `eBay (${ebayUsername})`,
       marketplace_type: 'ebay',
       icon: '🛒',
       status: 'connected',
@@ -65,12 +65,13 @@ const createMarketplaceIntegration = async (userId: string, ebayAccountId: strin
       orders_synced: 0
     };
 
-    // Check if integration already exists
+    // Check if integration already exists for this user and eBay username
     const { data: existingIntegration } = await supabase
       .from('marketplace_integrations')
       .select('id')
       .eq('user_id', userId)
       .eq('marketplace_type', 'ebay')
+      .eq('name', `eBay (${ebayUsername})`)
       .maybeSingle();
 
     if (existingIntegration) {

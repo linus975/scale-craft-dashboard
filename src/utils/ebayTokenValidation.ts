@@ -1,10 +1,10 @@
 
 import type { EbayToken } from '@/types/ebayTypes';
 
-export const getValidToken = (tokens: EbayToken[], ebayAccountId?: string | null): EbayToken | null => {
+export const getValidToken = (tokens: EbayToken[], ebayUsername?: string | null): EbayToken | null => {
   const token = tokens.find(t => 
-    ebayAccountId ? t.ebay_account_id === ebayAccountId : t.ebay_account_id === null
-  ) || tokens[0]; // Fallback to first token if no specific account ID match
+    ebayUsername ? t.ebay_username === ebayUsername : t.ebay_username
+  ) || tokens[0]; // Fallback to first token if no specific username match
   
   if (!token) return null;
 
