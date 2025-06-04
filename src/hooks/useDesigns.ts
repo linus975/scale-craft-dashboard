@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,40 +15,13 @@ export const useDesigns = () => {
   const { createMapping } = useEanMapping();
 
   const fetchDesigns = async () => {
-    console.log('Fetching designs...');
     try {
-      setLoading(true);
-      
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw authError;
-      }
-      
-      if (!user) {
-        console.log('No user found, skipping design fetch');
-        setDesigns([]);
-        setLoading(false);
-        return;
-      }
-
-      console.log('User authenticated, fetching designs for user:', user.id);
-
       const { data, error } = await supabase
         .from('designs')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      console.log('Database response:', { data, error });
-
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
-      }
-      
-      console.log('Successfully fetched designs:', data?.length || 0);
+      if (error) throw error;
       setDesigns(data || []);
     } catch (error: any) {
       console.error('Error fetching designs:', error);
@@ -58,7 +30,6 @@ export const useDesigns = () => {
         description: error.message,
         variant: "destructive",
       });
-      setDesigns([]);
     } finally {
       setLoading(false);
     }
@@ -200,7 +171,6 @@ export const useDesigns = () => {
   };
 
   useEffect(() => {
-    console.log('useDesigns: Initial fetch triggered');
     fetchDesigns();
   }, []);
 
