@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -197,10 +196,6 @@ export const useMarketplaceIntegrations = () => {
       const integration = integrations.find(i => i.id === id);
       if (!integration) throw new Error('Integration not found');
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not logged in');
-
       // For eBay tokens, we can't update the last_sync in marketplace_integrations
       // since they are virtual integrations, but we can still trigger the webhook
       if (!id.startsWith('ebay-token-')) {
@@ -210,42 +205,19 @@ export const useMarketplaceIntegrations = () => {
         });
       }
 
-      // Use the integration's configured webhook URL
-      const webhookUrl = integration.webhook_url;
-      
-      if (!webhookUrl) {
-        throw new Error('No webhook URL configured for this integration');
-      }
-      
-      // Determine shop_name and platform based on integration type
-      let shopName: string;
-      let platform: string;
-      
-      if (integration.ebay_username) {
-        // For eBay integrations
-        shopName = integration.ebay_username;
-        platform = 'ebay';
-      } else {
-        // For other marketplace integrations
-        shopName = integration.client_id || integration.name;
-        platform = integration.marketplace_type;
-      }
-      
-      const requestBody = {
-        user_id: user.id,
-        shop_name: shopName,
-        platform: platform
-      };
-
-      console.log('Webhook URL:', webhookUrl);
-      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+      const webhookUrl = integration.webhook_url || 'https://hooks.zapier.com/hooks/catch/your-webhook-id/';
       
       await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        mode: 'no-cors',
+        body: JSON.stringify({
+          marketplace: integration.name,
+          action: 'sync',
+          timestamp: new Date().toISOString(),
+        }),
       });
 
       toast({
@@ -256,7 +228,7 @@ export const useMarketplaceIntegrations = () => {
       console.error('Sync error:', error);
       toast({
         title: "Sync error",
-        description: `Error during synchronization: ${error.message}`,
+        description: "Error during synchronization. Please try again.",
         variant: "destructive",
       });
     }
