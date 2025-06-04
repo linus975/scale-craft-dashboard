@@ -21,7 +21,7 @@ export class EbaySyncService {
         throw new Error('User not logged in');
       }
 
-      const webhookUrl = 'https://n8n.melemeng.com/webhook-test/Ebay_Orders';
+      const webhookUrl = 'https://n8n.melemeng.com/webhook/Ebay_Sync';
       const shopName = integration.ebay_username || integration.name;
       
       const requestBody = {
