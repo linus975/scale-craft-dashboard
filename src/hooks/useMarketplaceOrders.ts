@@ -68,10 +68,20 @@ export const useMarketplaceOrders = () => {
 
       toast({
         title: "Bestellung verarbeitet",
-        description: `Bestellung ${orderData.order_id} wurde erfolgreich gespeichert.`,
+        description: `Bestellung ${orderData.order_id} wurde erfolgreich gespeichert und automatisch als Print Job erstellt.`,
       });
 
       await fetchOrders(); // Refresh the orders list
+      
+      // Trigger a custom event to notify other components about the new print job
+      window.dispatchEvent(new CustomEvent('newPrintJobCreated', { 
+        detail: { 
+          orderId: data.id,
+          productName: orderData.product_name,
+          orderNumber: orderData.order_id
+        } 
+      }));
+      
       return data;
     } catch (error: any) {
       console.error('Error upserting marketplace order:', error);
