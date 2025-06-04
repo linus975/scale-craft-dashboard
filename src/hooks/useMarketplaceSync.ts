@@ -28,13 +28,37 @@ export const useMarketplaceSync = () => {
       return;
     }
 
-    // Check if this is an eBay integration
-    const isEbayIntegration = integration.ebay_username || integration.marketplace_type === 'ebay';
-    
-    if (isEbayIntegration) {
-      await ebaySyncService.syncEbayIntegration(integration, integrationId, updateIntegration);
-    } else {
-      await standardSyncService.syncStandardIntegration(integration, integrationId, updateIntegration);
+    setIsSyncing(prev => ({ ...prev, [integrationId]: true }));
+
+    try {
+      // Check if this is an eBay integration
+      const isEbayIntegration = integration.ebay_username || integration.marketplace_type === 'ebay';
+      
+      if (isEbayIntegration) {
+        await ebaySyncService.syncEbayIntegration(integration, integrationId, updateIntegration);
+      } else {
+        await standardSyncService.syncStandardIntegration(integration, integrationId, updateIntegration);
+      }
+
+      // Dispatch event to notify other components that sync is complete
+      window.dispatchEvent(new CustomEvent('marketplaceSyncCompleted', {
+        detail: { integrationId, integrationName: integration.name }
+      }));
+
+      toast({
+        title: "Sync abgeschlossen",
+        description: `${integration.name} wurde erfolgreich synchronisiert.`,
+      });
+
+    } catch (error) {
+      console.error('Sync error:', error);
+      toast({
+        title: "Sync Fehler",
+        description: "Fehler beim Synchronisieren der Integration.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(prev => ({ ...prev, [integrationId]: false }));
     }
   };
 

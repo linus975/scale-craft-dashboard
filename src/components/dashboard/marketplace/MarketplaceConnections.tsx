@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Globe, RefreshCw, Edit, Trash2, Clock, User } from 'lucide-react';
+import { Globe, RefreshCw, Edit, Trash2, Clock, User, Loader2 } from 'lucide-react';
 
 interface Integration {
   id: string;
@@ -33,6 +33,7 @@ interface MarketplaceConnectionsProps {
 
 const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
   integrations,
+  isSyncing,
   onSyncNow,
   onEditIntegration,
   onDeleteIntegration
@@ -167,9 +168,14 @@ const MarketplaceConnections: React.FC<MarketplaceConnectionsProps> = ({
                       size="sm" 
                       variant="outline"
                       onClick={() => onSyncNow(integration.id)}
+                      disabled={isSyncing[integration.id]}
                     >
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Sync Now
+                      {isSyncing[integration.id] ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                      )}
+                      {isSyncing[integration.id] ? 'Syncing...' : 'Sync Now'}
                     </Button>
                     <Button 
                       size="sm" 

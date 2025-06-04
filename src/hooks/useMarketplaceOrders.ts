@@ -94,6 +94,21 @@ export const useMarketplaceOrders = () => {
     }
   };
 
+  // Listen for sync completion events to refresh orders
+  useEffect(() => {
+    const handleSyncComplete = () => {
+      console.log('Sync completed, refreshing orders...');
+      fetchOrders();
+    };
+
+    // Listen for custom sync completion event
+    window.addEventListener('marketplaceSyncCompleted', handleSyncComplete);
+    
+    return () => {
+      window.removeEventListener('marketplaceSyncCompleted', handleSyncComplete);
+    };
+  }, []);
+
   useEffect(() => {
     fetchOrders();
   }, []);
