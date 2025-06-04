@@ -38,7 +38,7 @@ const AddIntegrationDialog: React.FC<AddIntegrationDialogProps> = ({
         <img 
           src="/lovable-uploads/8c476811-2af8-437a-9f0e-c124bda23526.png" 
           alt="eBay" 
-          className="w-8 h-8 object-contain"
+          className="w-10 h-10 object-contain"
         />
       );
     }
