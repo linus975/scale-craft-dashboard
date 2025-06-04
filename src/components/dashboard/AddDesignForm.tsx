@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { File } from 'lucide-react';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import DesignInformationSection from './design-edit/DesignInformationSection';
+import ColorMachineFields from './design-edit/ColorMachineFields';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
@@ -67,12 +68,16 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
   const onSubmit = async (data: FormData) => {
     try {
-      // Validate form and files
-      const validationErrors = validateForm(data);
-      if (validationErrors.length > 0) {
+      // Make files optional in validation - only validate basic required fields
+      const basicValidationErrors: string[] = [];
+      if (!data.name) basicValidationErrors.push("Design name is required");
+      if (!data.trackingType) basicValidationErrors.push("Tracking type is required");
+      if (!data.eanNumber) basicValidationErrors.push("EAN/SKU number is required");
+      
+      if (basicValidationErrors.length > 0) {
         toast({
           title: "Validation Error",
-          description: validationErrors.join(", "),
+          description: basicValidationErrors.join(", "),
           variant: "destructive",
         });
         return;
@@ -86,13 +91,20 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
       const savedDesign = await createDesign(designData);
       
-      // Create separate print jobs for each part
-      const createdJobs = await createPrintJobsFromDesign(designData, savedDesign);
-      
-      toast({
-        title: "Design and Jobs successfully created",
-        description: `The design "${data.name}" was saved with ${createdJobs.length} print job(s) created.`,
-      });
+      // Only create print jobs if files are present
+      if (fileUpload.uploadedFiles.length > 0) {
+        const createdJobs = await createPrintJobsFromDesign(designData, savedDesign);
+        
+        toast({
+          title: "Design and Jobs successfully created",
+          description: `The design "${data.name}" was saved with ${createdJobs.length} print job(s) created.`,
+        });
+      } else {
+        toast({
+          title: "Design successfully created",
+          description: `The design "${data.name}" was saved. You can add files later.`,
+        });
+      }
       
       onSave();
     } catch (error) {
@@ -134,12 +146,28 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             getValues={form.getValues}
           />
 
+          {/* Color and Machine Fields */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Farbe und Maschine (optional)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ColorMachineFields
+                colorValue={form.watch('color')}
+                machineValue={form.watch('machine')}
+                machines={machines}
+                onColorChange={(value) => form.setValue('color', value)}
+                onMachineChange={(value) => form.setValue('machine', value)}
+              />
+            </CardContent>
+          </Card>
+
           {/* File Management */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <File className="h-5 w-5" />
-                Manage Files
+                Dateien verwalten (optional)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -174,10 +202,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
+              Abbrechen
             </Button>
             <Button type="submit">
-              Save Design
+              Design speichern
             </Button>
           </div>
         </form>

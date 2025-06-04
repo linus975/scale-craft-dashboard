@@ -14,6 +14,7 @@ export type Database = {
           cad_file_path: string | null
           cad_software: string | null
           category: string
+          color: string | null
           colors: string | null
           created_at: string
           description: string | null
@@ -23,6 +24,7 @@ export type Database = {
           gcode_file_path: string | null
           id: string
           ini_file_path: string | null
+          machine: string | null
           material: string | null
           name: string
           nozzle_diameter: string | null
@@ -39,6 +41,7 @@ export type Database = {
           cad_file_path?: string | null
           cad_software?: string | null
           category: string
+          color?: string | null
           colors?: string | null
           created_at?: string
           description?: string | null
@@ -48,6 +51,7 @@ export type Database = {
           gcode_file_path?: string | null
           id?: string
           ini_file_path?: string | null
+          machine?: string | null
           material?: string | null
           name: string
           nozzle_diameter?: string | null
@@ -64,6 +68,7 @@ export type Database = {
           cad_file_path?: string | null
           cad_software?: string | null
           category?: string
+          color?: string | null
           colors?: string | null
           created_at?: string
           description?: string | null
@@ -73,6 +78,7 @@ export type Database = {
           gcode_file_path?: string | null
           id?: string
           ini_file_path?: string | null
+          machine?: string | null
           material?: string | null
           name?: string
           nozzle_diameter?: string | null

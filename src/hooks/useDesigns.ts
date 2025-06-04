@@ -40,9 +40,35 @@ export const useDesigns = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Benutzer nicht angemeldet');
 
+      // Clean the design data to match database schema
+      const cleanDesignData = {
+        name: designData.name,
+        description: designData.description || null,
+        category: designData.category,
+        design_type: designData.design_type,
+        ean_number: designData.ean_number || null,
+        tracking_type: designData.tracking_type || null,
+        cad_software: designData.cad_software || null,
+        slicer: designData.slicer || null,
+        sketch_name: designData.sketch_name || null,
+        replacement_value: designData.replacement_value || null,
+        cad_file_path: designData.cad_file_path || null,
+        ini_file_path: designData.ini_file_path || null,
+        gcode_file_path: designData.gcode_file_path || null,
+        preview_image_path: designData.preview_image_path || null,
+        nozzle_diameter: designData.nozzle_diameter || null,
+        material: designData.material || null,
+        color: designData.color || null,
+        machine: designData.machine || null,
+        version: designData.version || 'v1.0',
+        user_id: user.id
+      };
+
+      console.log('Creating design with data:', cleanDesignData);
+
       const { data, error } = await supabase
         .from('designs')
-        .insert({ ...designData, user_id: user.id })
+        .insert(cleanDesignData)
         .select()
         .single();
 

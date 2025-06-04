@@ -2,17 +2,24 @@
 import React from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ColorMachineFieldsProps {
   colorValue?: string;
   machineValue?: string;
   formControl?: any;
+  machines?: any[];
+  onColorChange?: (value: string) => void;
+  onMachineChange?: (value: string) => void;
 }
 
 const ColorMachineFields: React.FC<ColorMachineFieldsProps> = ({
   colorValue,
   machineValue,
-  formControl
+  formControl,
+  machines = [],
+  onColorChange,
+  onMachineChange
 }) => {
   if (colorValue === undefined && machineValue === undefined) {
     return null;
@@ -20,38 +27,33 @@ const ColorMachineFields: React.FC<ColorMachineFieldsProps> = ({
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      {colorValue !== undefined && formControl && (
-        <FormField
-          control={formControl}
-          name="color"
-          rules={{ required: "Color is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Color *</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter color" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      {colorValue !== undefined && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Farbe (optional)</label>
+          <Input
+            placeholder="Farbe eingeben"
+            value={colorValue}
+            onChange={(e) => onColorChange?.(e.target.value)}
+          />
+        </div>
       )}
 
-      {machineValue !== undefined && formControl && (
-        <FormField
-          control={formControl}
-          name="machine"
-          rules={{ required: "Machine is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Machine *</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter machine name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      {machineValue !== undefined && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Maschine (optional)</label>
+          <Select value={machineValue} onValueChange={onMachineChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Maschine auswählen" />
+            </SelectTrigger>
+            <SelectContent>
+              {machines.map((machine) => (
+                <SelectItem key={machine.id} value={machine.name}>
+                  {machine.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       )}
     </div>
   );
