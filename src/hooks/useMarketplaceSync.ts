@@ -41,12 +41,11 @@ export const useMarketplaceSync = () => {
           throw new Error('User not logged in');
         }
 
+        // Simple payload with just shop name, platform and user ID
         requestBody = {
           user_id: user.id,
           shop_name: integration.ebay_username || integration.name,
-          marketplace: 'eBay',
-          timestamp: new Date().toISOString(),
-          action: 'sync'
+          platform: 'ebay'
         };
         
         console.log('eBay webhook URL:', webhookUrl);
