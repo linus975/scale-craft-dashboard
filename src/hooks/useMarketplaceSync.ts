@@ -29,16 +29,23 @@ export const useMarketplaceSync = () => {
       console.log('Is eBay integration:', isEbayIntegration);
 
       if (isEbayIntegration) {
-        // For eBay integrations, use GET request with query parameters
+        // For eBay integrations, use POST request to the HTTPS URL with JSON body
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           throw new Error('User not logged in');
         }
 
+        const webhookUrl = 'https://n8n.melemeng.com/webhook-test/Ebay_Orders';
         const shopName = integration.ebay_username || integration.name;
-        const webhookUrl = `https://n8n.melemeng.com/webhook-test/Ebay_Orders?user_id=${encodeURIComponent(user.id)}&shop_name=${encodeURIComponent(shopName)}&platform=ebay`;
+        
+        const requestBody = {
+          user_id: user.id,
+          shop_name: shopName,
+          platform: 'ebay'
+        };
         
         console.log('eBay webhook URL:', webhookUrl);
+        console.log('eBay request body:', JSON.stringify(requestBody, null, 2));
 
         // Update last sync time in database first (only for non-eBay virtual integrations)
         if (!integrationId.startsWith('ebay-token-')) {
@@ -48,10 +55,14 @@ export const useMarketplaceSync = () => {
           });
         }
 
-        // Make GET request to the webhook URL
-        console.log('Making GET request to webhook...');
+        // Make POST request to the webhook URL
+        console.log('Making POST request to webhook...');
         const response = await fetch(webhookUrl, {
-          method: 'GET',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
         });
 
         // Check response status
@@ -59,7 +70,7 @@ export const useMarketplaceSync = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        console.log('Webhook GET request sent successfully');
+        console.log('Webhook POST request sent successfully');
       } else {
         const webhookUrl = integration.webhook_url;
         
