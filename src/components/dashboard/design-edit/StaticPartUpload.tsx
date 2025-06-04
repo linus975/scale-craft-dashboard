@@ -40,7 +40,7 @@ const StaticPartUpload: React.FC<StaticPartUploadProps> = ({
         accept=".gcode,.g"
         extensions=".gcode, .g"
         inputId={`fileUpload-${partId}`}
-        required={true}
+        required={false}
         partId={partId}
         uploading={uploading}
         uploadedFiles={uploadedFiles}
@@ -51,12 +51,12 @@ const StaticPartUpload: React.FC<StaticPartUploadProps> = ({
       <div className="grid grid-cols-2 gap-2 mt-3">
         <NozzleDiameterInput
           id={`staticNozzleDiameter-${partId}`}
-          required={true}
+          required={false}
           onChange={handleNozzleDiameterChange}
         />
         <FilamentSelector
           id={`staticFilamentType-${partId}`}
-          required={true}
+          required={false}
           onChange={handleFilamentTypeChange}
         />
       </div>

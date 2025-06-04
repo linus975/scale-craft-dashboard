@@ -53,7 +53,7 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
           accept=".f3d"
           extensions=".f3d"
           inputId={`cadFileUpload-${partId}`}
-          required={true}
+          required={false}
           partId={partId}
           uploading={uploading}
           uploadedFiles={uploadedFiles}
@@ -67,7 +67,7 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
           accept=".ini"
           extensions=".ini"
           inputId={`iniFileUpload-${partId}`}
-          required={true}
+          required={false}
           partId={partId}
           uploading={uploading}
           uploadedFiles={uploadedFiles}
@@ -83,12 +83,12 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
       <div className="grid grid-cols-2 gap-4">
         <NozzleDiameterInput
           id={`personalizedNozzleDiameter-${partId}`}
-          required={true}
+          required={false}
           onChange={handleNozzleDiameterChange}
         />
         <FilamentSelector
           id={`personalizedFilamentType-${partId}`}
-          required={true}
+          required={false}
           onChange={handleFilamentTypeChange}
         />
       </div>

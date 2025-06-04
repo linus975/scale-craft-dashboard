@@ -61,14 +61,14 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         {title} {required && <span className="text-red-500">*</span>}
       </Label>
       <div className={`border-2 border-dashed rounded-lg p-4 text-center ${
-        required && !hasExactlyOne 
+        tooManyFiles 
           ? 'border-red-300 bg-red-50' 
           : hasFiles 
             ? 'border-green-300 bg-green-50' 
             : 'border-gray-300'
       }`}>
         <Upload className={`h-6 w-6 mx-auto mb-2 ${
-          required && !hasExactlyOne ? 'text-red-400' : 'text-gray-400'
+          tooManyFiles ? 'text-red-400' : 'text-gray-400'
         }`} />
         
         {tooManyFiles && (
@@ -78,15 +78,8 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           </div>
         )}
         
-        {required && !hasFiles && (
-          <div className="flex items-center justify-center gap-1 mb-2 text-red-600">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">This file is required</span>
-          </div>
-        )}
-        
         <p className="text-sm text-gray-600 mb-2">
-          Upload {extensions} files
+          Upload {extensions} files {!required && '(optional)'}
         </p>
         
         {hasFiles && (
