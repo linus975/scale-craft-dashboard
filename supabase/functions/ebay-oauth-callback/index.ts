@@ -183,8 +183,8 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get eBay user info to get the eBay account ID
-    let ebayAccountId = 'unknown';
+    // Get eBay user info to get the eBay username
+    let ebayUsername = 'unknown';
     try {
       const userResponse = await fetch('https://apiz.ebay.com/commerce/identity/v1/user/', {
         headers: {
@@ -195,7 +195,7 @@ serve(async (req) => {
       
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        ebayAccountId = userData.userId || userData.username || 'unknown';
+        ebayUsername = userData.userId || userData.username || 'unknown';
         console.log('eBay user data:', userData);
       }
     } catch (error) {
@@ -206,19 +206,21 @@ serve(async (req) => {
     const accessTokenExpires = new Date(Date.now() + (tokenData.expires_in * 1000));
     const refreshTokenExpires = new Date(Date.now() + (tokenData.refresh_token_expires_in * 1000));
 
-    // Store the OAuth token in ebay_oauth_tokens table
+    // Store the OAuth token in ebay_oauth_tokens table using ebay_username instead of ebay_account_id
     const { data: oauthToken, error: oauthError } = await supabase
       .from('ebay_oauth_tokens')
       .upsert({
         user_id: state,
-        ebay_account_id: ebayAccountId,
+        ebay_username: ebayUsername, // Changed from ebay_account_id to ebay_username
         access_token: tokenData.access_token,
         access_token_expires: accessTokenExpires.toISOString(),
         refresh_token: tokenData.refresh_token,
         refresh_token_expires: refreshTokenExpires.toISOString(),
-        scope: tokenData.scope || 'https://api.ebay.com/oauth/api_scope'
+        scope: tokenData.scope || 'https://api.ebay.com/oauth/api_scope',
+        expires_in: tokenData.expires_in,
+        refresh_token_expires_in: tokenData.refresh_token_expires_in
       }, {
-        onConflict: 'user_id,ebay_account_id'
+        onConflict: 'user_id,ebay_username' // Updated conflict resolution
       })
       .select()
       .single();
@@ -260,17 +262,15 @@ serve(async (req) => {
       .from('marketplace_integrations')
       .insert({
         user_id: state,
-        name: `eBay - ${ebayAccountId}`,
+        name: `eBay (${ebayUsername})`, // Use ebayUsername here
         marketplace_type: 'ebay',
         client_id: clientId,
         api_key: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
         webhook_url: 'https://n8n.melemeng.com/webhook/Ebay_Sync',
         sync_frequency: 'hourly',
         icon: '🛒',
         status: 'connected',
-        last_sync: new Date().toISOString(),
-        token_expires_at: accessTokenExpires.toISOString()
+        last_sync: new Date().toISOString()
       })
       .select()
       .single();
@@ -321,7 +321,7 @@ serve(async (req) => {
         </head>
         <body>
           <h2 class="success">🎉 eBay Integration Successful!</h2>
-          <p>Your eBay account "${ebayAccountId}" has been successfully connected.</p>
+          <p>Your eBay account "${ebayUsername}" has been successfully connected.</p>
           <p class="info">You can now close this window and return to the application.</p>
           <script>
             // Try to communicate with parent window if this is a popup
