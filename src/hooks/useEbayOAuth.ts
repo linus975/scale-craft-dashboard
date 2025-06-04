@@ -49,39 +49,42 @@ export const useEbayOAuth = () => {
       // Generate unique state to force new authorization and track user
       const uniqueState = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Construct eBay OAuth URL with parameters to force both login and consent
+      // Construct eBay OAuth URL with parameters to force login screen every time
       const ebayAuthUrl = `https://auth.ebay.com/oauth2/authorize?` +
         `client_id=FloatCra-n8n-PRD-5b004feb6-52b5e1c1&` +
         `response_type=code&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `scope=${encodeURIComponent(scopes.join(' '))}&` +
         `state=${encodeURIComponent(uniqueState)}&` +
-        `prompt=consent&` +
-        `approval_prompt=force`;
+        `prompt=login`;
 
-      console.log('Opening eBay OAuth URL with forced login and consent:', ebayAuthUrl);
+      console.log('Opening eBay OAuth URL with forced login:', ebayAuthUrl);
       
-      // Clear any existing eBay cookies/session in the popup to ensure fresh login
-      const popup = window.open(
-        'about:blank',
-        'ebayAuth', 
-        'width=600,height=700,scrollbars=yes,resizable=yes'
-      );
+      // Open popup and clear any existing session data to force fresh login
+      const popup = window.open('', 'ebayAuth', 'width=600,height=700,scrollbars=yes,resizable=yes');
 
       if (popup) {
-        // Clear storage and navigate to eBay auth
+        // Clear all storage and cookies, then navigate to eBay auth
         popup.document.write(`
           <html>
-            <head><title>Redirecting to eBay...</title></head>
-            <body>
-              <p>Redirecting to eBay login...</p>
+            <head><title>Connecting to eBay...</title></head>
+            <body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
+              <h3>Connecting to eBay...</h3>
+              <p>Please wait while we redirect you to eBay login...</p>
               <script>
+                // Clear all possible storage
                 if (window.localStorage) window.localStorage.clear();
                 if (window.sessionStorage) window.sessionStorage.clear();
                 
+                // Clear cookies
+                document.cookie.split(";").forEach(function(c) { 
+                  document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                
+                // Navigate to eBay auth after clearing
                 setTimeout(() => {
                   window.location.href = '${ebayAuthUrl}';
-                }, 100);
+                }, 500);
               </script>
             </body>
           </html>
