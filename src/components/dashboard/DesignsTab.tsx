@@ -26,6 +26,15 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  // Debug logging
+  console.log('🎨 DesignsTab render:', { 
+    designsCount: designs.length, 
+    loading, 
+    searchTerm, 
+    selectedCategory, 
+    selectedType 
+  });
+
   const filteredDesigns = designs.filter(design => {
     const matchesSearch = design.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          design.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,6 +45,8 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
     
     return matchesSearch && matchesCategory && matchesType;
   });
+
+  console.log('🔍 Filtered designs:', filteredDesigns.length);
 
   const categories = [...new Set(designs.map(design => design.category))];
 
@@ -96,7 +107,14 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading designs...</div>;
+    return (
+      <div className="flex justify-center items-center p-8 min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Designs werden geladen...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -122,14 +140,42 @@ const DesignsTab: React.FC<DesignsTabProps> = ({ onNavigateToWhitelabelCatalog }
         categories={categories}
       />
 
-      <DesignsGrid
-        filteredDesigns={filteredDesigns}
-        isSelectionMode={isSelectionMode}
-        selectedDesigns={selectedDesigns}
-        onSelectDesign={handleSelectDesign}
-        onConfigureDesign={handleConfigureDesign}
-        onDownloadDesign={handleDownloadDesign}
-      />
+      {designs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-12 text-center">
+          <div className="bg-gray-100 rounded-full p-4 mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Designs vorhanden</h3>
+          <p className="text-gray-500 mb-4">Erstellen Sie Ihr erstes Design, um zu beginnen.</p>
+          <button
+            onClick={() => setShowAddDialog(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Erstes Design erstellen
+          </button>
+        </div>
+      ) : filteredDesigns.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-12 text-center">
+          <div className="bg-gray-100 rounded-full p-4 mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Designs gefunden</h3>
+          <p className="text-gray-500">Versuchen Sie es mit anderen Suchbegriffen oder Filtern.</p>
+        </div>
+      ) : (
+        <DesignsGrid
+          filteredDesigns={filteredDesigns}
+          isSelectionMode={isSelectionMode}
+          selectedDesigns={selectedDesigns}
+          onSelectDesign={handleSelectDesign}
+          onConfigureDesign={handleConfigureDesign}
+          onDownloadDesign={handleDownloadDesign}
+        />
+      )}
 
       <WhitelabelPromoCard onNavigateToWhitelabelCatalog={onNavigateToWhitelabelCatalog} />
 

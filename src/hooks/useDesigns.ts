@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,20 +17,50 @@ export const useDesigns = () => {
 
   const fetchDesigns = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('🔍 Starting to fetch designs...');
+      
+      // First check if user is authenticated
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('👤 Current user:', user?.id, authError);
+      
+      if (authError) {
+        console.error('❌ Auth error:', authError);
+        throw authError;
+      }
+
+      if (!user) {
+        console.log('⚠️ No authenticated user found');
+        setDesigns([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log('📊 Fetching designs for user:', user.id);
+      
+      // Try to fetch designs
+      const { data, error, count } = await supabase
         .from('designs')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('📈 Query result:', { data, error, count });
+      console.log('📋 Designs data:', data);
+
+      if (error) {
+        console.error('❌ Database error:', error);
+        throw error;
+      }
+
+      console.log(`✅ Successfully fetched ${data?.length || 0} designs`);
       setDesigns(data || []);
     } catch (error: any) {
-      console.error('Error fetching designs:', error);
+      console.error('💥 Error in fetchDesigns:', error);
       toast({
         title: "Fehler beim Laden der Designs",
-        description: error.message,
+        description: error.message || "Unbekannter Fehler beim Laden der Designs",
         variant: "destructive",
       });
+      setDesigns([]);
     } finally {
       setLoading(false);
     }
@@ -39,6 +70,8 @@ export const useDesigns = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Benutzer nicht angemeldet');
+
+      console.log('🔨 Creating design with data:', designData);
 
       // Clean the design data to match database schema
       const cleanDesignData = {
@@ -64,7 +97,7 @@ export const useDesigns = () => {
         user_id: user.id
       };
 
-      console.log('Creating design with data:', cleanDesignData);
+      console.log('💾 Inserting clean design data:', cleanDesignData);
 
       const { data, error } = await supabase
         .from('designs')
@@ -72,7 +105,12 @@ export const useDesigns = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Insert error:', error);
+        throw error;
+      }
+
+      console.log('✅ Design created successfully:', data);
 
       // Create EAN mapping if EAN number is provided
       if (data.ean_number && data.tracking_type) {
@@ -83,10 +121,9 @@ export const useDesigns = () => {
             design_id: data.id
           });
           
-          console.log('EAN mapping created successfully for design:', data.name);
+          console.log('✅ EAN mapping created successfully for design:', data.name);
         } catch (mappingError) {
-          console.error('Error creating EAN mapping:', mappingError);
-          // Don't fail the design creation if EAN mapping fails
+          console.error('❌ Error creating EAN mapping:', mappingError);
           toast({
             title: "Warnung",
             description: "Design wurde erstellt, aber EAN-Mapping konnte nicht gespeichert werden.",
@@ -103,7 +140,7 @@ export const useDesigns = () => {
 
       return data;
     } catch (error: any) {
-      console.error('Error creating design:', error);
+      console.error('💥 Error creating design:', error);
       toast({
         title: "Fehler beim Erstellen des Designs",
         description: error.message,
@@ -171,6 +208,7 @@ export const useDesigns = () => {
   };
 
   useEffect(() => {
+    console.log('🚀 useDesigns hook mounted, fetching designs...');
     fetchDesigns();
   }, []);
 
