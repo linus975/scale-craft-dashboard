@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { File } from 'lucide-react';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import DesignInformationSection from './design-edit/DesignInformationSection';
-import ColorMachineFields from './design-edit/ColorMachineFields';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
@@ -29,8 +28,6 @@ interface FormData {
   eanNumber: string;
   description: string;
   category: string;
-  color: string;
-  machine: string;
 }
 
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
@@ -44,9 +41,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       trackingType: '',
       eanNumber: '',
       description: '',
-      category: '',
-      color: '',
-      machine: ''
+      category: ''
     }
   });
 
@@ -146,22 +141,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             getValues={form.getValues}
           />
 
-          {/* Color and Machine Fields */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Farbe und Maschine (optional)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ColorMachineFields
-                colorValue={form.watch('color')}
-                machineValue={form.watch('machine')}
-                machines={machines}
-                onColorChange={(value) => form.setValue('color', value)}
-                onMachineChange={(value) => form.setValue('machine', value)}
-              />
-            </CardContent>
-          </Card>
-
           {/* File Management */}
           <Card>
             <CardHeader>
@@ -191,10 +170,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onPartSoftwareChange={designParts.handlePartSoftwareChange}
                 onPartSpecificationChange={designParts.handlePartSpecificationChange}
                 validatePartFiles={(part) => designParts.validatePartFiles(part, fileUpload.uploadedFiles)}
-                colorValue={form.watch('color')}
-                machineValue={form.watch('machine')}
+                colorValue=""
+                machineValue=""
                 machines={machines}
                 formControl={form.control}
+                onColorChange={(value) => console.log('Color changed:', value)}
+                onMachineChange={(value) => console.log('Machine changed:', value)}
               />
             </CardContent>
           </Card>

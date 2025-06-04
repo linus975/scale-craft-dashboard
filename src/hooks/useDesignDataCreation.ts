@@ -8,8 +8,6 @@ interface FormData {
   eanNumber: string;
   description: string;
   category: string;
-  color: string;
-  machine: string;
 }
 
 export const useDesignDataCreation = (
@@ -32,8 +30,6 @@ export const useDesignDataCreation = (
       ean_number: data.eanNumber,
       description: data.description || null,
       category: data.category,
-      color: data.color || null,
-      machine: data.machine || null,
       design_type: mainPart?.partType || 'static',
       // Store F3D and INI files separately in database
       cad_file_path: f3dFile?.path || null,
