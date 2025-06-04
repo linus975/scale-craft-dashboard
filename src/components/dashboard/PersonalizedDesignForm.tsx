@@ -53,15 +53,11 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const mainPartFiles = uploadedFiles.filter(f => f.partId === 'main' || !f.partId);
-    const hasF3D = mainPartFiles.some(f => f.name.toLowerCase().endsWith('.f3d'));
-    const hasINI = mainPartFiles.some(f => f.name.toLowerCase().endsWith('.ini'));
-    
-    if (!formData.name || !formData.trackingNumber || !formData.category || !formData.cadSoftware || 
-        !formData.slicerSoftware || !hasF3D || !hasINI) {
+    // Only check required basic fields - files and software are now optional
+    if (!formData.name || !formData.trackingNumber || !formData.category) {
       toast({
         title: "Fehlende Angaben",
-        description: "Bitte füllen Sie alle Pflichtfelder aus und laden Sie F3D- und INI-Dateien hoch.",
+        description: "Bitte füllen Sie alle Pflichtfelder aus (Name, Tracking-Nummer und Kategorie).",
         variant: "destructive",
       });
       return;
@@ -69,12 +65,9 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
 
     setLoading(true);
     try {
+      const mainPartFiles = uploadedFiles.filter(f => f.partId === 'main' || !f.partId);
       const f3dFile = mainPartFiles.find(f => f.name.toLowerCase().endsWith('.f3d'));
       const iniFile = mainPartFiles.find(f => f.name.toLowerCase().endsWith('.ini'));
-
-      if (!f3dFile || !iniFile) {
-        throw new Error('F3D- und INI-Dateien sind erforderlich');
-      }
 
       let previewImagePath = null;
       if (previewImage) {
@@ -90,11 +83,11 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
         design_type: 'personalized',
         ean_number: formData.trackingNumber,
         tracking_type: formData.trackingType,
-        cad_software: formData.cadSoftware,
-        sketch_name: mainPartParams.sketchName,
-        replacement_value: mainPartParams.replacementValue,
-        cad_file_path: f3dFile.path,
-        ini_file_path: iniFile.path,
+        cad_software: formData.cadSoftware || null,
+        sketch_name: mainPartParams.sketchName || null,
+        replacement_value: mainPartParams.replacementValue || null,
+        cad_file_path: f3dFile?.path || null,
+        ini_file_path: iniFile?.path || null,
         preview_image_path: previewImagePath
       });
 
@@ -214,7 +207,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
       <CardHeader>
         <CardTitle>Personalisierbares Design hinzufügen</CardTitle>
         <CardDescription>
-          Laden Sie Ihre CAD-Datei hoch und konfigurieren Sie die Personalisierungseinstellungen
+          Erstellen Sie ein neues personalisierbares Design. Dateien sind optional und können später hinzugefügt werden.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -263,7 +256,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
 
           {/* Preview Image Upload */}
           <div className="space-y-2">
-            <Label htmlFor="previewImage">Vorschaubild</Label>
+            <Label htmlFor="previewImage">Vorschaubild (optional)</Label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
               <Image className="h-8 w-8 mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 mb-2">
@@ -289,7 +282,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
           {/* Description and Category */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="description">Beschreibung</Label>
+              <Label htmlFor="description">Beschreibung (optional)</Label>
               <Textarea
                 id="description"
                 placeholder="Beschreiben Sie Ihr Design..."
@@ -311,11 +304,11 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
             </div>
           </div>
 
-          {/* CAD and Slicer Software */}
+          {/* CAD and Slicer Software - now optional */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cadSoftware">CAD-Software *</Label>
-              <Select onValueChange={(value) => handleSelectChange('cadSoftware', value)} required>
+              <Label htmlFor="cadSoftware">CAD-Software (optional)</Label>
+              <Select onValueChange={(value) => handleSelectChange('cadSoftware', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="CAD-Software auswählen" />
                 </SelectTrigger>
@@ -330,8 +323,8 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="slicerSoftware">Slicer-Software *</Label>
-              <Select onValueChange={(value) => handleSelectChange('slicerSoftware', value)} required>
+              <Label htmlFor="slicerSoftware">Slicer-Software (optional)</Label>
+              <Select onValueChange={(value) => handleSelectChange('slicerSoftware', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Slicer-Software auswählen" />
                 </SelectTrigger>
@@ -351,17 +344,21 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
           <Separator />
 
           {/* Multi-Part File Management */}
-          <MultiPartFileManager
-            uploadedFiles={uploadedFiles}
-            loadingFiles={false}
-            uploading={uploading}
-            onFileUpload={handleFileUpload}
-            onFileRemove={handleFileRemove}
-            onFileDownload={handleFileDownload}
-            onPartParametersChange={handlePartParametersChange}
-            selectedPartId={selectedPartId}
-            onPartSelect={setSelectedPartId}
-          />
+          <div className="space-y-2">
+            <Label>Dateien (optional)</Label>
+            <p className="text-sm text-gray-600">Sie können Dateien jetzt oder später hinzufügen</p>
+            <MultiPartFileManager
+              uploadedFiles={uploadedFiles}
+              loadingFiles={false}
+              uploading={uploading}
+              onFileUpload={handleFileUpload}
+              onFileRemove={handleFileRemove}
+              onFileDownload={handleFileDownload}
+              onPartParametersChange={handlePartParametersChange}
+              selectedPartId={selectedPartId}
+              onPartSelect={setSelectedPartId}
+            />
+          </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">

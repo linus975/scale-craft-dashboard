@@ -48,12 +48,11 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const gcodeFiles = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.gcode') || f.name.toLowerCase().endsWith('.g'));
-    
-    if (!formData.name || !formData.trackingNumber || !formData.category || gcodeFiles.length === 0) {
+    // Only check required fields - files are now optional
+    if (!formData.name || !formData.trackingNumber || !formData.category) {
       toast({
         title: "Fehlende Angaben",
-        description: "Bitte füllen Sie alle Pflichtfelder aus und laden Sie mindestens eine G-Code Datei hoch.",
+        description: "Bitte füllen Sie alle Pflichtfelder aus (Name, Tracking-Nummer und Kategorie).",
         variant: "destructive",
       });
       return;
@@ -61,7 +60,8 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
 
     setLoading(true);
     try {
-      const mainGcodeFile = gcodeFiles[0];
+      const gcodeFiles = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.gcode') || f.name.toLowerCase().endsWith('.g'));
+      const mainGcodeFile = gcodeFiles.length > 0 ? gcodeFiles[0] : null;
 
       let previewImagePath = null;
       if (previewImage) {
@@ -73,7 +73,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         description: formData.description || null,
         category: formData.category,
         design_type: 'static',
-        gcode_file_path: mainGcodeFile.path,
+        gcode_file_path: mainGcodeFile?.path || null,
         ean_number: formData.trackingNumber,
         tracking_type: formData.trackingType,
         preview_image_path: previewImagePath
@@ -181,7 +181,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
       <CardHeader>
         <CardTitle>Statisches Design hinzufügen</CardTitle>
         <CardDescription>
-          Laden Sie Ihre G-Code Datei hoch und konfigurieren Sie die Druckeinstellungen für dieses statische Design
+          Erstellen Sie ein neues statisches Design. Dateien sind optional und können später hinzugefügt werden.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -230,7 +230,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
 
           {/* Preview Image Upload */}
           <div className="space-y-2">
-            <Label htmlFor="previewImage">Vorschaubild</Label>
+            <Label htmlFor="previewImage">Vorschaubild (optional)</Label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
               <Image className="h-8 w-8 mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 mb-2">
@@ -256,7 +256,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
           {/* Description and Category */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="description">Beschreibung</Label>
+              <Label htmlFor="description">Beschreibung (optional)</Label>
               <Textarea
                 id="description"
                 placeholder="Beschreiben Sie Ihr Design..."
@@ -281,16 +281,20 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
           <Separator />
 
           {/* Multi-Part File Management */}
-          <MultiPartFileManager
-            uploadedFiles={uploadedFiles}
-            loadingFiles={false}
-            uploading={uploading}
-            onFileUpload={handleFileUpload}
-            onFileRemove={handleFileRemove}
-            onFileDownload={handleFileDownload}
-            selectedPartId={selectedPartId}
-            onPartSelect={setSelectedPartId}
-          />
+          <div className="space-y-2">
+            <Label>Dateien (optional)</Label>
+            <p className="text-sm text-gray-600">Sie können Dateien jetzt oder später hinzufügen</p>
+            <MultiPartFileManager
+              uploadedFiles={uploadedFiles}
+              loadingFiles={false}
+              uploading={uploading}
+              onFileUpload={handleFileUpload}
+              onFileRemove={handleFileRemove}
+              onFileDownload={handleFileDownload}
+              selectedPartId={selectedPartId}
+              onPartSelect={setSelectedPartId}
+            />
+          </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
