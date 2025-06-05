@@ -210,7 +210,9 @@ export const useDesignFileUpload = () => {
     if (!previewImage) return null;
     
     try {
+      console.log('Uploading preview image:', previewImage.name);
       const path = await uploadFile(previewImage, 'preview-images');
+      console.log('Preview image uploaded to path:', path);
       return path;
     } catch (error) {
       console.error('Error uploading preview image:', error);
@@ -224,7 +226,9 @@ export const useDesignFileUpload = () => {
     if (!gcodeFile) return { path: null, content: null };
 
     try {
+      console.log('Uploading G-Code file:', gcodeFile.name);
       const path = await uploadFile(gcodeFile, 'gcode-files');
+      console.log('G-Code file uploaded to path:', path);
       
       // Read file content
       const content = await new Promise<string>((resolve, reject) => {

@@ -122,11 +122,17 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
       // Upload multi-images if exists
       if (multiImageUpload.images.length > 0) {
-        console.log('Using first multi-image as preview...');
-        // For now, we'll use the first image as preview
-        const firstImage = multiImageUpload.images[0];
-        if (!previewImagePath) {
-          previewImagePath = firstImage.file.name; // This would be the actual uploaded path in production
+        console.log('Uploading multi-images...');
+        // Upload first image as preview if no preview image was set
+        if (!previewImagePath && multiImageUpload.images[0]) {
+          const firstImageFile = multiImageUpload.images[0].file;
+          try {
+            const { uploadFile } = fileUpload;
+            previewImagePath = await uploadFile(firstImageFile, 'preview-images');
+            console.log('First multi-image uploaded as preview:', previewImagePath);
+          } catch (error) {
+            console.error('Error uploading first multi-image as preview:', error);
+          }
         }
       }
 
