@@ -1,15 +1,16 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 export const useDesignFileUpload = () => {
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
-  // Change to store G-code files per part
   const [gcodeFiles, setGcodeFiles] = useState<Record<string, File>>({});
   
   const { toast } = useToast();
+  const { uploadFile } = useFileUpload();
 
   const handlePreviewImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -61,15 +62,16 @@ export const useDesignFileUpload = () => {
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, partId?: string, expectedFileType?: 'f3d' | 'ini' | 'gcode') => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partId?: string, expectedFileType?: 'f3d' | 'ini' | 'gcode') => {
     const files = event.target.files;
     if (!files) return;
 
     setUploading(true);
     
-    // Simulate file upload
-    setTimeout(() => {
-      const newFiles = Array.from(files).map(file => {
+    try {
+      const newFiles = [];
+      
+      for (const file of Array.from(files)) {
         const fileExtension = file.name.split('.').pop()?.toLowerCase();
         
         // Validate file type if expectedFileType is specified
@@ -80,8 +82,7 @@ export const useDesignFileUpload = () => {
               description: "Please upload a .f3d file for CAD.",
               variant: "destructive",
             });
-            setUploading(false);
-            return null;
+            continue;
           }
           
           if (expectedFileType === 'ini' && fileExtension !== 'ini') {
@@ -90,8 +91,7 @@ export const useDesignFileUpload = () => {
               description: "Please upload a .ini file for configuration.",
               variant: "destructive",
             });
-            setUploading(false);
-            return null;
+            continue;
           }
           
           if (expectedFileType === 'gcode' && !['gcode', 'g'].includes(fileExtension || '')) {
@@ -100,36 +100,33 @@ export const useDesignFileUpload = () => {
               description: "Please upload a .gcode or .g file.",
               variant: "destructive",
             });
-            setUploading(false);
-            return null;
+            continue;
           }
         }
+
+        // Upload file to Supabase Storage
+        const filePath = await uploadFile(file, `designs/${partId || 'main'}`);
         
-        return {
+        const newFile = {
           id: Date.now() + Math.random() + '',
           name: file.name,
           type: getFileType(file.name),
           size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
           uploadDate: new Date().toISOString().split('T')[0],
-          path: `temp/${file.name}`,
+          path: filePath,
           originalName: file.name,
           partId: partId || 'main',
           designType: 'static' as const,
           fileExtension: fileExtension,
-          // Separate storage for F3D and INI files
           isF3DFile: fileExtension === 'f3d',
           isINIFile: fileExtension === 'ini',
-          // Add upload context to distinguish between different upload areas
           uploadContext: expectedFileType || 'general'
         };
-      }).filter(file => file !== null);
 
-      if (newFiles.length === 0) {
-        setUploading(false);
-        return;
+        newFiles.push(newFile);
       }
 
-      // Remove existing files of the same type and part to ensure only one F3D and one INI per part
+      // Remove existing files of the same type and part
       setUploadedFiles(prev => {
         const filteredPrev = prev.filter(existingFile => {
           const newFileTypes = newFiles.map(nf => ({ 
@@ -146,13 +143,20 @@ export const useDesignFileUpload = () => {
         return [...filteredPrev, ...newFiles];
       });
 
-      setUploading(false);
-      
       toast({
         title: "Files uploaded",
-        description: `${files.length} file(s) were successfully uploaded.`,
+        description: `${newFiles.length} file(s) were successfully uploaded.`,
       });
-    }, 1000);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast({
+        title: "Upload error",
+        description: "There was an error uploading the files.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
 
     event.target.value = '';
   };
@@ -197,9 +201,44 @@ export const useDesignFileUpload = () => {
     });
   };
 
-  // Helper function to get G-code file for specific part
   const getGcodeFileForPart = (partId: string) => {
     return gcodeFiles[partId] || null;
+  };
+
+  // Upload preview image to storage and return path
+  const uploadPreviewImage = async (): Promise<string | null> => {
+    if (!previewImage) return null;
+    
+    try {
+      const path = await uploadFile(previewImage, 'preview-images');
+      return path;
+    } catch (error) {
+      console.error('Error uploading preview image:', error);
+      throw error;
+    }
+  };
+
+  // Upload G-Code file to storage and return path and content
+  const uploadGcodeFile = async (partId: string): Promise<{ path: string | null; content: string | null }> => {
+    const gcodeFile = gcodeFiles[partId];
+    if (!gcodeFile) return { path: null, content: null };
+
+    try {
+      const path = await uploadFile(gcodeFile, 'gcode-files');
+      
+      // Read file content
+      const content = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsText(gcodeFile);
+      });
+
+      return { path, content };
+    } catch (error) {
+      console.error('Error uploading G-Code file:', error);
+      throw error;
+    }
   };
 
   return {
@@ -215,6 +254,8 @@ export const useDesignFileUpload = () => {
     handleFileRemove,
     handleFileDownload,
     removeGcodeFile,
-    getGcodeFileForPart
+    getGcodeFileForPart,
+    uploadPreviewImage,
+    uploadGcodeFile
   };
 };

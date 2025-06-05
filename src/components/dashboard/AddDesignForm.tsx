@@ -41,6 +41,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   // State for color and machine
   const [colorValue, setColorValue] = useState('');
   const [machineValue, setMachineValue] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -88,19 +89,13 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     form.setValue('machine', value);
   };
 
-  // Helper function to read file content as text
-  const readFileAsText = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
-      reader.onerror = reject;
-      reader.readAsText(file);
-    });
-  };
-
   const onSubmit = async (data: FormData) => {
+    if (saving) return; // Prevent double submission
+    
     try {
-      // Make files optional in validation - only validate basic required fields
+      setSaving(true);
+      
+      // Basic validation
       const basicValidationErrors: string[] = [];
       if (!data.name) basicValidationErrors.push("Design name is required");
       if (!data.trackingType) basicValidationErrors.push("Tracking type is required");
@@ -115,6 +110,39 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         return;
       }
 
+      console.log('Starting design save process...');
+
+      // Upload preview image if exists
+      let previewImagePath = null;
+      if (fileUpload.previewImage) {
+        console.log('Uploading preview image...');
+        previewImagePath = await fileUpload.uploadPreviewImage();
+        console.log('Preview image uploaded:', previewImagePath);
+      }
+
+      // Upload multi-images if exists
+      if (multiImageUpload.images.length > 0) {
+        console.log('Using first multi-image as preview...');
+        // For now, we'll use the first image as preview
+        const firstImage = multiImageUpload.images[0];
+        if (!previewImagePath) {
+          previewImagePath = firstImage.file.name; // This would be the actual uploaded path in production
+        }
+      }
+
+      // Upload G-Code file and get content for the main part
+      let gcodeFilePath = null;
+      let gcodeContent = null;
+      
+      const mainPartGcodeFile = fileUpload.getGcodeFileForPart(designParts.activePart);
+      if (mainPartGcodeFile) {
+        console.log('Uploading G-Code file...');
+        const gcodeResult = await fileUpload.uploadGcodeFile(designParts.activePart);
+        gcodeFilePath = gcodeResult.path;
+        gcodeContent = gcodeResult.content;
+        console.log('G-Code uploaded:', gcodeFilePath);
+      }
+
       // Include color and machine in the data
       const designDataWithColorMachine = {
         ...data,
@@ -122,45 +150,18 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         machine: machineValue
       };
 
+      // Create design data
       let designData = createDesignData(designDataWithColorMachine);
-
-      // Read G-Code file content for the main part if available
-      const mainPartGcodeFile = fileUpload.getGcodeFileForPart(designParts.activePart);
-      if (mainPartGcodeFile) {
-        try {
-          const gcodeContent = await readFileAsText(mainPartGcodeFile);
-          designData = {
-            ...designData,
-            gcode: gcodeContent
-          };
-        } catch (error) {
-          console.error('Error reading G-Code file:', error);
-          toast({
-            title: "Error reading G-Code file",
-            description: "Could not read the G-Code file content.",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
-      // Add image data if any images are uploaded
-      if (multiImageUpload.images.length > 0) {
-        // For now, we'll just take the first image as preview_image_path
-        // In a real implementation, you'd upload all images to storage
-        const firstImage = multiImageUpload.images[0];
-        designData = {
-          ...designData,
-          preview_image_path: firstImage.file.name // This would be the actual uploaded path in production
-        };
-      }
+      
+      // Override with uploaded file paths and content
+      designData = {
+        ...designData,
+        preview_image_path: previewImagePath,
+        gcode_file_path: gcodeFilePath,
+        gcode: gcodeContent
+      };
 
       console.log('Saving design with data:', designData);
-      console.log('Design Parts:', designParts.designParts);
-      console.log('Uploaded files:', fileUpload.uploadedFiles);
-      console.log('G-Code files:', fileUpload.gcodeFiles);
-      console.log('Images:', multiImageUpload.images);
-      console.log('Color:', colorValue, 'Machine:', machineValue);
 
       const savedDesign = await createDesign(designData);
       
@@ -175,7 +176,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       } else {
         toast({
           title: "Design successfully created",
-          description: `The design "${data.name}" was saved. You can add files later.`,
+          description: `The design "${data.name}" was saved.`,
         });
       }
       
@@ -184,9 +185,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       console.error('Error creating design:', error);
       toast({
         title: "Error creating design",
-        description: "There was an error saving the design.",
+        description: "There was an error saving the design. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -265,11 +268,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
               Abbrechen
             </Button>
-            <Button type="submit">
-              Design speichern
+            <Button type="submit" disabled={saving || fileUpload.uploading}>
+              {saving ? 'Wird gespeichert...' : 'Design speichern'}
             </Button>
           </div>
         </form>
