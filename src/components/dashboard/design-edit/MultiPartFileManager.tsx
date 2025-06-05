@@ -58,6 +58,9 @@ interface MultiPartFileManagerProps {
   onMachineChange?: (value: string) => void;
   machines?: Array<{ id: string; name: string }>;
   formControl?: any;
+  gcodeFile?: File | null;
+  onGcodeFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveGcodeFile?: () => void;
 }
 
 const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
@@ -86,6 +89,9 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   onMachineChange,
   machines = [],
   formControl,
+  gcodeFile,
+  onGcodeFileChange,
+  onRemoveGcodeFile
 }) => {
   const {
     designParts,
@@ -153,6 +159,9 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
             handlePartParametersChange(partId, field, value, onPartParametersChange)
           }
           onPartSpecificationChange={onPartSpecificationChange}
+          gcodeFile={gcodeFile}
+          onGcodeFileChange={onGcodeFileChange}
+          onRemoveGcodeFile={onRemoveGcodeFile}
         />
       )}
     </div>

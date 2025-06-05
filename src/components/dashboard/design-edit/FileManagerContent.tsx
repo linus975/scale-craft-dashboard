@@ -42,6 +42,9 @@ interface FileManagerContentProps {
   onFileDownload: (file: UploadedFile) => void;
   onPartParametersChange: (partId: string, field: string, value: string) => void;
   onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
+  gcodeFile?: File | null;
+  onGcodeFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveGcodeFile?: () => void;
 }
 
 const FileManagerContent: React.FC<FileManagerContentProps> = ({
@@ -54,7 +57,10 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   onFileRemove,
   onFileDownload,
   onPartParametersChange,
-  onPartSpecificationChange
+  onPartSpecificationChange,
+  gcodeFile,
+  onGcodeFileChange,
+  onRemoveGcodeFile
 }) => {
   const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalized') => {
     console.log(`Changing file ${fileId} to ${designType}`);
@@ -77,6 +83,9 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         onFileUpload={onFileUpload}
         uploadedFiles={uploadedFiles}
         onPartSpecificationChange={onPartSpecificationChange}
+        gcodeFile={gcodeFile}
+        onGcodeFileChange={onGcodeFileChange}
+        onRemoveGcodeFile={onRemoveGcodeFile}
       />
 
       <ParameterConfig
