@@ -23,12 +23,8 @@ export const useDesignDataCreation = (
     const iniFile = mainPartFiles?.find((file: any) => file.isINIFile && file.name.toLowerCase().endsWith('.ini'));
     const gcodeFile = mainPartFiles?.find((file: any) => file.name.toLowerCase().endsWith('.gcode') || file.name.toLowerCase().endsWith('.g'));
 
-    // Read G-Code file content if available
-    let gcodeContent = null;
-    if (fileUpload.gcodeFile) {
-      // We'll read the file content when saving the design
-      gcodeContent = 'GCODE_FILE_CONTENT'; // Placeholder - will be replaced with actual content
-    }
+    // Get G-Code file for the active part
+    const activePartGcodeFile = fileUpload.getGcodeFileForPart ? fileUpload.getGcodeFileForPart(designParts.activePart) : null;
 
     const designData = {
       name: data.name,
@@ -40,8 +36,8 @@ export const useDesignDataCreation = (
       // Store F3D and INI files separately in database
       cad_file_path: f3dFile?.path || null,
       ini_file_path: iniFile?.path || null,
-      gcode_file_path: gcodeFile?.path || null,
-      gcode: gcodeContent, // Store G-Code content in database
+      gcode_file_path: gcodeFile?.path || (activePartGcodeFile ? `gcode/${activePartGcodeFile.name}` : null),
+      gcode: null, // Will be set with actual content in the form
       preview_image_path: fileUpload.previewImage ? `preview/${fileUpload.previewImage.name}` : null,
       cad_software: mainPart?.cadSoftware || null,
       slicer: mainPart?.slicer || null,

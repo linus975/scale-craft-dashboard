@@ -6,7 +6,8 @@ export const useDesignFileUpload = () => {
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
-  const [gcodeFile, setGcodeFile] = useState<File | null>(null);
+  // Change to store G-code files per part
+  const [gcodeFiles, setGcodeFiles] = useState<Record<string, File>>({});
   
   const { toast } = useToast();
 
@@ -34,7 +35,7 @@ export const useDesignFileUpload = () => {
     }
   };
 
-  const handleGcodeFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGcodeFileChange = (event: React.ChangeEvent<HTMLInputElement>, partId: string = 'main') => {
     const file = event.target.files?.[0];
     if (file) {
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -48,10 +49,14 @@ export const useDesignFileUpload = () => {
         return;
       }
       
-      setGcodeFile(file);
+      setGcodeFiles(prev => ({
+        ...prev,
+        [partId]: file
+      }));
+      
       toast({
         title: "G-Code file selected",
-        description: `${file.name} was successfully selected.`,
+        description: `${file.name} was successfully selected for ${partId}.`,
       });
     }
   };
@@ -184,15 +189,24 @@ export const useDesignFileUpload = () => {
     console.log('Downloading file:', file.name);
   };
 
-  const removeGcodeFile = () => {
-    setGcodeFile(null);
+  const removeGcodeFile = (partId: string = 'main') => {
+    setGcodeFiles(prev => {
+      const newFiles = { ...prev };
+      delete newFiles[partId];
+      return newFiles;
+    });
+  };
+
+  // Helper function to get G-code file for specific part
+  const getGcodeFileForPart = (partId: string) => {
+    return gcodeFiles[partId] || null;
   };
 
   return {
     uploadedFiles,
     uploading,
     previewImage,
-    gcodeFile,
+    gcodeFiles,
     setUploadedFiles,
     handlePreviewImageDrop,
     handlePreviewImageChange,
@@ -200,6 +214,7 @@ export const useDesignFileUpload = () => {
     handleFileUpload,
     handleFileRemove,
     handleFileDownload,
-    removeGcodeFile
+    removeGcodeFile,
+    getGcodeFileForPart
   };
 };

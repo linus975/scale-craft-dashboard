@@ -58,9 +58,10 @@ interface MultiPartFileManagerProps {
   onMachineChange?: (value: string) => void;
   machines?: Array<{ id: string; name: string }>;
   formControl?: any;
-  gcodeFile?: File | null;
-  onGcodeFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onRemoveGcodeFile?: () => void;
+  gcodeFiles?: Record<string, File>;
+  onGcodeFileChange?: (event: React.ChangeEvent<HTMLInputElement>, partId: string) => void;
+  onRemoveGcodeFile?: (partId: string) => void;
+  getGcodeFileForPart?: (partId: string) => File | null;
 }
 
 const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
@@ -89,9 +90,10 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   onMachineChange,
   machines = [],
   formControl,
-  gcodeFile,
+  gcodeFiles,
   onGcodeFileChange,
-  onRemoveGcodeFile
+  onRemoveGcodeFile,
+  getGcodeFileForPart
 }) => {
   const {
     designParts,
@@ -121,6 +123,9 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   const validation = currentPart ? 
     (externalValidatePartFiles ? externalValidatePartFiles(currentPart) : validatePartFiles(currentPart)) : 
     { hasF3D: false, hasINI: false, hasPersonalizedFiles: false };
+
+  // Get G-code file for current part
+  const currentPartGcodeFile = getGcodeFileForPart ? getGcodeFileForPart(activePart) : null;
 
   return (
     <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
@@ -159,9 +164,9 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
             handlePartParametersChange(partId, field, value, onPartParametersChange)
           }
           onPartSpecificationChange={onPartSpecificationChange}
-          gcodeFile={gcodeFile}
-          onGcodeFileChange={onGcodeFileChange}
-          onRemoveGcodeFile={onRemoveGcodeFile}
+          gcodeFile={currentPartGcodeFile}
+          onGcodeFileChange={onGcodeFileChange ? (event) => onGcodeFileChange(event, activePart) : undefined}
+          onRemoveGcodeFile={onRemoveGcodeFile ? () => onRemoveGcodeFile(activePart) : undefined}
         />
       )}
     </div>

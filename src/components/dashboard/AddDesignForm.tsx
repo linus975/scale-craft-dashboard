@@ -124,10 +124,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
       let designData = createDesignData(designDataWithColorMachine);
 
-      // Read G-Code file content if available
-      if (fileUpload.gcodeFile) {
+      // Read G-Code file content for the main part if available
+      const mainPartGcodeFile = fileUpload.getGcodeFileForPart(designParts.activePart);
+      if (mainPartGcodeFile) {
         try {
-          const gcodeContent = await readFileAsText(fileUpload.gcodeFile);
+          const gcodeContent = await readFileAsText(mainPartGcodeFile);
           designData = {
             ...designData,
             gcode: gcodeContent
@@ -157,14 +158,14 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       console.log('Saving design with data:', designData);
       console.log('Design Parts:', designParts.designParts);
       console.log('Uploaded files:', fileUpload.uploadedFiles);
-      console.log('G-Code file:', fileUpload.gcodeFile);
+      console.log('G-Code files:', fileUpload.gcodeFiles);
       console.log('Images:', multiImageUpload.images);
       console.log('Color:', colorValue, 'Machine:', machineValue);
 
       const savedDesign = await createDesign(designData);
       
       // Only create print jobs if files are present
-      if (fileUpload.uploadedFiles.length > 0 || fileUpload.gcodeFile) {
+      if (fileUpload.uploadedFiles.length > 0 || Object.keys(fileUpload.gcodeFiles).length > 0) {
         const createdJobs = await createPrintJobsFromDesign(designDataWithColorMachine, savedDesign);
         
         toast({
@@ -254,9 +255,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 formControl={form.control}
                 onColorChange={handleColorChange}
                 onMachineChange={handleMachineChange}
-                gcodeFile={fileUpload.gcodeFile}
+                gcodeFiles={fileUpload.gcodeFiles}
                 onGcodeFileChange={fileUpload.handleGcodeFileChange}
                 onRemoveGcodeFile={fileUpload.removeGcodeFile}
+                getGcodeFileForPart={fileUpload.getGcodeFileForPart}
               />
             </CardContent>
           </Card>
