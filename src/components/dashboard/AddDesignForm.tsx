@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -139,6 +140,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       // Upload G-Code file and get content for the main part
       let gcodeFilePath = null;
       let gcodeContent = null;
+      let gcodeFileName = null;
       
       const mainPartGcodeFile = fileUpload.getGcodeFileForPart(designParts.activePart);
       if (mainPartGcodeFile) {
@@ -146,13 +148,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         const gcodeResult = await fileUpload.uploadGcodeFile(designParts.activePart);
         gcodeFilePath = gcodeResult.path;
         gcodeContent = gcodeResult.content;
+        gcodeFileName = mainPartGcodeFile.name;
         console.log('G-Code uploaded:', gcodeFilePath);
-        
-        // Show success toast for G-Code upload
-        toast({
-          title: "G-Code-Datei hochgeladen",
-          description: `Die G-Code-Datei "${mainPartGcodeFile.name}" wurde erfolgreich hochgeladen.`,
-        });
       }
 
       // Include color and machine in the data
@@ -181,14 +178,24 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       if (fileUpload.uploadedFiles.length > 0 || Object.keys(fileUpload.gcodeFiles).length > 0) {
         const createdJobs = await createPrintJobsFromDesign(designDataWithColorMachine, savedDesign);
         
+        let successMessage = `The design "${data.name}" was saved with ${createdJobs.length} print job(s) created.`;
+        if (gcodeFileName) {
+          successMessage += ` G-Code-Datei "${gcodeFileName}" wurde erfolgreich hochgeladen.`;
+        }
+        
         toast({
           title: "Design and Jobs successfully created",
-          description: `The design "${data.name}" was saved with ${createdJobs.length} print job(s) created.`,
+          description: successMessage,
         });
       } else {
+        let successMessage = `The design "${data.name}" was saved.`;
+        if (gcodeFileName) {
+          successMessage += ` G-Code-Datei "${gcodeFileName}" wurde erfolgreich hochgeladen.`;
+        }
+        
         toast({
           title: "Design successfully created",
-          description: `The design "${data.name}" was saved.`,
+          description: successMessage,
         });
       }
       
