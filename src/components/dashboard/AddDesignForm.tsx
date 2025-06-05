@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -95,9 +96,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: FormData) => {
     if (saving) return; // Prevent double submission
     
+    console.log('🚀 Starting design save process...');
+    setSaving(true);
+    
     try {
-      setSaving(true);
-      
       // Basic validation
       const basicValidationErrors: string[] = [];
       if (!data.name) basicValidationErrors.push("Design name is required");
@@ -113,27 +115,27 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         return;
       }
 
-      console.log('Starting design save process...');
+      console.log('✅ Validation passed, proceeding with save...');
 
       // Upload preview image if exists
       let previewImagePath = null;
       if (fileUpload.previewImage) {
-        console.log('Uploading preview image...');
+        console.log('📸 Uploading preview image...');
         previewImagePath = await fileUpload.uploadPreviewImage();
-        console.log('Preview image uploaded:', previewImagePath);
+        console.log('✅ Preview image uploaded:', previewImagePath);
       }
 
       // Upload multi-images if exists
       if (multiImageUpload.images.length > 0) {
-        console.log('Uploading multi-images...');
+        console.log('🖼️ Uploading multi-images...');
         // Upload first image as preview if no preview image was set
         if (!previewImagePath && multiImageUpload.images[0]) {
           const firstImageFile = multiImageUpload.images[0].file;
           try {
             previewImagePath = await uploadFile(firstImageFile, 'preview-images');
-            console.log('First multi-image uploaded as preview:', previewImagePath);
+            console.log('✅ First multi-image uploaded as preview:', previewImagePath);
           } catch (error) {
-            console.error('Error uploading first multi-image as preview:', error);
+            console.error('❌ Error uploading first multi-image as preview:', error);
           }
         }
       }
@@ -145,12 +147,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       
       const mainPartGcodeFile = fileUpload.getGcodeFileForPart(designParts.activePart);
       if (mainPartGcodeFile) {
-        console.log('Uploading G-Code file...');
+        console.log('⚙️ Uploading G-Code file...');
         const gcodeResult = await fileUpload.uploadGcodeFile(designParts.activePart);
         gcodeFilePath = gcodeResult.path;
         gcodeContent = gcodeResult.content;
         gcodeFileName = mainPartGcodeFile.name;
-        console.log('G-Code uploaded:', gcodeFilePath);
+        console.log('✅ G-Code uploaded:', gcodeFilePath);
       }
 
       // Include color and machine in the data
@@ -171,46 +173,53 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         gcode: gcodeContent
       };
 
-      console.log('Saving design with data:', designData);
+      console.log('💾 Saving design to database...', designData);
 
       const savedDesign = await createDesign(designData);
       
+      console.log('✅ Design saved successfully:', savedDesign);
+
       // Only create print jobs if files are present
       if (fileUpload.uploadedFiles.length > 0 || Object.keys(fileUpload.gcodeFiles).length > 0) {
+        console.log('🔧 Creating print jobs...');
         const createdJobs = await createPrintJobsFromDesign(designDataWithColorMachine, savedDesign);
         
-        let successMessage = `The design "${data.name}" was saved with ${createdJobs.length} print job(s) created.`;
+        let successMessage = `Das Design "${data.name}" wurde mit ${createdJobs.length} Druckauftrag/Druckaufträgen erfolgreich gespeichert.`;
         if (gcodeFileName) {
           successMessage += ` G-Code-Datei "${gcodeFileName}" wurde erfolgreich hochgeladen.`;
         }
         
         toast({
-          title: "Design and Jobs successfully created",
+          title: "Design und Aufträge erfolgreich erstellt",
           description: successMessage,
         });
       } else {
-        let successMessage = `The design "${data.name}" was saved.`;
+        let successMessage = `Das Design "${data.name}" wurde erfolgreich gespeichert.`;
         if (gcodeFileName) {
           successMessage += ` G-Code-Datei "${gcodeFileName}" wurde erfolgreich hochgeladen.`;
         }
         
         toast({
-          title: "Design successfully created",
+          title: "Design erfolgreich erstellt",
           description: successMessage,
         });
       }
       
-      // Close the dialog after successful save
-      onSave();
+      console.log('🎉 All operations completed successfully, closing dialog...');
+      
     } catch (error) {
-      console.error('Error creating design:', error);
+      console.error('❌ Error creating design:', error);
       toast({
-        title: "Error creating design",
-        description: "There was an error saving the design. Please try again.",
+        title: "Fehler beim Erstellen des Designs",
+        description: "Es gab einen Fehler beim Speichern des Designs. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {
       setSaving(false);
+      console.log('🔄 Setting saving to false and calling onSave()...');
+      // Always call onSave to close the dialog, regardless of success or failure
+      onSave();
+      console.log('✅ onSave() called - dialog should close now');
     }
   };
 
@@ -303,4 +312,5 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 };
 
 export default AddDesignForm;
+
 
