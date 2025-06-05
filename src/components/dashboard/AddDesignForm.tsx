@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -199,6 +200,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         });
       }
       
+      // Close the dialog after successful save
       onSave();
     } catch (error) {
       console.error('Error creating design:', error);
@@ -301,3 +303,4 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 };
 
 export default AddDesignForm;
+
