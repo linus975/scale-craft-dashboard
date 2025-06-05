@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -88,6 +87,7 @@ export const useDesigns = () => {
         cad_file_path: designData.cad_file_path || null,
         ini_file_path: designData.ini_file_path || null,
         gcode_file_path: designData.gcode_file_path || null,
+        gcode: designData.gcode || null,
         preview_image_path: designData.preview_image_path || null,
         nozzle_diameter: designData.nozzle_diameter || null,
         material: designData.material || null,
@@ -115,6 +115,7 @@ export const useDesigns = () => {
       // Create EAN mapping if EAN number is provided
       if (data.ean_number && data.tracking_type) {
         try {
+          // Try to create mapping, handle duplicates gracefully
           await createMapping({
             ean_number: data.ean_number,
             product_type: data.design_type as 'static' | 'personalized',
@@ -122,13 +123,16 @@ export const useDesigns = () => {
           });
           
           console.log('✅ EAN mapping created successfully for design:', data.name);
-        } catch (mappingError) {
+        } catch (mappingError: any) {
           console.error('❌ Error creating EAN mapping:', mappingError);
-          toast({
-            title: "Warnung",
-            description: "Design wurde erstellt, aber EAN-Mapping konnte nicht gespeichert werden.",
-            variant: "destructive",
-          });
+          // Don't fail the entire operation if EAN mapping already exists
+          if (!mappingError.message?.includes('duplicate key')) {
+            toast({
+              title: "Warnung",
+              description: "Design wurde erstellt, aber EAN-Mapping konnte nicht gespeichert werden.",
+              variant: "destructive",
+            });
+          }
         }
       }
 
