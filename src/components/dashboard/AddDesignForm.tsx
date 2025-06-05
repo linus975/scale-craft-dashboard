@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -148,6 +147,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         gcodeFilePath = gcodeResult.path;
         gcodeContent = gcodeResult.content;
         console.log('G-Code uploaded:', gcodeFilePath);
+        
+        // Show success toast for G-Code upload
+        toast({
+          title: "G-Code-Datei hochgeladen",
+          description: `Die G-Code-Datei "${mainPartGcodeFile.name}" wurde erfolgreich hochgeladen.`,
+        });
       }
 
       // Include color and machine in the data
