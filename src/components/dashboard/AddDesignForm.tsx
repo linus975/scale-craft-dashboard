@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
@@ -16,6 +16,7 @@ import { useDesignParts } from '@/hooks/useDesignParts';
 import { useDesignFormValidation } from '@/hooks/useDesignFormValidation';
 import { useDesignJobCreation } from '@/hooks/useDesignJobCreation';
 import { useDesignDataCreation } from '@/hooks/useDesignDataCreation';
+import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
 
 interface AddDesignFormProps {
   onCancel: () => void;
@@ -62,6 +63,14 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { validateForm } = useDesignFormValidation(designParts, fileUpload);
   const { createPrintJobsFromDesign } = useDesignJobCreation(designParts, fileUpload);
   const { createDesignData } = useDesignDataCreation(designParts, fileUpload);
+  const multiImageUpload = useMultiImageUpload();
+
+  // Clean up image previews on unmount
+  useEffect(() => {
+    return () => {
+      multiImageUpload.cleanupPreviews();
+    };
+  }, []);
 
   // Remove parts from uploaded files when removing a part
   const handleRemovePart = (partId: string) => {
@@ -134,10 +143,22 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         }
       }
 
+      // Add image data if any images are uploaded
+      if (multiImageUpload.images.length > 0) {
+        // For now, we'll just take the first image as preview_image_path
+        // In a real implementation, you'd upload all images to storage
+        const firstImage = multiImageUpload.images[0];
+        designData = {
+          ...designData,
+          preview_image_path: firstImage.file.name // This would be the actual uploaded path in production
+        };
+      }
+
       console.log('Saving design with data:', designData);
       console.log('Design Parts:', designParts.designParts);
       console.log('Uploaded files:', fileUpload.uploadedFiles);
       console.log('G-Code file:', fileUpload.gcodeFile);
+      console.log('Images:', multiImageUpload.images);
       console.log('Color:', colorValue, 'Machine:', machineValue);
 
       const savedDesign = await createDesign(designData);
@@ -181,7 +202,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             editingCategoryValue={categoryManager.editingCategoryValue}
             showAddCategoryDialog={categoryManager.showAddCategoryDialog}
             newCategoryName={categoryManager.newCategoryName}
-            previewImage={fileUpload.previewImage}
+            images={multiImageUpload.images}
             onStartEditCategory={categoryManager.handleStartEditCategory}
             onSaveEditCategory={categoryManager.handleSaveEditCategory}
             onCancelEditCategory={categoryManager.handleCancelEditCategory}
@@ -189,8 +210,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             onSaveNewCategory={categoryManager.handleSaveNewCategory}
             onCancelAddCategory={categoryManager.handleCancelAddCategory}
             onDeleteCategory={categoryManager.handleDeleteCategory}
-            onPreviewImageDrop={fileUpload.handlePreviewImageDrop}
-            onPreviewImageChange={fileUpload.handlePreviewImageChange}
+            onImageDrop={multiImageUpload.handleImageDrop}
+            onImageUpload={multiImageUpload.handleImageUpload}
+            onImagesChange={multiImageUpload.handleImagesChange}
             setEditingCategoryValue={categoryManager.setEditingCategoryValue}
             setNewCategoryName={categoryManager.setNewCategoryName}
             setShowAddCategoryDialog={categoryManager.setShowAddCategoryDialog}

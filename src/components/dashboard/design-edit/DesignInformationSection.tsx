@@ -10,7 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, Upload, Check, Settings } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, Settings } from 'lucide-react';
+import MultiImageUpload from './MultiImageUpload';
 
 interface FormData {
   name: string;
@@ -22,6 +23,12 @@ interface FormData {
   machine: string;
 }
 
+interface ImageFile {
+  id: string;
+  file: File;
+  preview: string;
+}
+
 interface DesignInformationSectionProps {
   control: Control<FormData>;
   trackingType: string;
@@ -30,7 +37,7 @@ interface DesignInformationSectionProps {
   editingCategoryValue: string;
   showAddCategoryDialog: boolean;
   newCategoryName: string;
-  previewImage: File | null;
+  images: ImageFile[];
   onStartEditCategory: () => void;
   onSaveEditCategory: () => void;
   onCancelEditCategory: () => void;
@@ -38,8 +45,9 @@ interface DesignInformationSectionProps {
   onSaveNewCategory: () => void;
   onCancelAddCategory: () => void;
   onDeleteCategory: () => void;
-  onPreviewImageDrop: (e: React.DragEvent<HTMLDivElement>) => void;
-  onPreviewImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onImageDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onImagesChange: (images: ImageFile[]) => void;
   setEditingCategoryValue: (value: string) => void;
   setNewCategoryName: (value: string) => void;
   setShowAddCategoryDialog: (show: boolean) => void;
@@ -54,7 +62,7 @@ const DesignInformationSection: React.FC<DesignInformationSectionProps> = ({
   editingCategoryValue,
   showAddCategoryDialog,
   newCategoryName,
-  previewImage,
+  images,
   onStartEditCategory,
   onSaveEditCategory,
   onCancelEditCategory,
@@ -62,8 +70,9 @@ const DesignInformationSection: React.FC<DesignInformationSectionProps> = ({
   onSaveNewCategory,
   onCancelAddCategory,
   onDeleteCategory,
-  onPreviewImageDrop,
-  onPreviewImageChange,
+  onImageDrop,
+  onImageUpload,
+  onImagesChange,
   setEditingCategoryValue,
   setNewCategoryName,
   setShowAddCategoryDialog,
@@ -133,40 +142,13 @@ const DesignInformationSection: React.FC<DesignInformationSectionProps> = ({
           />
         </div>
 
-        {/* Product Image Drop Zone */}
-        <div className="space-y-2">
-          <Label htmlFor="previewImage">Product Image</Label>
-          <div
-            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
-            onDrop={onPreviewImageDrop}
-            onDragOver={(e) => e.preventDefault()}
-            onClick={() => document.getElementById('previewImage')?.click()}
-          >
-            {previewImage ? (
-              <div className="space-y-2">
-                <img
-                  src={URL.createObjectURL(previewImage)}
-                  alt="Preview"
-                  className="max-h-32 mx-auto rounded"
-                />
-                <p className="text-sm text-gray-600">{previewImage.name}</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                <p className="text-sm text-gray-600">Drop image here or click to upload</p>
-                <p className="text-xs text-gray-400">PNG, JPG, GIF up to 10MB</p>
-              </div>
-            )}
-          </div>
-          <Input
-            id="previewImage"
-            type="file"
-            accept="image/*"
-            onChange={onPreviewImageChange}
-            className="hidden"
-          />
-        </div>
+        {/* Multi-Image Upload */}
+        <MultiImageUpload
+          images={images}
+          onImagesChange={onImagesChange}
+          onImageDrop={onImageDrop}
+          onImageUpload={onImageUpload}
+        />
 
         <FormField
           control={control}
