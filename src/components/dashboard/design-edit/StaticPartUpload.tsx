@@ -3,6 +3,7 @@ import React from 'react';
 import FileUploadSection from './FileUploadSection';
 import NozzleDiameterInput from './NozzleDiameterInput';
 import FilamentSelector from './FilamentSelector';
+import GCodeFileUpload from './GCodeFileUpload';
 
 interface StaticPartUploadProps {
   partName: string;
@@ -11,6 +12,9 @@ interface StaticPartUploadProps {
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   uploadedFiles: any[];
   onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
+  gcodeFile?: File | null;
+  onGcodeFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveGcodeFile?: () => void;
 }
 
 const StaticPartUpload: React.FC<StaticPartUploadProps> = ({
@@ -19,7 +23,10 @@ const StaticPartUpload: React.FC<StaticPartUploadProps> = ({
   uploading,
   onFileUpload,
   uploadedFiles,
-  onPartSpecificationChange
+  onPartSpecificationChange,
+  gcodeFile,
+  onGcodeFileChange,
+  onRemoveGcodeFile
 }) => {
   const handleNozzleDiameterChange = (value: string) => {
     if (onPartSpecificationChange) {
@@ -35,16 +42,13 @@ const StaticPartUpload: React.FC<StaticPartUploadProps> = ({
 
   return (
     <div className="space-y-2">
-      <FileUploadSection
+      <GCodeFileUpload
         title={`G-code File for "${partName}"`}
-        accept=".gcode,.g"
-        extensions=".gcode, .g"
-        inputId={`fileUpload-${partId}`}
-        required={false}
         partId={partId}
         uploading={uploading}
-        uploadedFiles={uploadedFiles}
-        onFileUpload={onFileUpload}
+        gcodeFile={gcodeFile}
+        onGcodeFileChange={onGcodeFileChange}
+        onRemoveGcodeFile={onRemoveGcodeFile}
       />
       
       {/* Nozzle Diameter and Filament Type for Static Design */}

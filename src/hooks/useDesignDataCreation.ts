@@ -1,7 +1,4 @@
 
-import { useDesignParts } from './useDesignParts';
-import { useDesignFileUpload } from './useDesignFileUpload';
-
 interface FormData {
   name: string;
   trackingType: string;
@@ -13,18 +10,25 @@ interface FormData {
 }
 
 export const useDesignDataCreation = (
-  designParts: ReturnType<typeof useDesignParts>,
-  fileUpload: ReturnType<typeof useDesignFileUpload>
+  designParts: any,
+  fileUpload: any
 ) => {
   const createDesignData = (data: FormData) => {
     // Create design data structure for multi-part support
     const mainPart = designParts.designParts[0];
-    const mainPartFiles = fileUpload.uploadedFiles.filter(file => file.partId === mainPart?.id);
+    const mainPartFiles = fileUpload.uploadedFiles.filter((file: any) => file.partId === mainPart?.id);
     
     // Separate F3D and INI files for individual database storage
-    const f3dFile = mainPartFiles?.find(file => file.isF3DFile && file.name.toLowerCase().endsWith('.f3d'));
-    const iniFile = mainPartFiles?.find(file => file.isINIFile && file.name.toLowerCase().endsWith('.ini'));
-    const gcodeFile = mainPartFiles?.find(file => file.name.toLowerCase().endsWith('.gcode') || file.name.toLowerCase().endsWith('.g'));
+    const f3dFile = mainPartFiles?.find((file: any) => file.isF3DFile && file.name.toLowerCase().endsWith('.f3d'));
+    const iniFile = mainPartFiles?.find((file: any) => file.isINIFile && file.name.toLowerCase().endsWith('.ini'));
+    const gcodeFile = mainPartFiles?.find((file: any) => file.name.toLowerCase().endsWith('.gcode') || file.name.toLowerCase().endsWith('.g'));
+
+    // Read G-Code file content if available
+    let gcodeContent = null;
+    if (fileUpload.gcodeFile) {
+      // We'll read the file content when saving the design
+      gcodeContent = 'GCODE_FILE_CONTENT'; // Placeholder - will be replaced with actual content
+    }
 
     const designData = {
       name: data.name,
@@ -37,6 +41,7 @@ export const useDesignDataCreation = (
       cad_file_path: f3dFile?.path || null,
       ini_file_path: iniFile?.path || null,
       gcode_file_path: gcodeFile?.path || null,
+      gcode: gcodeContent, // Store G-Code content in database
       preview_image_path: fileUpload.previewImage ? `preview/${fileUpload.previewImage.name}` : null,
       cad_software: mainPart?.cadSoftware || null,
       slicer: mainPart?.slicer || null,

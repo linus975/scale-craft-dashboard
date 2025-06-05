@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -5,6 +6,7 @@ export const useDesignFileUpload = () => {
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
+  const [gcodeFile, setGcodeFile] = useState<File | null>(null);
   
   const { toast } = useToast();
 
@@ -29,6 +31,28 @@ export const useDesignFileUpload = () => {
     const file = event.target.files?.[0];
     if (file) {
       setPreviewImage(file);
+    }
+  };
+
+  const handleGcodeFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      
+      if (!['gcode', 'g'].includes(fileExtension || '')) {
+        toast({
+          title: "Wrong file type",
+          description: "Please upload a .gcode or .g file.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setGcodeFile(file);
+      toast({
+        title: "G-Code file selected",
+        description: `${file.name} was successfully selected.`,
+      });
     }
   };
 
@@ -160,15 +184,22 @@ export const useDesignFileUpload = () => {
     console.log('Downloading file:', file.name);
   };
 
+  const removeGcodeFile = () => {
+    setGcodeFile(null);
+  };
+
   return {
     uploadedFiles,
     uploading,
     previewImage,
+    gcodeFile,
     setUploadedFiles,
     handlePreviewImageDrop,
     handlePreviewImageChange,
+    handleGcodeFileChange,
     handleFileUpload,
     handleFileRemove,
-    handleFileDownload
+    handleFileDownload,
+    removeGcodeFile
   };
 };

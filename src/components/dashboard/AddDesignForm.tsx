@@ -79,6 +79,16 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     form.setValue('machine', value);
   };
 
+  // Helper function to read file content as text
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
       // Make files optional in validation - only validate basic required fields
@@ -103,17 +113,37 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         machine: machineValue
       };
 
-      const designData = createDesignData(designDataWithColorMachine);
+      let designData = createDesignData(designDataWithColorMachine);
+
+      // Read G-Code file content if available
+      if (fileUpload.gcodeFile) {
+        try {
+          const gcodeContent = await readFileAsText(fileUpload.gcodeFile);
+          designData = {
+            ...designData,
+            gcode: gcodeContent
+          };
+        } catch (error) {
+          console.error('Error reading G-Code file:', error);
+          toast({
+            title: "Error reading G-Code file",
+            description: "Could not read the G-Code file content.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
 
       console.log('Saving design with data:', designData);
       console.log('Design Parts:', designParts.designParts);
       console.log('Uploaded files:', fileUpload.uploadedFiles);
+      console.log('G-Code file:', fileUpload.gcodeFile);
       console.log('Color:', colorValue, 'Machine:', machineValue);
 
       const savedDesign = await createDesign(designData);
       
       // Only create print jobs if files are present
-      if (fileUpload.uploadedFiles.length > 0) {
+      if (fileUpload.uploadedFiles.length > 0 || fileUpload.gcodeFile) {
         const createdJobs = await createPrintJobsFromDesign(designDataWithColorMachine, savedDesign);
         
         toast({
@@ -202,6 +232,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 formControl={form.control}
                 onColorChange={handleColorChange}
                 onMachineChange={handleMachineChange}
+                gcodeFile={fileUpload.gcodeFile}
+                onGcodeFileChange={fileUpload.handleGcodeFileChange}
+                onRemoveGcodeFile={fileUpload.removeGcodeFile}
               />
             </CardContent>
           </Card>
