@@ -17,6 +17,7 @@ import { useDesignFormValidation } from '@/hooks/useDesignFormValidation';
 import { useDesignJobCreation } from '@/hooks/useDesignJobCreation';
 import { useDesignDataCreation } from '@/hooks/useDesignDataCreation';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface AddDesignFormProps {
   onCancel: () => void;
@@ -37,6 +38,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { createDesign } = useDesigns();
   const { machines } = useMachines();
   const { toast } = useToast();
+  const { uploadFile } = useFileUpload();
   
   // State for color and machine
   const [colorValue, setColorValue] = useState('');
@@ -127,7 +129,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         if (!previewImagePath && multiImageUpload.images[0]) {
           const firstImageFile = multiImageUpload.images[0].file;
           try {
-            const { uploadFile } = fileUpload;
             previewImagePath = await uploadFile(firstImageFile, 'preview-images');
             console.log('First multi-image uploaded as preview:', previewImagePath);
           } catch (error) {
