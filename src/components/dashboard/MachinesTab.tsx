@@ -215,7 +215,7 @@ const MachinesTab: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="api_url">API URL</Label>
+                <Label htmlFor="api_url">Printer URL</Label>
                 <Input
                   id="api_url"
                   placeholder="http://octopi.local or API endpoint"
