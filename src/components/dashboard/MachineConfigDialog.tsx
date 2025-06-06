@@ -40,12 +40,20 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
   designs,
   queueJobs 
 }) => {
+  // Determine the display value for API key
+  const getApiKeyDisplayValue = () => {
+    if (machine.apiKey && machine.apiKey.trim() !== '') {
+      return '********************';
+    }
+    return '';
+  };
+
   const [formData, setFormData] = useState({
     name: machine.name,
     type: machine.type,
     connectionType: machine.connectionType || 'octoprint',
     apiUrl: machine.apiUrl || '',
-    apiKey: machine.apiKey ? '********************' : '',
+    apiKey: getApiKeyDisplayValue(),
     username: machine.username || '',
     password: ''
   });
@@ -97,6 +105,9 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
       default: return status;
     }
   };
+
+  // Check if API key exists in database
+  const hasApiKey = machine.apiKey && machine.apiKey.trim() !== '';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -177,8 +188,12 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                       type="password"
                       value={formData.apiKey}
                       onChange={(e) => handleInputChange('apiKey', e.target.value)}
-                      placeholder="OctoPrint API Key"
+                      placeholder={hasApiKey ? "Current key stored" : "No Key"}
+                      className={!hasApiKey ? "text-gray-400" : ""}
                     />
+                    {!hasApiKey && (
+                      <p className="text-sm text-gray-500">No API key stored</p>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
@@ -195,9 +210,14 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                       <Input
                         id="password"
                         type="password"
-                        value={formData.password}
-                        onChange={(e) => handleInputChange('password', e.target.value)}
+                        value={formData.apiKey}
+                        onChange={(e) => handleInputChange('apiKey', e.target.value)}
+                        placeholder={hasApiKey ? "Current key stored" : "No Key"}
+                        className={!hasApiKey ? "text-gray-400" : ""}
                       />
+                      {!hasApiKey && (
+                        <p className="text-sm text-gray-500">No API key stored</p>
+                      )}
                     </div>
                   </div>
                 )}
