@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -394,7 +393,7 @@ const MachinesTab: React.FC = () => {
             currentJob: selectedMachine.current_job_id ? 'Job running...' : null,
             connectionType: selectedMachine.connection_type,
             apiUrl: selectedMachine.api_url || '',
-            apiKey: selectedMachine.api_key || '',
+            apiKey: selectedMachine.api_key,
             username: selectedMachine.username || ''
           }}
           isOpen={!!selectedMachine}
