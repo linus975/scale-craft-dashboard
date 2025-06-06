@@ -43,9 +43,7 @@ export const useMachines = () => {
         .from('machines')
         .insert({ 
           ...machineData, 
-          user_id: user.id,
-          // Ensure password is included in the data
-          password: machineData.password || null
+          user_id: user.id
         })
         .select()
         .single();

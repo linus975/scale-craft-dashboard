@@ -149,7 +149,6 @@ export type Database = {
           last_seen: string | null
           name: string
           notes: string | null
-          password: string | null
           printer_type: string
           status: string
           updated_at: string
@@ -166,7 +165,6 @@ export type Database = {
           last_seen?: string | null
           name: string
           notes?: string | null
-          password?: string | null
           printer_type: string
           status?: string
           updated_at?: string
@@ -183,7 +181,6 @@ export type Database = {
           last_seen?: string | null
           name?: string
           notes?: string | null
-          password?: string | null
           printer_type?: string
           status?: string
           updated_at?: string

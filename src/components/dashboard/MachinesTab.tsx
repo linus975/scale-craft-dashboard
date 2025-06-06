@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,8 +32,7 @@ const MachinesTab: React.FC = () => {
     connection_type: '',
     api_url: '',
     api_key: '',
-    username: '',
-    password: ''
+    username: ''
   });
 
   const { machines, loading, createMachine, updateMachine, deleteMachine } = useMachines();
@@ -71,15 +69,9 @@ const MachinesTab: React.FC = () => {
         printer_type: formData.printer_type,
         connection_type: formData.connection_type,
         api_url: formData.api_url,
-        username: formData.username
+        username: formData.username,
+        api_key: formData.api_key // Always store in api_key field
       };
-
-      // Handle API key/password - store everything in api_key field
-      if (formData.connection_type === 'octoprint') {
-        machineData.api_key = formData.api_key;
-      } else {
-        machineData.api_key = formData.password; // Store password as api_key for all connections
-      }
 
       await createMachine(machineData);
       setIsAddMachineDialogOpen(false);
@@ -89,8 +81,7 @@ const MachinesTab: React.FC = () => {
         connection_type: '',
         api_url: '',
         api_key: '',
-        username: '',
-        password: ''
+        username: ''
       });
     } catch (error) {
       // Error is handled in the hook
@@ -105,8 +96,7 @@ const MachinesTab: React.FC = () => {
         connection_type: machineData.connectionType,
         api_url: machineData.apiUrl,
         api_key: machineData.apiKey,
-        username: machineData.username,
-        password: machineData.password
+        username: machineData.username
       });
     } catch (error) {
       // Error is handled in the hook
@@ -262,13 +252,13 @@ const MachinesTab: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">API Key</Label>
+                    <Label htmlFor="api_key_input">API Key</Label>
                     <Input
-                      id="password"
+                      id="api_key_input"
                       type="password"
                       placeholder="API Key"
-                      value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      value={formData.api_key}
+                      onChange={(e) => handleInputChange('api_key', e.target.value)}
                     />
                   </div>
                 </div>
