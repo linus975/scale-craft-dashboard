@@ -43,7 +43,7 @@ const MachinesTab: React.FC = () => {
     return <MachineStatisticsPage onBack={() => setCurrentView('main')} />;
   }
 
-  // Mock data für designs und queue jobs (wird später durch echte Daten ersetzt)
+  // Mock data for designs and queue jobs (will be replaced with real data later)
   const mockDesigns = [
     { id: 1, name: "Parametric Gear" },
     { id: 2, name: "Custom Bracket" },
@@ -100,7 +100,7 @@ const MachinesTab: React.FC = () => {
 
   const handleDeleteMachine = async (machineId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Möchten Sie diese Maschine wirklich löschen?')) {
+    if (window.confirm('Do you really want to delete this machine?')) {
       try {
         await deleteMachine(machineId);
       } catch (error) {
@@ -131,53 +131,53 @@ const MachinesTab: React.FC = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'active': return 'Aktiv';
+      case 'active': return 'Active';
       case 'offline': return 'Offline';
-      case 'needs_configuration': return 'Konfiguration erforderlich';
-      case 'error': return 'Fehler';
+      case 'needs_configuration': return 'Configuration Required';
+      case 'error': return 'Error';
       default: return status;
     }
   };
 
   const formatLastSeen = (lastSeen: string | null) => {
-    if (!lastSeen) return 'Nie verbunden';
+    if (!lastSeen) return 'Never connected';
     const date = new Date(lastSeen);
     const now = new Date();
     const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
-    if (diffMinutes < 1) return 'Gerade eben';
-    if (diffMinutes < 60) return `vor ${diffMinutes} Minuten`;
-    if (diffMinutes < 1440) return `vor ${Math.floor(diffMinutes / 60)} Stunden`;
-    return `vor ${Math.floor(diffMinutes / 1440)} Tagen`;
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+    if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)} hours ago`;
+    return `${Math.floor(diffMinutes / 1440)} days ago`;
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Machine Parc</h2>
-          <p className="text-slate-600">Verwalten Sie Ihre verbundenen 3D-Drucker und überwachen Sie deren Status</p>
+          <h2 className="text-2xl font-bold text-slate-900">Machine Fleet</h2>
+          <p className="text-slate-600">Manage your connected 3D printers and monitor their status</p>
         </div>
         <Dialog open={isAddMachineDialogOpen} onOpenChange={setIsAddMachineDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
               <Plus className="h-4 w-4 mr-2" />
-              Maschine hinzufügen
+              Add Machine
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>3D-Drucker hinzufügen</DialogTitle>
+              <DialogTitle>Add 3D Printer</DialogTitle>
               <DialogDescription>
-                Verbinden Sie einen neuen 3D-Drucker über API oder OctoPrint
+                Connect a new 3D printer via API or OctoPrint
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Maschinenname</Label>
+                <Label htmlFor="name">Machine Name</Label>
                 <Input
                   id="name"
-                  placeholder="z.B. Prusa i3 MK3S+"
+                  placeholder="e.g. Prusa i3 MK3S+"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   required
@@ -185,10 +185,10 @@ const MachinesTab: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="printer_type">Druckertyp</Label>
+                <Label htmlFor="printer_type">Printer Type</Label>
                 <Select onValueChange={(value) => handleInputChange('printer_type', value)} required>
                   <SelectTrigger>
-                    <SelectValue placeholder="Druckertyp auswählen" />
+                    <SelectValue placeholder="Select printer type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="fdm">FDM</SelectItem>
@@ -200,25 +200,25 @@ const MachinesTab: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="connection_type">Verbindungstyp</Label>
+                <Label htmlFor="connection_type">Connection Type</Label>
                 <Select onValueChange={(value) => handleInputChange('connection_type', value)} required>
                   <SelectTrigger>
-                    <SelectValue placeholder="Verbindungstyp auswählen" />
+                    <SelectValue placeholder="Select connection type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="octoprint">OctoPrint</SelectItem>
                     <SelectItem value="prusalink">PrusaLink</SelectItem>
                     <SelectItem value="bambu">Bambu Lab API</SelectItem>
-                    <SelectItem value="manual">Manuell</SelectItem>
+                    <SelectItem value="manual">Manual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="api_url">API-URL</Label>
+                <Label htmlFor="api_url">API URL</Label>
                 <Input
                   id="api_url"
-                  placeholder="http://octopi.local oder API-Endpunkt"
+                  placeholder="http://octopi.local or API endpoint"
                   value={formData.api_url}
                   onChange={(e) => handleInputChange('api_url', e.target.value)}
                 />
@@ -226,11 +226,11 @@ const MachinesTab: React.FC = () => {
 
               {formData.connection_type === 'octoprint' ? (
                 <div className="space-y-2">
-                  <Label htmlFor="api_key">API-Schlüssel</Label>
+                  <Label htmlFor="api_key">API Key</Label>
                   <Input
                     id="api_key"
                     type="password"
-                    placeholder="OctoPrint API-Schlüssel"
+                    placeholder="OctoPrint API Key"
                     value={formData.api_key}
                     onChange={(e) => handleInputChange('api_key', e.target.value)}
                   />
@@ -238,20 +238,20 @@ const MachinesTab: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="username">Benutzername</Label>
+                    <Label htmlFor="username">API User</Label>
                     <Input
                       id="username"
-                      placeholder="Benutzername"
+                      placeholder="API Username"
                       value={formData.username}
                       onChange={(e) => handleInputChange('username', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Passwort</Label>
+                    <Label htmlFor="password">API Key</Label>
                     <Input
                       id="password"
                       type="password"
-                      placeholder="Passwort"
+                      placeholder="API Key"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
                     />
@@ -266,10 +266,10 @@ const MachinesTab: React.FC = () => {
                   onClick={() => setIsAddMachineDialogOpen(false)}
                   className="flex-1"
                 >
-                  Abbrechen
+                  Cancel
                 </Button>
                 <Button type="submit" className="flex-1">
-                  Maschine hinzufügen
+                  Add Machine
                 </Button>
               </div>
             </form>
@@ -289,8 +289,8 @@ const MachinesTab: React.FC = () => {
                 <BarChart3 className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Maschinenstatistiken</h3>
-                <p className="text-slate-600">Detaillierte Analysen und Leistungsmetriken anzeigen</p>
+                <h3 className="text-lg font-semibold text-slate-900">Machine Statistics</h3>
+                <p className="text-slate-600">View detailed analytics and performance metrics</p>
               </div>
             </div>
             <ExternalLink className="h-5 w-5 text-slate-400" />
@@ -311,14 +311,14 @@ const MachinesTab: React.FC = () => {
           {machines.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <Printer className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Keine Maschinen gefunden</h3>
-              <p className="text-slate-600 mb-4">Fügen Sie Ihre erste 3D-Drucker hinzu, um zu beginnen.</p>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">No machines found</h3>
+              <p className="text-slate-600 mb-4">Add your first 3D printer to get started.</p>
               <Button 
                 onClick={() => setIsAddMachineDialogOpen(true)}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Erste Maschine hinzufügen
+                Add First Machine
               </Button>
             </div>
           ) : (
@@ -347,11 +347,11 @@ const MachinesTab: React.FC = () => {
                   <div className="space-y-3">
                     {machine.current_job_id && (
                       <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                        <p className="text-sm text-blue-900 font-medium">Aktueller Job:</p>
-                        <p className="text-sm text-blue-700">Job läuft...</p>
+                        <p className="text-sm text-blue-900 font-medium">Current Job:</p>
+                        <p className="text-sm text-blue-700">Job running...</p>
                       </div>
                     )}
-                    <p className="text-sm text-slate-500">Zuletzt gesehen: {formatLastSeen(machine.last_seen)}</p>
+                    <p className="text-sm text-slate-500">Last seen: {formatLastSeen(machine.last_seen)}</p>
                     <div className="flex gap-2">
                       <Button 
                         size="sm" 
@@ -363,7 +363,7 @@ const MachinesTab: React.FC = () => {
                         }}
                       >
                         <Settings className="h-3 w-3 mr-1" />
-                        Konfigurieren
+                        Configure
                       </Button>
                       <Button 
                         size="sm" 
@@ -391,7 +391,7 @@ const MachinesTab: React.FC = () => {
             status: selectedMachine.status,
             connection: selectedMachine.connection_type,
             lastSeen: formatLastSeen(selectedMachine.last_seen),
-            currentJob: selectedMachine.current_job_id ? 'Job läuft...' : null,
+            currentJob: selectedMachine.current_job_id ? 'Job running...' : null,
             connectionType: selectedMachine.connection_type,
             apiUrl: selectedMachine.api_url || '',
             apiKey: selectedMachine.api_key || '',

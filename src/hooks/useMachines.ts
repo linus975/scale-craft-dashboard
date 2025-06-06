@@ -25,7 +25,7 @@ export const useMachines = () => {
     } catch (error: any) {
       console.error('Error fetching machines:', error);
       toast({
-        title: "Fehler beim Laden der Maschinen",
+        title: "Error loading machines",
         description: error.message,
         variant: "destructive",
       });
@@ -37,11 +37,16 @@ export const useMachines = () => {
   const createMachine = async (machineData: Omit<MachineInsert, 'user_id'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Benutzer nicht angemeldet');
+      if (!user) throw new Error('User not logged in');
 
       const { data, error } = await supabase
         .from('machines')
-        .insert({ ...machineData, user_id: user.id })
+        .insert({ 
+          ...machineData, 
+          user_id: user.id,
+          // Ensure password is included in the data
+          password: machineData.password || null
+        })
         .select()
         .single();
 
@@ -49,15 +54,15 @@ export const useMachines = () => {
 
       setMachines(prev => [data, ...prev]);
       toast({
-        title: "Maschine hinzugefügt",
-        description: `${data.name} wurde erfolgreich hinzugefügt.`,
+        title: "Machine added",
+        description: `${data.name} was successfully added.`,
       });
 
       return data;
     } catch (error: any) {
       console.error('Error creating machine:', error);
       toast({
-        title: "Fehler beim Hinzufügen der Maschine",
+        title: "Error adding machine",
         description: error.message,
         variant: "destructive",
       });
@@ -81,15 +86,15 @@ export const useMachines = () => {
       ));
 
       toast({
-        title: "Maschine aktualisiert",
-        description: `${data.name} wurde erfolgreich aktualisiert.`,
+        title: "Machine updated",
+        description: `${data.name} was successfully updated.`,
       });
 
       return data;
     } catch (error: any) {
       console.error('Error updating machine:', error);
       toast({
-        title: "Fehler beim Aktualisieren der Maschine",
+        title: "Error updating machine",
         description: error.message,
         variant: "destructive",
       });
@@ -110,13 +115,13 @@ export const useMachines = () => {
 
       setMachines(prev => prev.filter(machine => machine.id !== id));
       toast({
-        title: "Maschine gelöscht",
-        description: `${machine?.name} wurde erfolgreich gelöscht.`,
+        title: "Machine deleted",
+        description: `${machine?.name} was successfully deleted.`,
       });
     } catch (error: any) {
       console.error('Error deleting machine:', error);
       toast({
-        title: "Fehler beim Löschen der Maschine",
+        title: "Error deleting machine",
         description: error.message,
         variant: "destructive",
       });
