@@ -15,7 +15,6 @@ import { useCategoryManager } from '@/hooks/useCategoryManager';
 import { useDesignFileUpload } from '@/hooks/useDesignFileUpload';
 import { useDesignParts } from '@/hooks/useDesignParts';
 import { useDesignFormValidation } from '@/hooks/useDesignFormValidation';
-import { useDesignJobCreation } from '@/hooks/useDesignJobCreation';
 import { useDesignDataCreation } from '@/hooks/useDesignDataCreation';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
 import { useFileUpload } from '@/hooks/useFileUpload';
@@ -67,7 +66,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const fileUpload = useDesignFileUpload();
   const designParts = useDesignParts();
   const { validateForm } = useDesignFormValidation(designParts, fileUpload);
-  const { createPrintJobsFromDesign } = useDesignJobCreation(designParts, fileUpload);
   const { createDesignData } = useDesignDataCreation(designParts, fileUpload);
   const multiImageUpload = useMultiImageUpload();
 
@@ -97,7 +95,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: FormData) => {
     if (saving) return; // Prevent double submission
     
-    console.log('🚀 Starting optimized design save process...', data);
+    console.log('🚀 Starting design save process...', data);
     setSaving(true);
     setProgress(0);
     setCurrentStep('Validating...');
@@ -177,38 +175,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         category: data.category.trim() || 'Allgemein'
       };
 
-      setProgress(80);
+      setProgress(90);
       setCurrentStep('Saving to database...');
 
-      // Step 6: Save design to database
+      // Step 6: Save design to database (no print job creation)
       const savedDesign = await createDesign(designData);
-      setProgress(90);
-      
-      // Step 7: Create print jobs in background (don't wait for completion)
-      if (fileUpload.uploadedFiles.length > 0 || Object.keys(fileUpload.gcodeFiles).length > 0) {
-        setCurrentStep('Creating print jobs...');
-        // Start job creation but don't wait for it to complete
-        createPrintJobsFromDesign(designDataWithColorMachine, savedDesign)
-          .then((createdJobs) => {
-            let successMessage = `${createdJobs.length} Druckauftrag/Druckaufträge wurden im Hintergrund erstellt.`;
-            if (gcodeFileName) {
-              successMessage += ` G-Code-Datei "${gcodeFileName}" wurde hochgeladen.`;
-            }
-            
-            toast({
-              title: "Druckaufträge erstellt",
-              description: successMessage,
-            });
-          })
-          .catch((jobError) => {
-            console.error('❌ Error creating print jobs (but design was saved):', jobError);
-            toast({
-              title: "Hinweis",
-              description: "Design wurde gespeichert, aber Druckaufträge konnten nicht erstellt werden.",
-            });
-          });
-      }
-
       setProgress(100);
       setCurrentStep('Complete!');
 

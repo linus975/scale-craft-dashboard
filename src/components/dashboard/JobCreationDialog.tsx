@@ -50,7 +50,7 @@ const JobCreationDialog: React.FC<JobCreationDialogProps> = ({
     
     setLoading(true);
     try {
-      // Create the print job
+      // Create the print job manually (not from design creation)
       const createdJob = await createPrintJob({
         product_id: selectedDesign.id,
         product_name: selectedDesign.name,
