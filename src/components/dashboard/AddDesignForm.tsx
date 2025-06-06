@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -96,15 +94,15 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: FormData) => {
     if (saving) return; // Prevent double submission
     
-    console.log('🚀 Starting design save process...');
+    console.log('🚀 Starting design save process...', data);
     setSaving(true);
     
     try {
-      // Basic validation
+      // Basic validation - only name is required
       const basicValidationErrors: string[] = [];
-      if (!data.name) basicValidationErrors.push("Design name is required");
-      if (!data.trackingType) basicValidationErrors.push("Tracking type is required");
-      if (!data.eanNumber) basicValidationErrors.push("EAN/SKU number is required");
+      if (!data.name.trim()) {
+        basicValidationErrors.push("Design name is required");
+      }
       
       if (basicValidationErrors.length > 0) {
         toast({
@@ -112,6 +110,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           description: basicValidationErrors.join(", "),
           variant: "destructive",
         });
+        setSaving(false);
         return;
       }
 
@@ -170,7 +169,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         ...designData,
         preview_image_path: previewImagePath,
         gcode_file_path: gcodeFilePath,
-        gcode: gcodeContent
+        gcode: gcodeContent,
+        // Make category optional by providing a default
+        category: data.category.trim() || 'Allgemein'
       };
 
       console.log('💾 Saving design to database...', designData);
@@ -182,17 +183,25 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       // Only create print jobs if files are present
       if (fileUpload.uploadedFiles.length > 0 || Object.keys(fileUpload.gcodeFiles).length > 0) {
         console.log('🔧 Creating print jobs...');
-        const createdJobs = await createPrintJobsFromDesign(designDataWithColorMachine, savedDesign);
-        
-        let successMessage = `Das Design "${data.name}" wurde mit ${createdJobs.length} Druckauftrag/Druckaufträgen erfolgreich gespeichert.`;
-        if (gcodeFileName) {
-          successMessage += ` G-Code-Datei "${gcodeFileName}" wurde erfolgreich hochgeladen.`;
+        try {
+          const createdJobs = await createPrintJobsFromDesign(designDataWithColorMachine, savedDesign);
+          
+          let successMessage = `Das Design "${data.name}" wurde mit ${createdJobs.length} Druckauftrag/Druckaufträgen erfolgreich gespeichert.`;
+          if (gcodeFileName) {
+            successMessage += ` G-Code-Datei "${gcodeFileName}" wurde erfolgreich hochgeladen.`;
+          }
+          
+          toast({
+            title: "Design und Aufträge erfolgreich erstellt",
+            description: successMessage,
+          });
+        } catch (jobError) {
+          console.error('❌ Error creating print jobs (but design was saved):', jobError);
+          toast({
+            title: "Design erfolgreich erstellt",
+            description: `Das Design "${data.name}" wurde gespeichert, aber es gab ein Problem beim Erstellen der Druckaufträge.`,
+          });
         }
-        
-        toast({
-          title: "Design und Aufträge erfolgreich erstellt",
-          description: successMessage,
-        });
       } else {
         let successMessage = `Das Design "${data.name}" wurde erfolgreich gespeichert.`;
         if (gcodeFileName) {
@@ -207,19 +216,19 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       
       console.log('🎉 All operations completed successfully, closing dialog...');
       
+      // Close the dialog immediately after successful save
+      onSave();
+      
     } catch (error) {
       console.error('❌ Error creating design:', error);
       toast({
         title: "Fehler beim Erstellen des Designs",
-        description: "Es gab einen Fehler beim Speichern des Designs. Bitte versuchen Sie es erneut.",
+        description: error instanceof Error ? error.message : "Es gab einen Fehler beim Speichern des Designs. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {
       setSaving(false);
-      console.log('🔄 Setting saving to false and calling onSave()...');
-      // Always call onSave to close the dialog, regardless of success or failure
-      onSave();
-      console.log('✅ onSave() called - dialog should close now');
+      console.log('🔄 Setting saving to false...');
     }
   };
 
@@ -312,5 +321,3 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 };
 
 export default AddDesignForm;
-
-

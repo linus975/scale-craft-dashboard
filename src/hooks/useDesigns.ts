@@ -76,7 +76,7 @@ export const useDesigns = () => {
       const cleanDesignData = {
         name: designData.name,
         description: designData.description || null,
-        category: designData.category,
+        category: designData.category || 'Allgemein', // Provide default if empty
         design_type: designData.design_type,
         ean_number: designData.ean_number || null,
         tracking_type: designData.tracking_type || null,
