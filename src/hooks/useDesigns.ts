@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -70,13 +71,13 @@ export const useDesigns = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Benutzer nicht angemeldet');
 
-      console.log('🔨 Creating design with data:', designData);
+      console.log('🔨 Creating design with optimized data:', designData);
 
       // Clean the design data to match database schema
       const cleanDesignData = {
         name: designData.name,
         description: designData.description || null,
-        category: designData.category || 'Allgemein', // Provide default if empty
+        category: designData.category || 'Allgemein', // Always provide default
         design_type: designData.design_type,
         ean_number: designData.ean_number || null,
         tracking_type: designData.tracking_type || null,
@@ -87,7 +88,7 @@ export const useDesigns = () => {
         cad_file_path: designData.cad_file_path || null,
         ini_file_path: designData.ini_file_path || null,
         gcode_file_path: designData.gcode_file_path || null,
-        gcode: designData.gcode || null,
+        gcode: null, // Don't store G-Code content anymore
         preview_image_path: designData.preview_image_path || null,
         nozzle_diameter: designData.nozzle_diameter || null,
         material: designData.material || null,
@@ -97,7 +98,7 @@ export const useDesigns = () => {
         user_id: user.id
       };
 
-      console.log('💾 Inserting clean design data:', cleanDesignData);
+      console.log('💾 Inserting optimized design data:', cleanDesignData);
 
       const { data, error } = await supabase
         .from('designs')

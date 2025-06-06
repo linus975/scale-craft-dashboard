@@ -72,6 +72,14 @@ export const useDesignFileUpload = () => {
       const newFiles = [];
       
       for (const file of Array.from(files)) {
+        // File size validation - warn for files larger than 50MB
+        if (file.size > 50 * 1024 * 1024) {
+          toast({
+            title: "Large file detected",
+            description: `${file.name} is ${(file.size / 1024 / 1024).toFixed(1)}MB. This might take longer to upload.`,
+          });
+        }
+
         const fileExtension = file.name.split('.').pop()?.toLowerCase();
         
         // Validate file type if expectedFileType is specified
@@ -210,37 +218,31 @@ export const useDesignFileUpload = () => {
     if (!previewImage) return null;
     
     try {
-      console.log('Uploading preview image:', previewImage.name);
+      console.log('📸 Uploading preview image:', previewImage.name);
       const path = await uploadFile(previewImage, 'preview-images');
-      console.log('Preview image uploaded to path:', path);
+      console.log('✅ Preview image uploaded to path:', path);
       return path;
     } catch (error) {
-      console.error('Error uploading preview image:', error);
+      console.error('❌ Error uploading preview image:', error);
       throw error;
     }
   };
 
-  // Upload G-Code file to storage and return path and content
+  // Optimized G-Code upload - only upload file, don't read content
   const uploadGcodeFile = async (partId: string): Promise<{ path: string | null; content: string | null }> => {
     const gcodeFile = gcodeFiles[partId];
     if (!gcodeFile) return { path: null, content: null };
 
     try {
-      console.log('Uploading G-Code file:', gcodeFile.name);
+      console.log('⚙️ Uploading G-Code file:', gcodeFile.name);
       const path = await uploadFile(gcodeFile, 'gcode-files');
-      console.log('G-Code file uploaded to path:', path);
+      console.log('✅ G-Code file uploaded to path:', path);
       
-      // Read file content
-      const content = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.onerror = reject;
-        reader.readAsText(gcodeFile);
-      });
-
-      return { path, content };
+      // Don't read content anymore - just return the path
+      // Content can be read later when needed for processing
+      return { path, content: null };
     } catch (error) {
-      console.error('Error uploading G-Code file:', error);
+      console.error('❌ Error uploading G-Code file:', error);
       throw error;
     }
   };

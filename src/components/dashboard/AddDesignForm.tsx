@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { File } from 'lucide-react';
+import { File, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import DesignInformationSection from './design-edit/DesignInformationSection';
 import { useDesigns } from '@/hooks/useDesigns';
@@ -44,6 +45,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const [colorValue, setColorValue] = useState('');
   const [machineValue, setMachineValue] = useState('');
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -94,11 +97,13 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: FormData) => {
     if (saving) return; // Prevent double submission
     
-    console.log('🚀 Starting design save process...', data);
+    console.log('🚀 Starting optimized design save process...', data);
     setSaving(true);
+    setProgress(0);
+    setCurrentStep('Validating...');
     
     try {
-      // Basic validation - only name is required
+      // Step 1: Basic validation - only name is required
       const basicValidationErrors: string[] = [];
       if (!data.name.trim()) {
         basicValidationErrors.push("Design name is required");
@@ -114,107 +119,109 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         return;
       }
 
-      console.log('✅ Validation passed, proceeding with save...');
+      setProgress(10);
+      setCurrentStep('Preparing files...');
 
-      // Upload preview image if exists
+      // Step 2: Upload preview image if exists
       let previewImagePath = null;
       if (fileUpload.previewImage) {
-        console.log('📸 Uploading preview image...');
+        setCurrentStep('Uploading preview image...');
         previewImagePath = await fileUpload.uploadPreviewImage();
-        console.log('✅ Preview image uploaded:', previewImagePath);
+        setProgress(30);
       }
 
-      // Upload multi-images if exists
+      // Step 3: Upload multi-images if exists
       if (multiImageUpload.images.length > 0) {
-        console.log('🖼️ Uploading multi-images...');
+        setCurrentStep('Uploading images...');
         // Upload first image as preview if no preview image was set
         if (!previewImagePath && multiImageUpload.images[0]) {
           const firstImageFile = multiImageUpload.images[0].file;
           try {
             previewImagePath = await uploadFile(firstImageFile, 'preview-images');
-            console.log('✅ First multi-image uploaded as preview:', previewImagePath);
           } catch (error) {
             console.error('❌ Error uploading first multi-image as preview:', error);
           }
         }
+        setProgress(50);
       }
 
-      // Upload G-Code file and get content for the main part
+      // Step 4: Upload G-Code file (optimized - no content reading)
       let gcodeFilePath = null;
-      let gcodeContent = null;
       let gcodeFileName = null;
       
       const mainPartGcodeFile = fileUpload.getGcodeFileForPart(designParts.activePart);
       if (mainPartGcodeFile) {
-        console.log('⚙️ Uploading G-Code file...');
+        setCurrentStep('Uploading G-Code file...');
         const gcodeResult = await fileUpload.uploadGcodeFile(designParts.activePart);
         gcodeFilePath = gcodeResult.path;
-        gcodeContent = gcodeResult.content;
         gcodeFileName = mainPartGcodeFile.name;
-        console.log('✅ G-Code uploaded:', gcodeFilePath);
+        setProgress(70);
       }
 
-      // Include color and machine in the data
+      // Step 5: Prepare design data
+      setCurrentStep('Preparing design data...');
       const designDataWithColorMachine = {
         ...data,
         color: colorValue,
         machine: machineValue
       };
 
-      // Create design data
       let designData = createDesignData(designDataWithColorMachine);
       
-      // Override with uploaded file paths and content
+      // Override with uploaded file paths (no gcode content)
       designData = {
         ...designData,
         preview_image_path: previewImagePath,
         gcode_file_path: gcodeFilePath,
-        gcode: gcodeContent,
-        // Make category optional by providing a default
+        gcode: null, // Don't store content anymore
         category: data.category.trim() || 'Allgemein'
       };
 
-      console.log('💾 Saving design to database...', designData);
+      setProgress(80);
+      setCurrentStep('Saving to database...');
 
+      // Step 6: Save design to database
       const savedDesign = await createDesign(designData);
+      setProgress(90);
       
-      console.log('✅ Design saved successfully:', savedDesign);
-
-      // Only create print jobs if files are present
+      // Step 7: Create print jobs in background (don't wait for completion)
       if (fileUpload.uploadedFiles.length > 0 || Object.keys(fileUpload.gcodeFiles).length > 0) {
-        console.log('🔧 Creating print jobs...');
-        try {
-          const createdJobs = await createPrintJobsFromDesign(designDataWithColorMachine, savedDesign);
-          
-          let successMessage = `Das Design "${data.name}" wurde mit ${createdJobs.length} Druckauftrag/Druckaufträgen erfolgreich gespeichert.`;
-          if (gcodeFileName) {
-            successMessage += ` G-Code-Datei "${gcodeFileName}" wurde erfolgreich hochgeladen.`;
-          }
-          
-          toast({
-            title: "Design und Aufträge erfolgreich erstellt",
-            description: successMessage,
+        setCurrentStep('Creating print jobs...');
+        // Start job creation but don't wait for it to complete
+        createPrintJobsFromDesign(designDataWithColorMachine, savedDesign)
+          .then((createdJobs) => {
+            let successMessage = `${createdJobs.length} Druckauftrag/Druckaufträge wurden im Hintergrund erstellt.`;
+            if (gcodeFileName) {
+              successMessage += ` G-Code-Datei "${gcodeFileName}" wurde hochgeladen.`;
+            }
+            
+            toast({
+              title: "Druckaufträge erstellt",
+              description: successMessage,
+            });
+          })
+          .catch((jobError) => {
+            console.error('❌ Error creating print jobs (but design was saved):', jobError);
+            toast({
+              title: "Hinweis",
+              description: "Design wurde gespeichert, aber Druckaufträge konnten nicht erstellt werden.",
+            });
           });
-        } catch (jobError) {
-          console.error('❌ Error creating print jobs (but design was saved):', jobError);
-          toast({
-            title: "Design erfolgreich erstellt",
-            description: `Das Design "${data.name}" wurde gespeichert, aber es gab ein Problem beim Erstellen der Druckaufträge.`,
-          });
-        }
-      } else {
-        let successMessage = `Das Design "${data.name}" wurde erfolgreich gespeichert.`;
-        if (gcodeFileName) {
-          successMessage += ` G-Code-Datei "${gcodeFileName}" wurde erfolgreich hochgeladen.`;
-        }
-        
-        toast({
-          title: "Design erfolgreich erstellt",
-          description: successMessage,
-        });
+      }
+
+      setProgress(100);
+      setCurrentStep('Complete!');
+
+      // Show success message
+      let successMessage = `Das Design "${data.name}" wurde erfolgreich gespeichert.`;
+      if (gcodeFileName) {
+        successMessage += ` G-Code-Datei "${gcodeFileName}" wurde hochgeladen.`;
       }
       
-      console.log('🎉 All operations completed successfully, closing dialog...');
+      toast({
+        title: "Design erfolgreich erstellt",
+        description: successMessage,
+      });
       
       // Close the dialog immediately after successful save
       onSave();
@@ -228,7 +235,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       });
     } finally {
       setSaving(false);
-      console.log('🔄 Setting saving to false...');
+      setProgress(0);
+      setCurrentStep('');
     }
   };
 
@@ -304,6 +312,24 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               />
             </CardContent>
           </Card>
+
+          {/* Progress Indicator when saving */}
+          {saving && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm font-medium">{currentStep}</span>
+                  </div>
+                  <Progress value={progress} className="w-full" />
+                  <p className="text-xs text-muted-foreground">
+                    Design wird gespeichert... Bitte warten Sie.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
