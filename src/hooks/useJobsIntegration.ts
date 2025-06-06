@@ -15,8 +15,21 @@ export const useJobsIntegration = () => {
   // Only show ready_to_print jobs in the priority queues
   const readyToPrintJobs = printJobs.filter(job => job.status === 'ready_to_print');
   
-  const highPriorityJobs = readyToPrintJobs.filter(job => (job.priority || 5) > 5);
-  const normalPriorityJobs = readyToPrintJobs.filter(job => (job.priority || 5) <= 5);
+  // Sort ready_to_print jobs by queued_at (oldest first) - jobs that have been waiting longest appear first
+  const sortedReadyToPrintJobs = [...readyToPrintJobs].sort((a, b) => {
+    // If both have queued_at timestamps, sort by oldest first
+    if (a.queued_at && b.queued_at) {
+      return new Date(a.queued_at).getTime() - new Date(b.queued_at).getTime();
+    }
+    // If only one has queued_at, prioritize the one with timestamp
+    if (a.queued_at && !b.queued_at) return -1;
+    if (!a.queued_at && b.queued_at) return 1;
+    // If neither has queued_at, sort by created_at (oldest first)
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+  
+  const highPriorityJobs = sortedReadyToPrintJobs.filter(job => (job.priority || 5) > 5);
+  const normalPriorityJobs = sortedReadyToPrintJobs.filter(job => (job.priority || 5) <= 5);
   
   // Keep completed and failed jobs as they were
   const completedJobs = printJobs.filter(job => job.status === 'done');
