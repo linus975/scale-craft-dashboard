@@ -45,7 +45,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
     type: machine.type,
     connectionType: machine.connectionType || 'octoprint',
     apiUrl: machine.apiUrl || '',
-    apiKey: machine.apiKey || '',
+    apiKey: machine.apiKey ? '********************' : '',
     username: machine.username || '',
     password: ''
   });
@@ -62,7 +62,14 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ ...formData, id: machine.id });
+    const submitData = { ...formData, id: machine.id };
+    
+    // If API key field shows asterisks and wasn't changed, don't include it in update
+    if (formData.apiKey === '********************') {
+      delete submitData.apiKey;
+    }
+    
+    onSave(submitData);
     onClose();
   };
 
