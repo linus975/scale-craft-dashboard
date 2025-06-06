@@ -57,7 +57,7 @@ export const useDesignJobCreation = (
             iniFilePath: iniFile?.path || null
           },
           priority: 5,
-          status: part.partType === 'personalized' ? 'waiting_for_personalization' : 'ready_to_print',
+          status: 'waiting_for_classifying', // Always start with waiting_for_classifying
           notes: `Auto-generated job from design "${designData.name}" for part "${part.name}"`
         };
 
