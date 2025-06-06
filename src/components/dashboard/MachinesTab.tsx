@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,7 +66,7 @@ const MachinesTab: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const machineData = {
+      const machineData: any = {
         name: formData.name,
         printer_type: formData.printer_type,
         connection_type: formData.connection_type,
@@ -73,12 +74,11 @@ const MachinesTab: React.FC = () => {
         username: formData.username
       };
 
-      // Handle API key/password based on connection type
+      // Handle API key/password - store everything in api_key field
       if (formData.connection_type === 'octoprint') {
         machineData.api_key = formData.api_key;
       } else {
-        machineData.api_key = formData.password; // Store password as api_key for non-octoprint connections
-        machineData.username = formData.username;
+        machineData.api_key = formData.password; // Store password as api_key for all connections
       }
 
       await createMachine(machineData);
@@ -409,7 +409,7 @@ const MachinesTab: React.FC = () => {
             currentJob: selectedMachine.current_job_id ? 'Job running...' : null,
             connectionType: selectedMachine.connection_type,
             apiUrl: selectedMachine.api_url || '',
-            apiKey: selectedMachine.api_key,
+            apiKey: selectedMachine.api_key || '',
             username: selectedMachine.username || ''
           }}
           isOpen={!!selectedMachine}
