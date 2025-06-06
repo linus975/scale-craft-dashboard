@@ -65,7 +65,23 @@ const MachinesTab: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createMachine(formData);
+      const machineData = {
+        name: formData.name,
+        printer_type: formData.printer_type,
+        connection_type: formData.connection_type,
+        api_url: formData.api_url,
+        username: formData.username
+      };
+
+      // Handle API key/password based on connection type
+      if (formData.connection_type === 'octoprint') {
+        machineData.api_key = formData.api_key;
+      } else {
+        machineData.api_key = formData.password; // Store password as api_key for non-octoprint connections
+        machineData.username = formData.username;
+      }
+
+      await createMachine(machineData);
       setIsAddMachineDialogOpen(false);
       setFormData({
         name: '',
