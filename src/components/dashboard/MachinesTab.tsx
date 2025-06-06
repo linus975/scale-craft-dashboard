@@ -117,6 +117,7 @@ const MachinesTab: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800 border-green-200';
+      case 'idle': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'offline': return 'bg-red-100 text-red-800 border-red-200';
       case 'needs_configuration': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'error': return 'bg-red-100 text-red-800 border-red-200';
@@ -127,6 +128,7 @@ const MachinesTab: React.FC = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <Wifi className="h-4 w-4" />;
+      case 'idle': return <Wifi className="h-4 w-4" />;
       case 'offline': return <WifiOff className="h-4 w-4" />;
       case 'needs_configuration': return <Settings className="h-4 w-4" />;
       case 'error': return <WifiOff className="h-4 w-4" />;
@@ -137,6 +139,7 @@ const MachinesTab: React.FC = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'active': return 'Active';
+      case 'idle': return 'Idle';
       case 'offline': return 'Offline';
       case 'needs_configuration': return 'Configuration Required';
       case 'error': return 'Error';
