@@ -7,36 +7,28 @@ export const useFileUpload = () => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
-  const uploadFile = async (file: File, folder: string = '') => {
+  const uploadFile = async (file: File, folder: string = '', onProgress?: (progress: number) => void) => {
     setUploading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Benutzer nicht angemeldet');
 
-      // Use the original filename but check if it already exists
-      let fileName = file.name;
+      // Always add timestamp to filename to avoid conflicts - no existence checks needed
+      const fileExt = file.name.split('.').pop();
+      const fileNameWithoutExt = file.name.replace(`.${fileExt}`, '');
+      const timestamp = Date.now();
+      const fileName = `${fileNameWithoutExt}_${timestamp}.${fileExt}`;
+
+      // Simplified path structure
       const filePath = folder ? `${user.id}/${folder}/${fileName}` : `${user.id}/${fileName}`;
 
-      // Check if file already exists
-      const { data: existingFile } = await supabase.storage
-        .from('design-files')
-        .list(folder ? `${user.id}/${folder}` : user.id, {
-          search: fileName
-        });
-
-      // If file exists, add timestamp to make it unique
-      if (existingFile && existingFile.length > 0) {
-        const fileExt = file.name.split('.').pop();
-        const fileNameWithoutExt = file.name.replace(`.${fileExt}`, '');
-        const timestamp = Date.now();
-        fileName = `${fileNameWithoutExt}_${timestamp}.${fileExt}`;
-      }
-
-      const finalFilePath = folder ? `${user.id}/${folder}/${fileName}` : `${user.id}/${fileName}`;
-
+      // Upload with progress tracking
       const { data, error } = await supabase.storage
         .from('design-files')
-        .upload(finalFilePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false // Since we use timestamps, we never need to overwrite
+        });
 
       if (error) throw error;
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -95,7 +94,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: FormData) => {
     if (saving) return; // Prevent double submission
     
-    console.log('🚀 Starting design save process...', data);
+    console.log('🚀 Starting optimized design save process...', data);
     setSaving(true);
     setProgress(0);
     setCurrentStep('Validating...');
@@ -117,15 +116,14 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         return;
       }
 
-      setProgress(10);
-      setCurrentStep('Preparing files...');
+      setProgress(20);
+      setCurrentStep('Uploading preview image...');
 
       // Step 2: Upload preview image if exists
       let previewImagePath = null;
       if (fileUpload.previewImage) {
-        setCurrentStep('Uploading preview image...');
         previewImagePath = await fileUpload.uploadPreviewImage();
-        setProgress(30);
+        setProgress(40);
       }
 
       // Step 3: Upload multi-images if exists
@@ -135,15 +133,15 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         if (!previewImagePath && multiImageUpload.images[0]) {
           const firstImageFile = multiImageUpload.images[0].file;
           try {
-            previewImagePath = await uploadFile(firstImageFile, 'preview-images');
+            previewImagePath = await uploadFile(firstImageFile, 'previews');
           } catch (error) {
             console.error('❌ Error uploading first multi-image as preview:', error);
           }
         }
-        setProgress(50);
+        setProgress(60);
       }
 
-      // Step 4: Upload G-Code file (optimized - no content reading)
+      // Step 4: Upload G-Code file (optimized)
       let gcodeFilePath = null;
       let gcodeFileName = null;
       
@@ -153,7 +151,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         const gcodeResult = await fileUpload.uploadGcodeFile(designParts.activePart);
         gcodeFilePath = gcodeResult.path;
         gcodeFileName = mainPartGcodeFile.name;
-        setProgress(70);
+        setProgress(80);
       }
 
       // Step 5: Prepare design data
@@ -166,7 +164,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
       let designData = createDesignData(designDataWithColorMachine);
       
-      // Override with uploaded file paths (no gcode content)
+      // Override with uploaded file paths
       designData = {
         ...designData,
         preview_image_path: previewImagePath,

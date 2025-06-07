@@ -112,8 +112,9 @@ export const useDesignFileUpload = () => {
           }
         }
 
-        // Upload file to Supabase Storage
-        const filePath = await uploadFile(file, `designs/${partId || 'main'}`);
+        // Simplified upload to optimized folder structure
+        const folderPath = partId ? `parts/${partId}` : 'general';
+        const filePath = await uploadFile(file, folderPath);
         
         const newFile = {
           id: Date.now() + Math.random() + '',
@@ -213,13 +214,13 @@ export const useDesignFileUpload = () => {
     return gcodeFiles[partId] || null;
   };
 
-  // Upload preview image to storage and return path
+  // Optimized preview image upload
   const uploadPreviewImage = async (): Promise<string | null> => {
     if (!previewImage) return null;
     
     try {
       console.log('📸 Uploading preview image:', previewImage.name);
-      const path = await uploadFile(previewImage, 'preview-images');
+      const path = await uploadFile(previewImage, 'previews');
       console.log('✅ Preview image uploaded to path:', path);
       return path;
     } catch (error) {
@@ -228,18 +229,17 @@ export const useDesignFileUpload = () => {
     }
   };
 
-  // Optimized G-Code upload - only upload file, don't read content
+  // Optimized G-Code upload
   const uploadGcodeFile = async (partId: string): Promise<{ path: string | null; content: string | null }> => {
     const gcodeFile = gcodeFiles[partId];
     if (!gcodeFile) return { path: null, content: null };
 
     try {
       console.log('⚙️ Uploading G-Code file:', gcodeFile.name);
-      const path = await uploadFile(gcodeFile, 'gcode-files');
+      const path = await uploadFile(gcodeFile, 'gcode');
       console.log('✅ G-Code file uploaded to path:', path);
       
       // Don't read content anymore - just return the path
-      // Content can be read later when needed for processing
       return { path, content: null };
     } catch (error) {
       console.error('❌ Error uploading G-Code file:', error);
