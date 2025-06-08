@@ -47,7 +47,8 @@ export const useJobAssignmentJson = () => {
         throw error;
       }
 
-      const result = data as JobAssignmentResult;
+      // Properly type the result by converting from Json to our expected interface
+      const result = data as unknown as JobAssignmentResult;
 
       if (result.success && result.job_assigned) {
         toast({
