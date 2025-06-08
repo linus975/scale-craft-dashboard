@@ -679,6 +679,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_and_assign_next_job: {
+        Args: { machine_uuid: string }
+        Returns: Json
+      }
       test_connection: {
         Args: Record<PropertyKey, never>
         Returns: {

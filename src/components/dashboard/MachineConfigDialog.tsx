@@ -6,10 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Play, ListPlus, Loader2, Bug, Zap } from 'lucide-react';
+import { Settings, Play, ListPlus, Loader2, Bug, Zap, CheckCircle } from 'lucide-react';
 import { useJobClaiming } from '@/hooks/useJobClaiming';
 import { useJobClaimingDebug } from '@/hooks/useJobClaimingDebug';
 import { useJobAssignment } from '@/hooks/useJobAssignment';
+import { useJobAssignmentJson } from '@/hooks/useJobAssignmentJson';
 
 interface Machine {
   id: number | string;
@@ -46,6 +47,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
   const { claimNextJob, claiming } = useJobClaiming();
   const { debugJobClaiming, debugging } = useJobClaimingDebug();
   const { assignNextJob, assigning } = useJobAssignment();
+  const { assignJobWithJson, assigning: assigningJson } = useJobAssignmentJson();
 
   // Determine the display value for API key
   const getApiKeyDisplayValue = () => {
@@ -105,6 +107,15 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
   const handleAssignNextJob = async () => {
     const result = await assignNextJob(machine.id.toString());
     if (result) {
+      // Refresh the parent component to show the updated machine status
+      onClose();
+      // You might want to trigger a refetch of machines here
+    }
+  };
+
+  const handleAssignWithJson = async () => {
+    const result = await assignJobWithJson(machine.id.toString());
+    if (result?.success) {
       // Refresh the parent component to show the updated machine status
       onClose();
       // You might want to trigger a refetch of machines here
@@ -337,6 +348,25 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                       <>
                         <Zap className="h-4 w-4 mr-2" />
                         Assign Next Job (Alternative)
+                      </>
+                    )}
+                  </Button>
+
+                  <Button 
+                    onClick={handleAssignWithJson}
+                    disabled={assigningJson || machine.status === 'busy'}
+                    variant="outline"
+                    className="w-full border-green-200 text-green-700 hover:bg-green-50"
+                  >
+                    {assigningJson ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Assigning...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Assign Job (JSON Output)
                       </>
                     )}
                   </Button>
