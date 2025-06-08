@@ -17,24 +17,36 @@ export const useMachines = () => {
 
   const fetchMachines = async () => {
     try {
-      const { data, error } = await supabase
+      // First get all machines
+      const { data: machinesData, error: machinesError } = await supabase
         .from('machines')
-        .select(`
-          *,
-          print_jobs!machines_current_job_id_fkey (
-            product_name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (machinesError) throw machinesError;
+
+      // Then get job names for machines that have a current_job_id
+      const machineIds = machinesData?.filter(m => m.current_job_id).map(m => m.current_job_id) || [];
       
-      // Transform the data to include current job name
-      const machinesWithJobNames = (data || []).map(machine => ({
-        ...machine,
-        current_job_name: machine.print_jobs?.product_name || null,
-        print_jobs: undefined // Remove the nested object
-      }));
+      let jobsData: any[] = [];
+      if (machineIds.length > 0) {
+        const { data: jobs, error: jobsError } = await supabase
+          .from('print_jobs')
+          .select('id, product_name')
+          .in('id', machineIds);
+
+        if (jobsError) throw jobsError;
+        jobsData = jobs || [];
+      }
+
+      // Combine the data
+      const machinesWithJobNames = (machinesData || []).map(machine => {
+        const currentJob = jobsData.find(job => job.id === machine.current_job_id);
+        return {
+          ...machine,
+          current_job_name: currentJob?.product_name || null
+        };
+      });
       
       setMachines(machinesWithJobNames);
     } catch (error: any) {
@@ -89,20 +101,26 @@ export const useMachines = () => {
         .from('machines')
         .update(machineData)
         .eq('id', id)
-        .select(`
-          *,
-          print_jobs!machines_current_job_id_fkey (
-            product_name
-          )
-        `)
+        .select()
         .single();
 
       if (error) throw error;
 
+      // Get the job name if there's a current_job_id
+      let currentJobName = null;
+      if (data.current_job_id) {
+        const { data: jobData } = await supabase
+          .from('print_jobs')
+          .select('product_name')
+          .eq('id', data.current_job_id)
+          .single();
+        
+        currentJobName = jobData?.product_name || null;
+      }
+
       const updatedMachine = {
         ...data,
-        current_job_name: data.print_jobs?.product_name || null,
-        print_jobs: undefined
+        current_job_name: currentJobName
       };
 
       setMachines(prev => prev.map(machine => 
