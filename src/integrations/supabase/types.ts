@@ -653,6 +653,17 @@ export type Database = {
       }
     }
     Functions: {
+      claim_next_ready_job: {
+        Args: { machine_id: string }
+        Returns: {
+          id: string
+          job_number: string
+          product_name: string
+          status: string
+          queued_at: string
+          started_at: string
+        }[]
+      }
       generate_job_number: {
         Args: Record<PropertyKey, never>
         Returns: string

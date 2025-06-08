@@ -35,7 +35,7 @@ const MachinesTab: React.FC = () => {
     username: ''
   });
 
-  const { machines, loading, createMachine, updateMachine, deleteMachine } = useMachines();
+  const { machines, loading, createMachine, updateMachine, deleteMachine, refetch } = useMachines();
 
   if (currentView === 'statistics') {
     return <MachineStatisticsPage onBack={() => setCurrentView('main')} />;
@@ -112,6 +112,12 @@ const MachinesTab: React.FC = () => {
         // Error is handled in the hook
       }
     }
+  };
+
+  const handleMachineConfigClose = () => {
+    setSelectedMachine(null);
+    // Refresh machines to show updated status after potential job claiming
+    refetch();
   };
 
   const getStatusColor = (status: string) => {
@@ -415,7 +421,7 @@ const MachinesTab: React.FC = () => {
             username: selectedMachine.username || ''
           }}
           isOpen={!!selectedMachine}
-          onClose={() => setSelectedMachine(null)}
+          onClose={handleMachineConfigClose}
           onSave={handleMachineConfigSave}
           designs={mockDesigns}
           queueJobs={mockQueueJobs}

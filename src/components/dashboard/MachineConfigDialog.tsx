@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Play, ListPlus } from 'lucide-react';
+import { Settings, Play, ListPlus, Loader2 } from 'lucide-react';
+import { useJobClaiming } from '@/hooks/useJobClaiming';
 
 interface Machine {
   id: number | string;
@@ -40,6 +41,8 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
   designs,
   queueJobs 
 }) => {
+  const { claimNextJob, claiming } = useJobClaiming();
+
   // Determine the display value for API key
   const getApiKeyDisplayValue = () => {
     if (machine.apiKey && machine.apiKey.trim() !== '') {
@@ -84,6 +87,15 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
   const handleStartNextJob = () => {
     console.log(`Starting next job: ${selectedNextJob} from ${jobSource}`);
     // TODO: Implement job start logic
+  };
+
+  const handleClaimNextJob = async () => {
+    const result = await claimNextJob(machine.id.toString());
+    if (result) {
+      // Refresh the parent component to show the updated machine status
+      onClose();
+      // You might want to trigger a refetch of machines here
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -263,11 +275,46 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
               </CardContent>
             </Card>
 
-            {/* Next Job Selection */}
+            {/* Job Queue Management */}
             <Card>
               <CardHeader>
-                <CardTitle>Next Job</CardTitle>
-                <CardDescription>Select next job to print</CardDescription>
+                <CardTitle>Job Management</CardTitle>
+                <CardDescription>Claim jobs from the queue automatically</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button 
+                    onClick={handleClaimNextJob}
+                    disabled={claiming || machine.status === 'busy'}
+                    className="w-full"
+                  >
+                    {claiming ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Claiming Job...
+                      </>
+                    ) : (
+                      <>
+                        <ListPlus className="h-4 w-4 mr-2" />
+                        Claim Next Ready Job
+                      </>
+                    )}
+                  </Button>
+                  
+                  {machine.status === 'busy' && (
+                    <p className="text-sm text-slate-500 text-center">
+                      Machine is currently busy with a job
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Next Job Selection - Keep for manual selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Manual Job Selection</CardTitle>
+                <CardDescription>Manually select next job to print</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -311,10 +358,11 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                   <Button 
                     onClick={handleStartNextJob} 
                     disabled={!selectedNextJob}
+                    variant="outline"
                     className="w-full"
                   >
                     <Play className="h-4 w-4 mr-2" />
-                    Start Next Job
+                    Start Selected Job
                   </Button>
                 </div>
               </CardContent>
