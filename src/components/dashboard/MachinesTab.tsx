@@ -359,10 +359,12 @@ const MachinesTab: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {machine.current_job_id && (
+                    {machine.current_job_id && machine.current_job_name && (
                       <div className="p-2 bg-blue-50 rounded border border-blue-200">
                         <p className="text-sm text-blue-900 font-medium">Current Job:</p>
-                        <p className="text-sm text-blue-700">Job running...</p>
+                        <p className="text-sm text-blue-700 truncate" title={machine.current_job_name}>
+                          {machine.current_job_name}
+                        </p>
                       </div>
                     )}
                     <p className="text-sm text-slate-500">Last seen: {formatLastSeen(machine.last_seen)}</p>
@@ -405,7 +407,8 @@ const MachinesTab: React.FC = () => {
             status: selectedMachine.status,
             connection: selectedMachine.connection_type,
             lastSeen: formatLastSeen(selectedMachine.last_seen),
-            currentJob: selectedMachine.current_job_id ? 'Job running...' : null,
+            currentJob: selectedMachine.current_job_name || null,
+            current_job_name: selectedMachine.current_job_name,
             connectionType: selectedMachine.connection_type,
             apiUrl: selectedMachine.api_url || '',
             apiKey: selectedMachine.api_key || '',
