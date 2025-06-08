@@ -10,7 +10,7 @@ import { Settings, Play, ListPlus, Loader2, Bug, Zap, CheckCircle } from 'lucide
 import { useJobClaiming } from '@/hooks/useJobClaiming';
 import { useJobClaimingDebug } from '@/hooks/useJobClaimingDebug';
 import { useJobAssignment } from '@/hooks/useJobAssignment';
-import { useJobAssignmentJson } from '@/hooks/useJobAssignmentJson';
+import { useJobMachineAssignment } from '@/hooks/useJobMachineAssignment';
 
 interface Machine {
   id: number | string;
@@ -47,7 +47,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
   const { claimNextJob, claiming } = useJobClaiming();
   const { debugJobClaiming, debugging } = useJobClaimingDebug();
   const { assignNextJob, assigning } = useJobAssignment();
-  const { assignJobWithJson, assigning: assigningJson } = useJobAssignmentJson();
+  const { assignJobToMachine, assigning: assigningMachine } = useJobMachineAssignment();
 
   // Determine the display value for API key
   const getApiKeyDisplayValue = () => {
@@ -113,9 +113,9 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
     }
   };
 
-  const handleAssignWithJson = async () => {
-    const result = await assignJobWithJson(machine.id.toString());
-    if (result?.success) {
+  const handleAssignJobToMachine = async () => {
+    const result = await assignJobToMachine(machine.id.toString());
+    if (result) {
       // Refresh the parent component to show the updated machine status
       onClose();
       // You might want to trigger a refetch of machines here
@@ -311,13 +311,32 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
             <Card>
               <CardHeader>
                 <CardTitle>Job Management</CardTitle>
-                <CardDescription>Claim jobs from the queue automatically</CardDescription>
+                <CardDescription>Assign jobs from the queue automatically</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <Button 
+                    onClick={handleAssignJobToMachine}
+                    disabled={assigningMachine || machine.status === 'busy'}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    {assigningMachine ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Assigning Job...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Assign Job to Machine
+                      </>
+                    )}
+                  </Button>
+
+                  <Button 
                     onClick={handleClaimNextJob}
                     disabled={claiming || machine.status === 'busy'}
+                    variant="secondary"
                     className="w-full"
                   >
                     {claiming ? (
@@ -328,7 +347,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                     ) : (
                       <>
                         <ListPlus className="h-4 w-4 mr-2" />
-                        Claim Next Ready Job
+                        Claim Next Ready Job (Legacy)
                       </>
                     )}
                   </Button>
@@ -336,7 +355,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                   <Button 
                     onClick={handleAssignNextJob}
                     disabled={assigning || machine.status === 'busy'}
-                    variant="secondary"
+                    variant="outline"
                     className="w-full"
                   >
                     {assigning ? (
@@ -348,25 +367,6 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                       <>
                         <Zap className="h-4 w-4 mr-2" />
                         Assign Next Job (Alternative)
-                      </>
-                    )}
-                  </Button>
-
-                  <Button 
-                    onClick={handleAssignWithJson}
-                    disabled={assigningJson || machine.status === 'busy'}
-                    variant="outline"
-                    className="w-full border-green-200 text-green-700 hover:bg-green-50"
-                  >
-                    {assigningJson ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Assigning...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Assign Job (JSON Output)
                       </>
                     )}
                   </Button>
