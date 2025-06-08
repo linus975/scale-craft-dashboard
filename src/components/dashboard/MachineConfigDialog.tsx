@@ -6,8 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Play, ListPlus, Loader2 } from 'lucide-react';
+import { Settings, Play, ListPlus, Loader2, Bug } from 'lucide-react';
 import { useJobClaiming } from '@/hooks/useJobClaiming';
+import { useJobClaimingDebug } from '@/hooks/useJobClaimingDebug';
 
 interface Machine {
   id: number | string;
@@ -42,6 +43,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
   queueJobs 
 }) => {
   const { claimNextJob, claiming } = useJobClaiming();
+  const { debugJobClaiming, debugging } = useJobClaimingDebug();
 
   // Determine the display value for API key
   const getApiKeyDisplayValue = () => {
@@ -96,6 +98,10 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
       onClose();
       // You might want to trigger a refetch of machines here
     }
+  };
+
+  const handleDebugClaiming = async () => {
+    await debugJobClaiming(machine.id.toString());
   };
 
   const getStatusColor = (status: string) => {
@@ -265,6 +271,10 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                     <span className="text-sm text-slate-600">Last seen:</span>
                     <span className="text-sm">{machine.lastSeen}</span>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Machine ID:</span>
+                    <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{machine.id}</span>
+                  </div>
                   {machine.current_job_name && (
                     <div className="p-3 bg-blue-50 rounded border border-blue-200">
                       <p className="text-sm text-blue-900 font-medium">Current Job:</p>
@@ -300,6 +310,25 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                       </>
                     )}
                   </Button>
+
+                  <Button 
+                    onClick={handleDebugClaiming}
+                    disabled={debugging}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {debugging ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Debugging...
+                      </>
+                    ) : (
+                      <>
+                        <Bug className="h-4 w-4 mr-2" />
+                        Debug Job Claiming
+                      </>
+                    )}
+                  </Button>
                   
                   {machine.status === 'busy' && (
                     <p className="text-sm text-slate-500 text-center">
@@ -310,7 +339,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
               </CardContent>
             </Card>
 
-            {/* Next Job Selection - Keep for manual selection */}
+            {/* Manual Job Selection */}
             <Card>
               <CardHeader>
                 <CardTitle>Manual Job Selection</CardTitle>

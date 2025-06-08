@@ -20,13 +20,29 @@ export const useJobClaiming = () => {
     setClaiming(true);
     try {
       console.log(`Attempting to claim next job for machine: ${machineId}`);
+      console.log(`Machine ID type: ${typeof machineId}, value: "${machineId}"`);
       
+      // Validate machine ID format (should be UUID)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(machineId)) {
+        throw new Error(`Invalid machine ID format: ${machineId}. Must be a valid UUID.`);
+      }
+
+      // Call the RPC function with explicit parameter naming
       const { data, error } = await supabase.rpc('claim_next_ready_job', {
         machine_id: machineId
       });
 
+      console.log('RPC Response data:', data);
+      console.log('RPC Response error:', error);
+
       if (error) {
-        console.error('Error claiming job:', error);
+        console.error('RPC Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
 

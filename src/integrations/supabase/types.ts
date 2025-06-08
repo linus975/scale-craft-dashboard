@@ -668,6 +668,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      test_connection: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          message: string
+          timestamp_now: string
+          success: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
