@@ -28,8 +28,8 @@ export const useJobClaiming = () => {
         throw new Error(`Invalid machine ID format: ${machineId}. Must be a valid UUID.`);
       }
 
-      // Call the RPC function with explicit parameter naming
-      const { data, error } = await supabase.rpc('claim_next_ready_job', {
+      // Use the assign_job_to_machine function since claim_next_ready_job doesn't exist anymore
+      const { data, error } = await supabase.rpc('assign_job_to_machine', {
         machine_id: machineId
       });
 
@@ -48,7 +48,10 @@ export const useJobClaiming = () => {
 
       console.log('Claim job result:', data);
 
-      if (!data || data.length === 0) {
+      // Properly handle the response - it should be an array
+      const dataArray = Array.isArray(data) ? data : [];
+      
+      if (!dataArray || dataArray.length === 0) {
         console.log('No jobs available to claim');
         toast({
           title: "No jobs available",
@@ -58,7 +61,7 @@ export const useJobClaiming = () => {
         return null;
       }
 
-      const claimedJob = data[0] as ClaimedJob;
+      const claimedJob = dataArray[0] as ClaimedJob;
       
       toast({
         title: "Job claimed successfully",

@@ -4,12 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface AssignedJob {
-  job_id: string;
+  id: string;
   job_number: string;
   product_name: string;
-  job_status: string;
-  queued_at: string;
-  started_at: string;
+  status: string;
+  queued_at: string | null;
+  started_at: string | null;
+  updated_at: string;
 }
 
 export const useJobAssignment = () => {
@@ -28,9 +29,9 @@ export const useJobAssignment = () => {
         throw new Error(`Invalid machine ID format: ${machineId}. Must be a valid UUID.`);
       }
 
-      // Call the alternative RPC function
-      const { data, error } = await supabase.rpc('assign_next_job_to_machine', {
-        p_machine_id: machineId
+      // Call the assign_job_to_machine RPC function (the only one available now)
+      const { data, error } = await supabase.rpc('assign_job_to_machine', {
+        machine_id: machineId
       });
 
       console.log('Assignment RPC Response data:', data);
@@ -48,7 +49,10 @@ export const useJobAssignment = () => {
 
       console.log('Job assignment result:', data);
 
-      if (!data || data.length === 0) {
+      // Properly handle the response - it should be an array
+      const dataArray = Array.isArray(data) ? data : [];
+      
+      if (!dataArray || dataArray.length === 0) {
         console.log('No jobs available to assign');
         toast({
           title: "No jobs available",
@@ -58,7 +62,7 @@ export const useJobAssignment = () => {
         return null;
       }
 
-      const assignedJob = data[0] as AssignedJob;
+      const assignedJob = dataArray[0] as AssignedJob;
       
       toast({
         title: "Job assigned successfully",

@@ -60,27 +60,30 @@ export const useJobClaimingDebug = () => {
         return;
       }
 
-      // 3. Try to claim using RPC function
-      console.log('Attempting to claim job using RPC function...');
-      const { data: claimResult, error: claimError } = await supabase.rpc('claim_next_ready_job', {
+      // 3. Try to assign using RPC function (the only one available now)
+      console.log('Attempting to assign job using RPC function...');
+      const { data: assignResult, error: assignError } = await supabase.rpc('assign_job_to_machine', {
         machine_id: machineId
       });
 
-      console.log('RPC Claim result:', claimResult);
-      console.log('RPC Claim error:', claimError);
+      console.log('RPC Assign result:', assignResult);
+      console.log('RPC Assign error:', assignError);
 
-      if (claimError) {
+      if (assignError) {
         toast({
           title: "RPC Function Error",
-          description: `Error: ${claimError.message}`,
+          description: `Error: ${assignError.message}`,
           variant: "destructive",
         });
         return;
       }
 
-      if (!claimResult || claimResult.length === 0) {
+      // Properly handle the response - it should be an array
+      const resultArray = Array.isArray(assignResult) ? assignResult : [];
+      
+      if (!resultArray || resultArray.length === 0) {
         toast({
-          title: "No job claimed",
+          title: "No job assigned",
           description: "RPC function returned empty result despite available jobs",
           variant: "destructive",
         });
@@ -89,7 +92,7 @@ export const useJobClaimingDebug = () => {
 
       toast({
         title: "Debug complete",
-        description: `Successfully claimed job: ${claimResult[0].job_number}`,
+        description: `Successfully assigned job: ${resultArray[0].job_number}`,
       });
 
     } catch (error: any) {
