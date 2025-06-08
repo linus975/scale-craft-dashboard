@@ -6,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Play, ListPlus, Loader2, Bug } from 'lucide-react';
+import { Settings, Play, ListPlus, Loader2, Bug, Zap } from 'lucide-react';
 import { useJobClaiming } from '@/hooks/useJobClaiming';
 import { useJobClaimingDebug } from '@/hooks/useJobClaimingDebug';
+import { useJobAssignment } from '@/hooks/useJobAssignment';
 
 interface Machine {
   id: number | string;
@@ -44,6 +45,7 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
 }) => {
   const { claimNextJob, claiming } = useJobClaiming();
   const { debugJobClaiming, debugging } = useJobClaimingDebug();
+  const { assignNextJob, assigning } = useJobAssignment();
 
   // Determine the display value for API key
   const getApiKeyDisplayValue = () => {
@@ -93,6 +95,15 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
 
   const handleClaimNextJob = async () => {
     const result = await claimNextJob(machine.id.toString());
+    if (result) {
+      // Refresh the parent component to show the updated machine status
+      onClose();
+      // You might want to trigger a refetch of machines here
+    }
+  };
+
+  const handleAssignNextJob = async () => {
+    const result = await assignNextJob(machine.id.toString());
     if (result) {
       // Refresh the parent component to show the updated machine status
       onClose();
@@ -307,6 +318,25 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                       <>
                         <ListPlus className="h-4 w-4 mr-2" />
                         Claim Next Ready Job
+                      </>
+                    )}
+                  </Button>
+
+                  <Button 
+                    onClick={handleAssignNextJob}
+                    disabled={assigning || machine.status === 'busy'}
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    {assigning ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Assigning Job...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4 mr-2" />
+                        Assign Next Job (Alternative)
                       </>
                     )}
                   </Button>

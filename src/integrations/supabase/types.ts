@@ -653,6 +653,17 @@ export type Database = {
       }
     }
     Functions: {
+      assign_next_job_to_machine: {
+        Args: { p_machine_id: string }
+        Returns: {
+          job_id: string
+          job_number: string
+          product_name: string
+          job_status: string
+          queued_at: string
+          started_at: string
+        }[]
+      }
       claim_next_ready_job: {
         Args: { machine_id: string }
         Returns: {
