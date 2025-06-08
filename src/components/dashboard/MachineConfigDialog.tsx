@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +16,7 @@ interface Machine {
   connection: string;
   lastSeen: string;
   currentJob: string | null;
+  current_job_name?: string | null;
   apiUrl?: string;
   apiKey?: string;
   username?: string;
@@ -253,10 +253,10 @@ const MachineConfigDialog: React.FC<MachineConfigDialogProps> = ({
                     <span className="text-sm text-slate-600">Last seen:</span>
                     <span className="text-sm">{machine.lastSeen}</span>
                   </div>
-                  {machine.currentJob && (
+                  {machine.current_job_name && (
                     <div className="p-3 bg-blue-50 rounded border border-blue-200">
                       <p className="text-sm text-blue-900 font-medium">Current Job:</p>
-                      <p className="text-sm text-blue-700">{machine.currentJob}</p>
+                      <p className="text-sm text-blue-700">{machine.current_job_name}</p>
                     </div>
                   )}
                 </div>

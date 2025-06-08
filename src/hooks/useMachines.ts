@@ -4,7 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
-type Machine = Database['public']['Tables']['machines']['Row'];
+type Machine = Database['public']['Tables']['machines']['Row'] & {
+  current_job_name?: string;
+};
 type MachineInsert = Database['public']['Tables']['machines']['Insert'];
 type MachineUpdate = Database['public']['Tables']['machines']['Update'];
 
@@ -17,11 +19,24 @@ export const useMachines = () => {
     try {
       const { data, error } = await supabase
         .from('machines')
-        .select('*')
+        .select(`
+          *,
+          print_jobs!machines_current_job_id_fkey (
+            product_name
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMachines(data || []);
+      
+      // Transform the data to include current job name
+      const machinesWithJobNames = (data || []).map(machine => ({
+        ...machine,
+        current_job_name: machine.print_jobs?.product_name || null,
+        print_jobs: undefined // Remove the nested object
+      }));
+      
+      setMachines(machinesWithJobNames);
     } catch (error: any) {
       console.error('Error fetching machines:', error);
       toast({
@@ -50,7 +65,7 @@ export const useMachines = () => {
 
       if (error) throw error;
 
-      setMachines(prev => [data, ...prev]);
+      setMachines(prev => [{ ...data, current_job_name: null }, ...prev]);
       toast({
         title: "Machine added",
         description: `${data.name} was successfully added.`,
@@ -74,13 +89,24 @@ export const useMachines = () => {
         .from('machines')
         .update(machineData)
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          print_jobs!machines_current_job_id_fkey (
+            product_name
+          )
+        `)
         .single();
 
       if (error) throw error;
 
+      const updatedMachine = {
+        ...data,
+        current_job_name: data.print_jobs?.product_name || null,
+        print_jobs: undefined
+      };
+
       setMachines(prev => prev.map(machine => 
-        machine.id === id ? data : machine
+        machine.id === id ? updatedMachine : machine
       ));
 
       toast({
@@ -88,7 +114,7 @@ export const useMachines = () => {
         description: `${data.name} was successfully updated.`,
       });
 
-      return data;
+      return updatedMachine;
     } catch (error: any) {
       console.error('Error updating machine:', error);
       toast({
