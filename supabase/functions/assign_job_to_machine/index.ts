@@ -90,6 +90,48 @@ serve(async (req) => {
 
     console.log(`Attempting to assign job to machine: ${machine_id}`);
 
+    // ZUSÄTZLICHE SICHERHEITSPRÜFUNG: Prüfe ob die Maschine bereits einen Job hat
+    const { data: machineCheck, error: machineError } = await supabase
+      .from('machines')
+      .select('id, status, current_job_id')
+      .eq('id', machine_id)
+      .single();
+
+    if (machineError) {
+      console.error('Machine check error:', machineError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Machine not found', 
+          details: machineError.message 
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+
+    if (machineCheck.current_job_id) {
+      console.log(`Machine ${machine_id} already has job assigned: ${machineCheck.current_job_id}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Machine already busy', 
+          message: `Machine already has job ${machineCheck.current_job_id} assigned`,
+          current_job_id: machineCheck.current_job_id 
+        }),
+        { 
+          status: 409, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+
     // Call the atomic assign_job_to_machine SQL function
     const { data, error } = await supabase.rpc('assign_job_to_machine', {
       machine_id: machine_id
@@ -134,11 +176,39 @@ serve(async (req) => {
     const assignedJob = data[0];
     console.log('Job successfully assigned:', assignedJob);
 
+    // ZUSÄTZLICHE VERIFIKATION: Prüfe ob die Zuweisung wirklich erfolgreich war
+    const { data: verifyMachine, error: verifyError } = await supabase
+      .from('machines')
+      .select('current_job_id, status')
+      .eq('id', machine_id)
+      .single();
+
+    if (verifyMachine?.current_job_id !== assignedJob.id) {
+      console.error('Job assignment verification failed!', {
+        expected: assignedJob.id,
+        actual: verifyMachine?.current_job_id
+      });
+      return new Response(
+        JSON.stringify({ 
+          error: 'Assignment verification failed',
+          details: 'Job assignment could not be verified'
+        }),
+        { 
+          status: 500, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         job: assignedJob,
-        message: `Job ${assignedJob.job_number} assigned to machine successfully`
+        message: `Job ${assignedJob.job_number} assigned to machine successfully`,
+        machine_status: verifyMachine.status
       }),
       { 
         status: 200, 
