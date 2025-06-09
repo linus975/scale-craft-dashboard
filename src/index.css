@@ -105,10 +105,10 @@
     @apply bg-background text-foreground;
   }
 
-  /* Custom scrollbar styling to make it always visible */
+  /* Custom scrollbar styling to make it always visible with thumb always showing */
   ::-webkit-scrollbar {
     width: 16px;
-    background-color: transparent;
+    background-color: #f1f5f9;
   }
 
   ::-webkit-scrollbar-track {
@@ -120,16 +120,25 @@
     background-color: #cbd5e1;
     border-radius: 8px;
     border: 2px solid #f1f5f9;
-    min-height: 40px;
+    min-height: 100%;
+    /* Force the thumb to always be visible by setting a minimum size */
+    height: 100%;
   }
 
   ::-webkit-scrollbar-thumb:hover {
     background-color: #94a3b8;
   }
 
-  /* For Firefox */
+  /* For Firefox - force scrollbar to always show */
   html {
     scrollbar-width: auto;
     scrollbar-color: #cbd5e1 #f1f5f9;
+    scrollbar-gutter: stable;
+  }
+
+  /* Additional CSS to ensure scrollbar thumb is always visible */
+  body::-webkit-scrollbar-thumb {
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 }
