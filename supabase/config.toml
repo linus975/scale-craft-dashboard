@@ -37,6 +37,9 @@ port = 54323
 [functions.ebay-oauth-callback]
 verify_jwt = false
 
+[functions.assign_job_to_machine]
+verify_jwt = false
+
 [storage]
 enabled = true
 port = 54325
