@@ -96,14 +96,12 @@
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  html {
     /* Force scrollbar to always be visible to prevent layout shift */
     overflow-y: scroll;
   }
 
-  html {
-    /* Ensure consistent scrollbar behavior */
-    overflow-y: scroll;
+  body {
+    @apply bg-background text-foreground;
   }
 }
