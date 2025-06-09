@@ -18,7 +18,6 @@ import {
   ShoppingCart,
   Printer,
   BookOpen,
-  Package,
   Menu
 } from 'lucide-react';
 import OverviewTab from './OverviewTab';
@@ -27,7 +26,6 @@ import JobsTab from './JobsTab';
 import MarketplaceTab from './MarketplaceTab';
 import MachinesTab from './MachinesTab';
 import KnowledgeBaseTab from './KnowledgeBaseTab';
-import ShippingTab from './ShippingTab';
 import BusinessMetricsPage from './BusinessMetricsPage';
 import SystemLogPage from './SystemLogPage';
 import WhitelabelCatalogPage from './WhitelabelCatalogPage';
@@ -95,14 +93,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     { value: "designs", label: "Designs", icon: Layers },
     { value: "jobs", label: "QueueBoard", icon: Settings },
     { value: "machines", label: "Machines", icon: Printer },
-    { value: "shipping", label: "Shipping", icon: Package },
     { value: "knowledge", label: "Knowledge Base", icon: BookOpen },
   ];
 
   const currentTabItem = tabItems.find(item => item.value === activeTab);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100" style={{ overflowY: 'scroll' }}>
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -153,7 +150,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             {/* Desktop Navigation */}
-            <TabsList className="hidden lg:grid w-full grid-cols-7 lg:w-fit lg:grid-cols-7 mb-8">
+            <TabsList className="hidden lg:grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 mb-8">
               {tabItems.map((item) => (
                 <TabsTrigger key={item.value} value={item.value} className="flex items-center gap-2">
                   <item.icon className="h-4 w-4" />
@@ -217,10 +214,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
             <TabsContent value="machines">
               <MachinesTab />
-            </TabsContent>
-
-            <TabsContent value="shipping">
-              <ShippingTab />
             </TabsContent>
 
             <TabsContent value="knowledge">

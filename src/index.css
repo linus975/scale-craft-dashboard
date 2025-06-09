@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -97,5 +98,12 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Force scrollbar to always be visible to prevent layout shift */
+    overflow-y: scroll;
+  }
+
+  html {
+    /* Ensure consistent scrollbar behavior */
+    overflow-y: scroll;
   }
 }
