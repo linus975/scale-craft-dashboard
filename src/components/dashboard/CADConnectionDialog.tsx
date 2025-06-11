@@ -49,10 +49,19 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
   ];
 
   const getIntegrationsForProgram = (programId: string) => {
-    const programIntegrations = integrations.filter(integration => 
-      integration.program_type === programId || 
-      (programId === 'fusion360' && integration.program_type === null && integration.client_id?.includes('autodesk'))
-    );
+    const programIntegrations = integrations.filter(integration => {
+      // For Fusion 360, match both 'fusion360', 'fusion', and null (legacy)
+      if (programId === 'fusion360') {
+        return integration.program_type === 'fusion360' || 
+               integration.program_type === 'fusion' || 
+               (integration.program_type === null && integration.client_id?.includes('autodesk'));
+      }
+      // For SolidWorks
+      if (programId === 'solidworks') {
+        return integration.program_type === 'solidworks';
+      }
+      return integration.program_type === programId;
+    });
     console.log(`🔍 Integrations for ${programId}:`, programIntegrations);
     return programIntegrations;
   };
@@ -115,25 +124,28 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            {cadPrograms.map((program) => (
-              <TabsTrigger 
-                key={program.id} 
-                value={program.id} 
-                className="flex items-center gap-2"
-                style={activeTab === program.id ? { 
-                  backgroundColor: program.color,
-                  color: 'white'
-                } : {}}
-              >
-                <span>{program.icon}</span>
-                {program.name}
-                {getIntegrationsForProgram(program.id).length > 0 && (
-                  <Badge variant="secondary" className="ml-1 text-xs">
-                    {getIntegrationsForProgram(program.id).length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            ))}
+            {cadPrograms.map((program) => {
+              const programIntegrations = getIntegrationsForProgram(program.id);
+              return (
+                <TabsTrigger 
+                  key={program.id} 
+                  value={program.id} 
+                  className="flex items-center gap-2"
+                  style={activeTab === program.id ? { 
+                    backgroundColor: program.color,
+                    color: 'white'
+                  } : {}}
+                >
+                  <span>{program.icon}</span>
+                  {program.name}
+                  {programIntegrations.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 text-xs">
+                      {programIntegrations.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
           {cadPrograms.map((program) => {
