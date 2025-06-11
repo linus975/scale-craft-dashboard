@@ -19,12 +19,14 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
     {
       id: 'fusion360',
       name: 'Fusion 360',
-      icon: '🔧'
+      icon: '🔧',
+      color: '#FF6A01'
     },
     {
       id: 'solidworks',
       name: 'SolidWorks',
-      icon: '⚙️'
+      icon: '⚙️',
+      color: '#F04E23'
     }
   ];
 
@@ -46,6 +48,10 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
     return '*'.repeat(secret.length);
   };
 
+  const getActiveProgram = () => {
+    return cadPrograms.find(program => program.id === activeTab);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
@@ -59,7 +65,15 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             {cadPrograms.map((program) => (
-              <TabsTrigger key={program.id} value={program.id} className="flex items-center gap-2">
+              <TabsTrigger 
+                key={program.id} 
+                value={program.id} 
+                className="flex items-center gap-2"
+                style={activeTab === program.id ? { 
+                  backgroundColor: program.color,
+                  color: 'white'
+                } : {}}
+              >
                 <span>{program.icon}</span>
                 {program.name}
               </TabsTrigger>
@@ -80,6 +94,7 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                       onClick={() => handleConnect(program.id)}
                       disabled={loading}
                       className="w-full"
+                      style={{ backgroundColor: program.color }}
                     >
                       Connect Now
                     </Button>
