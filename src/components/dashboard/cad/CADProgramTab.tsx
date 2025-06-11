@@ -160,9 +160,10 @@ const CADProgramTab: React.FC<CADProgramTabProps> = ({
                           
                           <div>
                             {integration.access_token && (
-                              <p className="text-xs bg-green-50 p-1 rounded text-green-700">
-                                🔐 Token available - Connection active
-                              </p>
+                              <div className="text-xs bg-green-50 p-1 rounded text-green-700">
+                                <div>🔐 Token</div>
+                                <div>Connection active</div>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -183,7 +184,7 @@ const CADProgramTab: React.FC<CADProgramTabProps> = ({
                         {deleting === integration.id ? (
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
                         ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         )}
                       </Button>
                     </div>
