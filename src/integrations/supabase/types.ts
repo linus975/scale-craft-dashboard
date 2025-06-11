@@ -17,7 +17,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          program_type: string
+          program_type: string | null
           refresh_token: string | null
           status: string
           token_expires_in: number | null
@@ -32,7 +32,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
-          program_type: string
+          program_type?: string | null
           refresh_token?: string | null
           status?: string
           token_expires_in?: number | null
@@ -47,7 +47,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
-          program_type?: string
+          program_type?: string | null
           refresh_token?: string | null
           status?: string
           token_expires_in?: number | null
