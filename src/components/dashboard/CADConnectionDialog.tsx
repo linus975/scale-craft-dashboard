@@ -1,14 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useCADIntegrations } from '@/hooks/useCADIntegrations';
-import { Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import CADProgramTab from './cad/CADProgramTab';
 
 interface CADConnectionDialogProps {
   isOpen: boolean;
@@ -87,21 +85,6 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const maskSecret = (secret?: string) => {
-    if (!secret) return 'Not set';
-    return '*'.repeat(Math.min(secret.length, 12));
-  };
-
   if (loading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -162,137 +145,15 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
             const programIntegrations = getIntegrationsForProgram(program.id);
             
             return (
-              <TabsContent key={program.id} value={program.id} className="space-y-4 mt-6">
-                {programIntegrations.length > 0 ? (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium flex items-center gap-2">
-                      <span>{program.icon}</span>
-                      {program.name} Connections
-                      <Badge variant="outline">{programIntegrations.length}</Badge>
-                    </h3>
-                    
-                    {programIntegrations.map((integration, index) => (
-                      <Card key={integration.id} className="border-l-4" style={{ borderLeftColor: program.color }}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl">{program.icon}</span>
-                              <div>
-                                <h4 className="font-medium">
-                                  {integration.name || `${program.name} Connection #${index + 1}`}
-                                </h4>
-                                <Badge 
-                                  variant={integration.status === 'connected' ? 'default' : 'secondary'}
-                                  className={integration.status === 'connected' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}
-                                >
-                                  {integration.status === 'connected' ? '✅ Connected' : '⚠️ ' + integration.status}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="text-sm text-gray-500">
-                                Created: {formatDate(integration.created_at)}
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteIntegration(integration.id)}
-                                disabled={deleting === integration.id}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                {deleting === integration.id ? (
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                                ) : (
-                                  <Trash2 className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <Label className="text-gray-600 font-medium">Client ID</Label>
-                              <p className="font-mono text-sm bg-gray-50 p-2 rounded mt-1 break-all">
-                                {integration.client_id || 'Not set'}
-                              </p>
-                            </div>
-                            
-                            <div>
-                              <Label className="text-gray-600 font-medium">Client Secret</Label>
-                              <p className="font-mono text-sm bg-gray-50 p-2 rounded mt-1">
-                                {maskSecret(integration.client_secret)}
-                              </p>
-                            </div>
-
-                            {integration.access_token && (
-                              <div className="md:col-span-2">
-                                <Label className="text-gray-600 font-medium">Status</Label>
-                                <p className="text-sm bg-green-50 p-2 rounded mt-1 text-green-700">
-                                  🔐 Token available - Connection active
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-
-                    {/* Add new connection button when integrations exist */}
-                    <div className="pt-4 border-t">
-                      <div className="text-center space-y-4 p-6 bg-gray-50 rounded-lg">
-                        <span className="text-4xl">{program.icon}</span>
-                        <h4 className="font-medium text-gray-900">
-                          Add New {program.name} Connection
-                        </h4>
-                        <p className="text-gray-600 text-sm">
-                          Add another {program.name} connection for additional integrations
-                        </p>
-                        <Button 
-                          onClick={() => handleConnect(program.id)}
-                          disabled={loading}
-                          className="w-full max-w-xs text-white"
-                          style={{ backgroundColor: program.color }}
-                        >
-                          {loading ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Connecting...
-                            </>
-                          ) : (
-                            '➕ Add New Connection'
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Show connect new section when no integrations exist */
-                  <div className="text-center space-y-4 p-6 bg-gray-50 rounded-lg">
-                    <span className="text-4xl">{program.icon}</span>
-                    <h4 className="font-medium text-gray-900">
-                      Connect {program.name}
-                    </h4>
-                    <p className="text-gray-600 text-sm">
-                      Connect {program.name} for enhanced design integration
-                    </p>
-                    <Button 
-                      onClick={() => handleConnect(program.id)}
-                      disabled={loading}
-                      className="w-full max-w-xs text-white"
-                      style={{ backgroundColor: program.color }}
-                    >
-                      {loading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Connecting...
-                        </>
-                      ) : (
-                        `🔗 Connect ${program.name}`
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </TabsContent>
+              <CADProgramTab
+                key={program.id}
+                program={program}
+                integrations={programIntegrations}
+                onConnect={handleConnect}
+                onDeleteIntegration={handleDeleteIntegration}
+                deleting={deleting}
+                loading={loading}
+              />
             );
           })}
         </Tabs>
