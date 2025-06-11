@@ -110,11 +110,6 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
           <DialogTitle>Manage CAD Programs</DialogTitle>
           <DialogDescription>
             Connect and manage your CAD programs for seamless design integration
-            {integrations.length > 0 && (
-              <span className="block mt-1 text-sm text-green-600">
-                ✅ {integrations.length} integration(s) found
-              </span>
-            )}
           </DialogDescription>
         </DialogHeader>
 
