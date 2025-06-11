@@ -18,6 +18,7 @@ export type Database = {
           name: string
           program_type: string
           status: string
+          token_expires_in: number | null
           updated_at: string
           user_id: string
         }
@@ -29,6 +30,7 @@ export type Database = {
           name: string
           program_type: string
           status?: string
+          token_expires_in?: number | null
           updated_at?: string
           user_id: string
         }
@@ -40,6 +42,7 @@ export type Database = {
           name?: string
           program_type?: string
           status?: string
+          token_expires_in?: number | null
           updated_at?: string
           user_id?: string
         }
