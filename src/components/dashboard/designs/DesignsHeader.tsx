@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, Trash2, Upload, Download, MoreVertical } from 'lucide-react';
 import AddDesignForm from '../AddDesignForm';
+import CADConnectionDialog from '../CADConnectionDialog';
 
 interface DesignsHeaderProps {
   showAddDialog: boolean;
@@ -27,6 +28,8 @@ const DesignsHeader: React.FC<DesignsHeaderProps> = ({
   handleToggleSelectionMode,
   handleStartSelectionMode
 }) => {
+  const [showCADDialog, setShowCADDialog] = useState(false);
+
   const handleFormComplete = () => {
     setShowAddDialog(false);
     setSelectedDesignType(null);
@@ -40,6 +43,14 @@ const DesignsHeader: React.FC<DesignsHeaderProps> = ({
       </div>
       
       <div className="flex gap-2 relative">
+        <Button 
+          onClick={() => setShowCADDialog(true)}
+          className="bg-orange-500 hover:bg-orange-600"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add CAD
+        </Button>
+
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
@@ -61,6 +72,11 @@ const DesignsHeader: React.FC<DesignsHeaderProps> = ({
             />
           </DialogContent>
         </Dialog>
+
+        <CADConnectionDialog 
+          isOpen={showCADDialog}
+          onClose={() => setShowCADDialog(false)}
+        />
 
         {isSelectionMode ? (
           <Button 
