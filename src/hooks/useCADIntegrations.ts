@@ -6,8 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 interface CADIntegration {
   id: string;
   user_id: string;
-  program_type: string;
-  name: string;
+  program_type: string | null;
+  name: string | null;
   client_id: string;
   client_secret?: string;
   status: string;

@@ -16,7 +16,7 @@ export type Database = {
           client_secret: string | null
           created_at: string
           id: string
-          name: string
+          name: string | null
           program_type: string | null
           refresh_token: string | null
           status: string
@@ -31,7 +31,7 @@ export type Database = {
           client_secret?: string | null
           created_at?: string
           id?: string
-          name: string
+          name?: string | null
           program_type?: string | null
           refresh_token?: string | null
           status?: string
@@ -46,7 +46,7 @@ export type Database = {
           client_secret?: string | null
           created_at?: string
           id?: string
-          name?: string
+          name?: string | null
           program_type?: string | null
           refresh_token?: string | null
           status?: string
