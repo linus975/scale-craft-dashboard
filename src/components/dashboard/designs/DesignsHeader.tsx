@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -45,7 +44,8 @@ const DesignsHeader: React.FC<DesignsHeaderProps> = ({
       <div className="flex gap-2 relative">
         <Button 
           onClick={() => setShowCADDialog(true)}
-          className="bg-orange-500 hover:bg-orange-600"
+          style={{ backgroundColor: '#FF3C11' }}
+          className="hover:opacity-90 text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add CAD
