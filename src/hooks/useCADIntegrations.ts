@@ -41,9 +41,21 @@ export const useCADIntegrations = () => {
     }
   };
 
-  const handleConnect = (programType: string) => {
+  const handleConnect = async (programType: string) => {
     if (programType === 'fusion360') {
-      const authUrl = 'https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=88t4YWH9qN3JhuCJT0vdELQqarJwrQYxe4D87ZMXfPVKzOPy&redirect_uri=https://n8n.melemeng.com/webhook/fusion-callback/&scope=data:create%20data:read%20data:write';
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentifizierung erforderlich",
+          description: "Bitte melden Sie sich an, um CAD-Programme zu verbinden.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const authUrl = `https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=88t4YWH9qN3JhuCJT0vdELQqarJwrQYxe4D87ZMXfPVKzOPy&redirect_uri=https://n8n.melemeng.com/webhook/fusion-callback/&scope=data:create%20data:read%20data:write&state=${user.id}`;
       window.open(authUrl, '_blank');
     } else if (programType === 'solidworks') {
       // Hier könnte später die SolidWorks Authentifizierung URL hinzugefügt werden
