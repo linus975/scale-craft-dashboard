@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,22 @@ interface CADConnectionDialogProps {
 }
 
 const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClose }) => {
-  const { integrations, handleConnect, loading } = useCADIntegrations();
+  const { integrations, handleConnect, loading, refetch } = useCADIntegrations();
   const [activeTab, setActiveTab] = useState('fusion360');
+
+  // Refetch data when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('🔄 CAD Dialog opened, refetching integrations...');
+      refetch();
+    }
+  }, [isOpen, refetch]);
+
+  // Debug log for integrations
+  useEffect(() => {
+    console.log('🔧 CAD Integrations data:', integrations);
+    console.log('📊 Total integrations count:', integrations?.length || 0);
+  }, [integrations]);
 
   const cadPrograms = [
     {
@@ -32,7 +47,12 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
   ];
 
   const getIntegrationsForProgram = (programId: string) => {
-    return integrations.filter(integration => integration.program_type === programId);
+    const programIntegrations = integrations.filter(integration => 
+      integration.program_type === programId || 
+      (programId === 'fusion360' && integration.program_type === null && integration.client_id?.includes('autodesk'))
+    );
+    console.log(`🔍 Integrations for ${programId}:`, programIntegrations);
+    return programIntegrations;
   };
 
   const formatDate = (dateString: string) => {
@@ -46,13 +66,27 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
   };
 
   const maskSecret = (secret?: string) => {
-    if (!secret) return 'Not set';
+    if (!secret) return 'Nicht gesetzt';
     return '*'.repeat(Math.min(secret.length, 12));
   };
 
-  const getActiveProgram = () => {
-    return cadPrograms.find(program => program.id === activeTab);
-  };
+  if (loading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>CAD Programme verwalten</DialogTitle>
+            <DialogDescription>
+              Lade CAD-Integrationen...
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -61,6 +95,11 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
           <DialogTitle>CAD Programme verwalten</DialogTitle>
           <DialogDescription>
             Verbinden und verwalten Sie Ihre CAD Programme für nahtlose Design-Integration
+            {integrations.length > 0 && (
+              <span className="block mt-1 text-sm text-green-600">
+                ✅ {integrations.length} Integration(en) gefunden
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -78,6 +117,11 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
               >
                 <span>{program.icon}</span>
                 {program.name}
+                {getIntegrationsForProgram(program.id).length > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {getIntegrationsForProgram(program.id).length}
+                  </Badge>
+                )}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -90,44 +134,58 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                 {/* Existing Integrations */}
                 {programIntegrations.length > 0 && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Bestehende Verbindungen</h3>
-                    {programIntegrations.map((integration) => (
-                      <Card key={integration.id} className="border">
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <span>{program.icon}</span>
+                      Bestehende {program.name} Verbindungen
+                      <Badge variant="outline">{programIntegrations.length}</Badge>
+                    </h3>
+                    
+                    {programIntegrations.map((integration, index) => (
+                      <Card key={integration.id} className="border-l-4" style={{ borderLeftColor: program.color }}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
                               <span className="text-2xl">{program.icon}</span>
                               <div>
                                 <h4 className="font-medium">
-                                  {integration.name || `${program.name} Connection`}
+                                  {integration.name || `${program.name} Verbindung #${index + 1}`}
                                 </h4>
                                 <Badge 
                                   variant={integration.status === 'connected' ? 'default' : 'secondary'}
-                                  className={integration.status === 'connected' ? 'bg-green-100 text-green-800' : ''}
+                                  className={integration.status === 'connected' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}
                                 >
-                                  {integration.status}
+                                  {integration.status === 'connected' ? '✅ Verbunden' : '⚠️ ' + integration.status}
                                 </Badge>
                               </div>
                             </div>
                             <div className="text-sm text-gray-500">
-                              Verbunden: {formatDate(integration.updated_at)}
+                              Erstellt: {formatDate(integration.created_at)}
                             </div>
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             <div>
-                              <Label className="text-gray-600">Client ID</Label>
-                              <p className="font-mono text-sm bg-gray-50 p-2 rounded mt-1">
-                                {integration.client_id}
+                              <Label className="text-gray-600 font-medium">Client ID</Label>
+                              <p className="font-mono text-sm bg-gray-50 p-2 rounded mt-1 break-all">
+                                {integration.client_id || 'Nicht gesetzt'}
                               </p>
                             </div>
                             
                             <div>
-                              <Label className="text-gray-600">Client Secret</Label>
+                              <Label className="text-gray-600 font-medium">Client Secret</Label>
                               <p className="font-mono text-sm bg-gray-50 p-2 rounded mt-1">
                                 {maskSecret(integration.client_secret)}
                               </p>
                             </div>
+
+                            {integration.access_token && (
+                              <div className="md:col-span-2">
+                                <Label className="text-gray-600 font-medium">Status</Label>
+                                <p className="text-sm bg-green-50 p-2 rounded mt-1 text-green-700">
+                                  🔐 Token verfügbar - Verbindung aktiv
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -136,10 +194,11 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                 )}
                 
                 {/* Connect New Section */}
-                <div className="pt-4 border-t">
+                <div className={programIntegrations.length > 0 ? "pt-4 border-t" : ""}>
                   <div className="text-center space-y-4 p-6 bg-gray-50 rounded-lg">
+                    <span className="text-4xl">{program.icon}</span>
                     <h4 className="font-medium text-gray-900">
-                      {programIntegrations.length > 0 ? 'Neue Verbindung hinzufügen' : `${program.name} verbinden`}
+                      {programIntegrations.length > 0 ? `Neue ${program.name} Verbindung hinzufügen` : `${program.name} verbinden`}
                     </h4>
                     <p className="text-gray-600 text-sm">
                       {programIntegrations.length > 0 
@@ -150,10 +209,17 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                     <Button 
                       onClick={() => handleConnect(program.id)}
                       disabled={loading}
-                      className="w-full max-w-xs"
+                      className="w-full max-w-xs text-white"
                       style={{ backgroundColor: program.color }}
                     >
-                      {programIntegrations.length > 0 ? 'Neue Verbindung' : 'Jetzt verbinden'}
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Verbinde...
+                        </>
+                      ) : (
+                        programIntegrations.length > 0 ? '➕ Neue Verbindung' : `🔗 ${program.name} verbinden`
+                      )}
                     </Button>
                   </div>
                 </div>
