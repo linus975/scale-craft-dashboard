@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,6 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useCADIntegrations } from '@/hooks/useCADIntegrations';
+import { Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CADConnectionDialogProps {
   isOpen: boolean;
@@ -16,6 +18,8 @@ interface CADConnectionDialogProps {
 const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClose }) => {
   const { integrations, handleConnect, loading, refetch } = useCADIntegrations();
   const [activeTab, setActiveTab] = useState('fusion360');
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Refetch data when dialog opens
   useEffect(() => {
@@ -53,6 +57,34 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
     );
     console.log(`🔍 Integrations for ${programId}:`, programIntegrations);
     return programIntegrations;
+  };
+
+  const handleDeleteIntegration = async (integrationId: string) => {
+    setDeleting(integrationId);
+    try {
+      const { error } = await supabase
+        .from('cad_integrations')
+        .delete()
+        .eq('id', integrationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Integration deleted",
+        description: "CAD integration has been successfully removed.",
+      });
+
+      refetch();
+    } catch (error: any) {
+      console.error('Error deleting integration:', error);
+      toast({
+        title: "Error deleting integration",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -131,7 +163,6 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
             
             return (
               <TabsContent key={program.id} value={program.id} className="space-y-4 mt-6">
-                {/* Show existing integrations or connect new */}
                 {programIntegrations.length > 0 ? (
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium flex items-center gap-2">
@@ -158,8 +189,23 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                                 </Badge>
                               </div>
                             </div>
-                            <div className="text-sm text-gray-500">
-                              Created: {formatDate(integration.created_at)}
+                            <div className="flex items-center gap-3">
+                              <div className="text-sm text-gray-500">
+                                Created: {formatDate(integration.created_at)}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteIntegration(integration.id)}
+                                disabled={deleting === integration.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                {deleting === integration.id ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
                             </div>
                           </div>
                           
