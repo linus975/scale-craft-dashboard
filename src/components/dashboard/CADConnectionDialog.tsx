@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -94,7 +93,6 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                       onClick={() => handleConnect(program.id)}
                       disabled={loading}
                       className="w-full"
-                      style={{ backgroundColor: program.color }}
                     >
                       Connect Now
                     </Button>
