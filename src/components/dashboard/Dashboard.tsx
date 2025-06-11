@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { 
-  Cpu, 
   LogOut, 
   Settings, 
   Layers, 
@@ -106,7 +105,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
-                <Cpu className="h-5 w-5 text-white" />
+                <img 
+                  src="/lovable-uploads/e1835e4f-37a0-4b91-a9e4-8c14c3a93f5c.png" 
+                  alt="ScaleCraft Logo" 
+                  className="h-5 w-5 object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
