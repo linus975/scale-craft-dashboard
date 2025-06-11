@@ -15,13 +15,6 @@ interface CADIntegration {
   updated_at: string;
 }
 
-interface CADIntegrationInsert {
-  program_type: string;
-  name: string;
-  client_id: string;
-  client_secret: string;
-}
-
 export const useCADIntegrations = () => {
   const [integrations, setIntegrations] = useState<CADIntegration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,39 +41,16 @@ export const useCADIntegrations = () => {
     }
   };
 
-  const createIntegration = async (integrationData: CADIntegrationInsert) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Benutzer nicht angemeldet');
-
-      const { data, error } = await supabase
-        .from('cad_integrations')
-        .insert({
-          ...integrationData,
-          user_id: user.id,
-          status: 'connected'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      await fetchIntegrations();
-      
+  const handleConnect = (programType: string) => {
+    if (programType === 'fusion360') {
+      const authUrl = 'https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=88t4YWH9qN3JhuCJT0vdELQqarJwrQYxe4D87ZMXfPVKzOPy&redirect_uri=https://n8n.melemeng.com/webhook/fusion-callback/&scope=data:create%20data:read%20data:write';
+      window.open(authUrl, '_blank');
+    } else if (programType === 'solidworks') {
+      // Hier könnte später die SolidWorks Authentifizierung URL hinzugefügt werden
       toast({
-        title: "CAD-Integration erfolgreich erstellt",
-        description: `${data.name} wurde erfolgreich verbunden.`,
+        title: "SolidWorks Integration",
+        description: "SolidWorks Integration wird bald verfügbar sein.",
       });
-
-      return data;
-    } catch (error: any) {
-      console.error('Error creating CAD integration:', error);
-      toast({
-        title: "Fehler beim Erstellen der CAD-Integration",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
     }
   };
 
@@ -91,7 +61,7 @@ export const useCADIntegrations = () => {
   return {
     integrations,
     loading,
-    createIntegration,
+    handleConnect,
     refetch: fetchIntegrations
   };
 };

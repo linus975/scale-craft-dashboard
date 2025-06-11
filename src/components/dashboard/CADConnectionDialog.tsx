@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCADIntegrations } from '@/hooks/useCADIntegrations';
 
@@ -13,12 +12,8 @@ interface CADConnectionDialogProps {
 }
 
 const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClose }) => {
-  const { integrations, createIntegration, loading } = useCADIntegrations();
+  const { integrations, handleConnect, loading } = useCADIntegrations();
   const [activeTab, setActiveTab] = useState('fusion360');
-  const [credentials, setCredentials] = useState({
-    clientId: '',
-    clientSecret: ''
-  });
 
   const cadPrograms = [
     {
@@ -35,21 +30,6 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
 
   const getIntegrationForProgram = (programId: string) => {
     return integrations.find(integration => integration.program_type === programId);
-  };
-
-  const handleConnect = async (programId: string) => {
-    try {
-      await createIntegration({
-        program_type: programId,
-        client_id: credentials.clientId,
-        client_secret: credentials.clientSecret,
-        name: cadPrograms.find(p => p.id === programId)?.name || programId
-      });
-      
-      setCredentials({ clientId: '', clientSecret: '' });
-    } catch (error) {
-      console.error('Error connecting CAD program:', error);
-    }
   };
 
   const formatDate = (dateString: string) => {
@@ -92,34 +72,16 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
             return (
               <TabsContent key={program.id} value={program.id} className="space-y-4 mt-6">
                 {!integration ? (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor={`${program.id}-client-id`}>Client ID</Label>
-                      <Input
-                        id={`${program.id}-client-id`}
-                        value={credentials.clientId}
-                        onChange={(e) => setCredentials(prev => ({ ...prev, clientId: e.target.value }))}
-                        placeholder="Geben Sie Ihre Client ID ein"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor={`${program.id}-client-secret`}>Client Secret</Label>
-                      <Input
-                        id={`${program.id}-client-secret`}
-                        type="password"
-                        value={credentials.clientSecret}
-                        onChange={(e) => setCredentials(prev => ({ ...prev, clientSecret: e.target.value }))}
-                        placeholder="Geben Sie Ihr Client Secret ein"
-                      />
-                    </div>
-
+                  <div className="text-center space-y-4">
+                    <p className="text-gray-600">
+                      Verbinden Sie {program.name} für erweiterte Design-Integration
+                    </p>
                     <Button 
                       onClick={() => handleConnect(program.id)}
-                      disabled={!credentials.clientId || !credentials.clientSecret || loading}
+                      disabled={loading}
                       className="w-full"
                     >
-                      {loading ? 'Verbinde...' : 'Jetzt verbinden'}
+                      Jetzt verbinden
                     </Button>
                   </div>
                 ) : (

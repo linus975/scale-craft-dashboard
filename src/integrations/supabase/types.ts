@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cad_integrations: {
+        Row: {
+          client_id: string
+          client_secret: string | null
+          created_at: string
+          id: string
+          name: string
+          program_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          client_secret?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          program_type: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          client_secret?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          program_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       designs: {
         Row: {
           cad_file_path: string | null
