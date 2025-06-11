@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Trash2, Edit2, Check, X } from 'lucide-react';
 
 interface CADIntegration {
   id: string;
@@ -47,6 +48,9 @@ const CADProgramTab: React.FC<CADProgramTabProps> = ({
   deleting,
   loading
 }) => {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>('');
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       day: '2-digit',
@@ -57,9 +61,22 @@ const CADProgramTab: React.FC<CADProgramTabProps> = ({
     });
   };
 
-  const maskSecret = (secret?: string) => {
-    if (!secret) return 'Not set';
-    return '*'.repeat(Math.min(secret.length, 12));
+  const handleEditStart = (integration: CADIntegration) => {
+    setEditingId(integration.id);
+    setEditingName(integration.name || `${program.name} Connection #${integrations.findIndex(i => i.id === integration.id) + 1}`);
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditingName('');
+  };
+
+  const handleEditSave = async (integrationId: string) => {
+    // Here you would typically call an API to update the name
+    // For now, we'll just close the edit mode
+    console.log('Saving name:', editingName, 'for integration:', integrationId);
+    setEditingId(null);
+    setEditingName('');
   };
 
   return (
@@ -75,15 +92,56 @@ const CADProgramTab: React.FC<CADProgramTabProps> = ({
           <div className="space-y-2">
             {integrations.map((integration, index) => (
               <Card key={integration.id} className="border-l-4 py-1" style={{ borderLeftColor: program.color }}>
-                <CardContent className="p-3">
+                <CardContent className="p-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1">
                       <span className="text-lg">{program.icon}</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-sm">
-                            {integration.name || `${program.name} Connection #${index + 1}`}
-                          </h4>
+                          {editingId === integration.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                className="h-6 text-xs font-medium"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleEditSave(integration.id);
+                                  if (e.key === 'Escape') handleEditCancel();
+                                }}
+                                autoFocus
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditSave(integration.id)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleEditCancel}
+                                className="h-6 w-6 p-0"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <h4 className="font-medium text-xs">
+                                {integration.name || `${program.name} Connection #${index + 1}`}
+                              </h4>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditStart(integration)}
+                                className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                           <Badge 
                             variant={integration.status === 'connected' ? 'default' : 'secondary'}
                             className={`text-xs ${integration.status === 'connected' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}
@@ -101,20 +159,13 @@ const CADProgramTab: React.FC<CADProgramTabProps> = ({
                           </div>
                           
                           <div>
-                            <Label className="text-gray-600 font-medium text-xs">Client Secret</Label>
-                            <p className="font-mono text-xs bg-gray-50 p-1 rounded">
-                              {maskSecret(integration.client_secret)}
-                            </p>
+                            {integration.access_token && (
+                              <p className="text-xs bg-green-50 p-1 rounded text-green-700">
+                                🔐 Token available - Connection active
+                              </p>
+                            )}
                           </div>
                         </div>
-
-                        {integration.access_token && (
-                          <div className="mt-1">
-                            <p className="text-xs bg-green-50 p-1 rounded text-green-700">
-                              🔐 Token available - Connection active
-                            </p>
-                          </div>
-                        )}
                       </div>
                     </div>
                     
@@ -127,12 +178,12 @@ const CADProgramTab: React.FC<CADProgramTabProps> = ({
                         size="sm"
                         onClick={() => onDeleteIntegration(integration.id)}
                         disabled={deleting === integration.id}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
                       >
                         {deleting === integration.id ? (
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
                         ) : (
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         )}
                       </Button>
                     </div>
@@ -142,12 +193,12 @@ const CADProgramTab: React.FC<CADProgramTabProps> = ({
             ))}
           </div>
 
-          {/* Add New Connection Button - only shown when integrations exist */}
-          <div className="text-center space-y-2 p-3 bg-gray-50 rounded-lg border-t">
+          {/* Add New Connection Button */}
+          <div className="text-center space-y-2 p-2 bg-gray-50 rounded-lg border-t">
             <Button 
               onClick={() => onConnect(program.id)}
               disabled={loading}
-              className="w-full max-w-xs text-white"
+              className="w-full max-w-xs text-white text-sm"
               style={{ backgroundColor: program.color }}
             >
               {loading ? (
