@@ -56,7 +56,7 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('de-DE', {
+    return new Date(dateString).toLocaleString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -66,7 +66,7 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
   };
 
   const maskSecret = (secret?: string) => {
-    if (!secret) return 'Nicht gesetzt';
+    if (!secret) return 'Not set';
     return '*'.repeat(Math.min(secret.length, 12));
   };
 
@@ -75,9 +75,9 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>CAD Programme verwalten</DialogTitle>
+            <DialogTitle>Manage CAD Programs</DialogTitle>
             <DialogDescription>
-              Lade CAD-Integrationen...
+              Loading CAD integrations...
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center py-8">
@@ -92,12 +92,12 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>CAD Programme verwalten</DialogTitle>
+          <DialogTitle>Manage CAD Programs</DialogTitle>
           <DialogDescription>
-            Verbinden und verwalten Sie Ihre CAD Programme für nahtlose Design-Integration
+            Connect and manage your CAD programs for seamless design integration
             {integrations.length > 0 && (
               <span className="block mt-1 text-sm text-green-600">
-                ✅ {integrations.length} Integration(en) gefunden
+                ✅ {integrations.length} integration(s) found
               </span>
             )}
           </DialogDescription>
@@ -131,12 +131,12 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
             
             return (
               <TabsContent key={program.id} value={program.id} className="space-y-4 mt-6">
-                {/* Existing Integrations */}
-                {programIntegrations.length > 0 && (
+                {/* Show existing integrations or connect new */}
+                {programIntegrations.length > 0 ? (
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium flex items-center gap-2">
                       <span>{program.icon}</span>
-                      Bestehende {program.name} Verbindungen
+                      {program.name} Connections
                       <Badge variant="outline">{programIntegrations.length}</Badge>
                     </h3>
                     
@@ -148,18 +148,18 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                               <span className="text-2xl">{program.icon}</span>
                               <div>
                                 <h4 className="font-medium">
-                                  {integration.name || `${program.name} Verbindung #${index + 1}`}
+                                  {integration.name || `${program.name} Connection #${index + 1}`}
                                 </h4>
                                 <Badge 
                                   variant={integration.status === 'connected' ? 'default' : 'secondary'}
                                   className={integration.status === 'connected' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}
                                 >
-                                  {integration.status === 'connected' ? '✅ Verbunden' : '⚠️ ' + integration.status}
+                                  {integration.status === 'connected' ? '✅ Connected' : '⚠️ ' + integration.status}
                                 </Badge>
                               </div>
                             </div>
                             <div className="text-sm text-gray-500">
-                              Erstellt: {formatDate(integration.created_at)}
+                              Created: {formatDate(integration.created_at)}
                             </div>
                           </div>
                           
@@ -167,7 +167,7 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                             <div>
                               <Label className="text-gray-600 font-medium">Client ID</Label>
                               <p className="font-mono text-sm bg-gray-50 p-2 rounded mt-1 break-all">
-                                {integration.client_id || 'Nicht gesetzt'}
+                                {integration.client_id || 'Not set'}
                               </p>
                             </div>
                             
@@ -182,7 +182,7 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                               <div className="md:col-span-2">
                                 <Label className="text-gray-600 font-medium">Status</Label>
                                 <p className="text-sm bg-green-50 p-2 rounded mt-1 text-green-700">
-                                  🔐 Token verfügbar - Verbindung aktiv
+                                  🔐 Token available - Connection active
                                 </p>
                               </div>
                             )}
@@ -190,21 +190,44 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                         </CardContent>
                       </Card>
                     ))}
+
+                    {/* Add new connection button when integrations exist */}
+                    <div className="pt-4 border-t">
+                      <div className="text-center space-y-4 p-6 bg-gray-50 rounded-lg">
+                        <span className="text-4xl">{program.icon}</span>
+                        <h4 className="font-medium text-gray-900">
+                          Add New {program.name} Connection
+                        </h4>
+                        <p className="text-gray-600 text-sm">
+                          Add another {program.name} connection for additional integrations
+                        </p>
+                        <Button 
+                          onClick={() => handleConnect(program.id)}
+                          disabled={loading}
+                          className="w-full max-w-xs text-white"
+                          style={{ backgroundColor: program.color }}
+                        >
+                          {loading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Connecting...
+                            </>
+                          ) : (
+                            '➕ Add New Connection'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                )}
-                
-                {/* Connect New Section */}
-                <div className={programIntegrations.length > 0 ? "pt-4 border-t" : ""}>
+                ) : (
+                  /* Show connect new section when no integrations exist */
                   <div className="text-center space-y-4 p-6 bg-gray-50 rounded-lg">
                     <span className="text-4xl">{program.icon}</span>
                     <h4 className="font-medium text-gray-900">
-                      {programIntegrations.length > 0 ? `Neue ${program.name} Verbindung hinzufügen` : `${program.name} verbinden`}
+                      Connect {program.name}
                     </h4>
                     <p className="text-gray-600 text-sm">
-                      {programIntegrations.length > 0 
-                        ? `Fügen Sie eine weitere ${program.name} Verbindung hinzu`
-                        : `Verbinden Sie ${program.name} für erweiterte Design-Integration`
-                      }
+                      Connect {program.name} for enhanced design integration
                     </p>
                     <Button 
                       onClick={() => handleConnect(program.id)}
@@ -215,14 +238,14 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                       {loading ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Verbinde...
+                          Connecting...
                         </>
                       ) : (
-                        programIntegrations.length > 0 ? '➕ Neue Verbindung' : `🔗 ${program.name} verbinden`
+                        `🔗 Connect ${program.name}`
                       )}
                     </Button>
                   </div>
-                </div>
+                )}
               </TabsContent>
             );
           })}
