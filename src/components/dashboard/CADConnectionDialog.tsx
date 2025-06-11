@@ -33,7 +33,7 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('de-DE', {
+    return new Date(dateString).toLocaleString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -50,9 +50,9 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>CAD-Programme verbinden</DialogTitle>
+          <DialogTitle>Connect CAD Programs</DialogTitle>
           <DialogDescription>
-            Verbinden Sie Ihre CAD-Programme für nahtlose Design-Integration
+            Connect your CAD programs for seamless design integration
           </DialogDescription>
         </DialogHeader>
 
@@ -74,20 +74,20 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                 {!integration ? (
                   <div className="text-center space-y-4">
                     <p className="text-gray-600">
-                      Verbinden Sie {program.name} für erweiterte Design-Integration
+                      Connect {program.name} for enhanced design integration
                     </p>
                     <Button 
                       onClick={() => handleConnect(program.id)}
                       disabled={loading}
                       className="w-full"
                     >
-                      Jetzt verbinden
+                      Connect Now
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <h3 className="font-medium text-green-800 mb-3">Verbindung hergestellt</h3>
+                      <h3 className="font-medium text-green-800 mb-3">Connection Established</h3>
                       
                       <div className="space-y-2">
                         <div>
@@ -101,7 +101,7 @@ const CADConnectionDialog: React.FC<CADConnectionDialogProps> = ({ isOpen, onClo
                         </div>
                         
                         <div>
-                          <Label className="text-sm text-gray-600">Zuletzt verbunden</Label>
+                          <Label className="text-sm text-gray-600">Last Connected</Label>
                           <p className="text-sm">{formatDate(integration.updated_at)}</p>
                         </div>
                       </div>
