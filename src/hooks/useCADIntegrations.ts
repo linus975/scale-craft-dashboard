@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +12,9 @@ interface CADIntegration {
   client_secret?: string;
   status: string;
   token_expires_in?: number;
+  token_type?: string;
+  refresh_token?: string;
+  access_token?: string;
   created_at: string;
   updated_at: string;
 }

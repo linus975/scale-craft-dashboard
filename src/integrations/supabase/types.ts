@@ -11,38 +11,47 @@ export type Database = {
     Tables: {
       cad_integrations: {
         Row: {
+          access_token: string | null
           client_id: string
           client_secret: string | null
           created_at: string
           id: string
           name: string
           program_type: string
+          refresh_token: string | null
           status: string
           token_expires_in: number | null
+          token_type: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          access_token?: string | null
           client_id: string
           client_secret?: string | null
           created_at?: string
           id?: string
           name: string
           program_type: string
+          refresh_token?: string | null
           status?: string
           token_expires_in?: number | null
+          token_type?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          access_token?: string | null
           client_id?: string
           client_secret?: string | null
           created_at?: string
           id?: string
           name?: string
           program_type?: string
+          refresh_token?: string | null
           status?: string
           token_expires_in?: number | null
+          token_type?: string | null
           updated_at?: string
           user_id?: string
         }
