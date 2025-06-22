@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useOptimizedFileUpload } from '@/hooks/useOptimizedFileUpload';
@@ -281,6 +282,7 @@ export const useDesignFileUpload = () => {
     uploadProgress,
     previewImage,
     gcodeFiles,
+    uploadFile, // Now expose the uploadFile method
     setUploadedFiles,
     handlePreviewImageDrop,
     handlePreviewImageChange,
