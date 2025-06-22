@@ -44,7 +44,7 @@ export const useHighPerformanceUpload = () => {
     folder: string = '',
     onProgress?: (progress: number, speed?: string, timeRemaining?: string) => void
   ): Promise<string> => {
-    console.log(`🚀 UPLOAD START: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+    console.log(`🚀 DIRECT UPLOAD START: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
     console.log(`📊 File details:`, {
       name: file.name,
       size: file.size,
@@ -70,110 +70,33 @@ export const useHighPerformanceUpload = () => {
     console.log(`📁 Path generation: ${pathTime}ms, Path: ${filePath}`);
 
     try {
-      // Step 3: Try to create signed upload URL first
-      const signedUrlStartTime = Date.now();
-      console.log(`🔗 Trying signed URL upload...`);
+      // Step 3: Use DIRECT upload for better performance
+      const directUploadStartTime = Date.now();
+      console.log(`📤 Starting direct upload to Supabase Storage...`);
       
-      const { data: urlData, error: urlError } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('design-files')
-        .createSignedUploadUrl(filePath);
-      
-      const signedUrlTime = Date.now() - signedUrlStartTime;
-      console.log(`🔗 Signed URL creation: ${signedUrlTime}ms`);
-      
-      if (urlError) {
-        console.log(`❌ Signed URL failed: ${urlError.message}`);
-        console.log(`🔄 Falling back to direct upload...`);
-        
-        // Fallback to direct upload
-        const directUploadStartTime = Date.now();
-        
-        const { data, error } = await supabase.storage
-          .from('design-files')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-        const directUploadTime = Date.now() - directUploadStartTime;
-        const totalTime = Date.now() - overallStartTime;
-        
-        console.log(`⚡ Direct upload completed: ${directUploadTime}ms`);
-        console.log(`🏁 TOTAL TIME: ${totalTime}ms (${(totalTime/1000).toFixed(1)}s)`);
-        
-        if (error) {
-          console.error(`❌ Direct upload error:`, error);
-          throw error;
-        }
-
-        onProgress?.(100, `${((file.size / 1024 / 1024) / (directUploadTime / 1000)).toFixed(1)} MB/s`, '0s');
-        return data.path;
+      const directUploadTime = Date.now() - directUploadStartTime;
+      const totalTime = Date.now() - overallStartTime;
+      
+      console.log(`⚡ Direct upload completed: ${directUploadTime}ms`);
+      console.log(`🏁 TOTAL TIME: ${totalTime}ms (${(totalTime/1000).toFixed(1)}s)`);
+      
+      if (error) {
+        console.error(`❌ Direct upload error:`, error);
+        throw error;
       }
 
-      // Step 4: Use signed URL with XMLHttpRequest for real progress
-      console.log(`🔗 Using signed URL: ${urlData.signedUrl.substring(0, 100)}...`);
+      const speed = (file.size / 1024 / 1024 / (directUploadTime / 1000)).toFixed(1);
+      console.log(`⚡ Average speed: ${speed} MB/s`);
+      onProgress?.(100, `${speed} MB/s`, '0s');
       
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const uploadStartTime = Date.now();
-        
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const progress = (e.loaded / e.total) * 100;
-            const elapsed = (Date.now() - uploadStartTime) / 1000;
-            const speed = elapsed > 0 ? (e.loaded / 1024 / 1024 / elapsed).toFixed(1) : '0';
-            const remaining = elapsed > 0 && e.loaded > 0 ? 
-              ((e.total - e.loaded) / (e.loaded / elapsed) / 1000).toFixed(0) : '0';
-            
-            console.log(`📤 Progress: ${progress.toFixed(1)}% (${(e.loaded/1024/1024).toFixed(1)}MB/${(e.total/1024/1024).toFixed(1)}MB) at ${speed} MB/s`);
-            onProgress?.(progress, `${speed} MB/s`, `${remaining}s`);
-          }
-        });
-
-        xhr.addEventListener('load', () => {
-          const uploadTime = Date.now() - uploadStartTime;
-          const totalTime = Date.now() - overallStartTime;
-          
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const speed = (file.size / 1024 / 1024 / (uploadTime / 1000)).toFixed(1);
-            console.log(`✅ Signed URL upload completed: ${uploadTime}ms`);
-            console.log(`🏁 TOTAL TIME: ${totalTime}ms (${(totalTime/1000).toFixed(1)}s)`);
-            console.log(`⚡ Average speed: ${speed} MB/s`);
-            
-            onProgress?.(100, `${speed} MB/s`, '0s');
-            resolve(filePath);
-          } else {
-            console.error(`❌ Upload failed with status: ${xhr.status} ${xhr.statusText}`);
-            console.log(`❌ Response:`, xhr.responseText);
-            reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
-          }
-        });
-
-        xhr.addEventListener('error', (event) => {
-          const totalTime = Date.now() - overallStartTime;
-          console.error(`❌ Upload error after ${totalTime}ms:`, event);
-          reject(new Error('Upload failed due to network error'));
-        });
-
-        xhr.addEventListener('timeout', () => {
-          const totalTime = Date.now() - overallStartTime;
-          console.error(`⏰ Upload timeout after ${totalTime}ms`);
-          reject(new Error('Upload timed out'));
-        });
-
-        // Set a reasonable timeout (30 seconds)
-        xhr.timeout = 30000;
-        
-        const xhrStartTime = Date.now();
-        xhr.open('PUT', urlData.signedUrl);
-        xhr.setRequestHeader('Content-Type', file.type);
-        
-        console.log(`🚀 Starting XMLHttpRequest upload...`);
-        xhr.send(file);
-        
-        const xhrSetupTime = Date.now() - xhrStartTime;
-        console.log(`⚙️ XHR setup: ${xhrSetupTime}ms`);
-      });
+      return data.path;
 
     } catch (error) {
       const totalTime = Date.now() - overallStartTime;
@@ -190,7 +113,7 @@ export const useHighPerformanceUpload = () => {
     setUploading(true);
     const results: { file: File; path?: string; error?: string }[] = [];
     
-    console.log(`🚀 Starting upload of ${files.length} files`);
+    console.log(`🚀 Starting DIRECT upload of ${files.length} files`);
     
     try {
       // Initialize progress tracking
@@ -208,7 +131,7 @@ export const useHighPerformanceUpload = () => {
       });
       setUploadProgress(progressMap);
 
-      // Upload files sequentially for better debugging (can be made parallel later)
+      // Upload files sequentially for better performance (avoid overloading Supabase)
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileId = `${i}-${file.name}`;
