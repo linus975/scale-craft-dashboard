@@ -19,61 +19,30 @@ export const useHighPerformanceUpload = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, UploadProgress>>({});
   const { toast } = useToast();
-  
-  // Cache user to avoid repeated auth calls
-  const userCache = useRef<any>(null);
-
-  const getCachedUser = useCallback(async () => {
-    if (userCache.current) {
-      return userCache.current;
-    }
-    
-    const startTime = Date.now();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    const authTime = Date.now() - startTime;
-    console.log(`🔐 Auth check took: ${authTime}ms`);
-    
-    if (error || !user) throw new Error('User not authenticated');
-    
-    userCache.current = user;
-    return user;
-  }, []);
 
   const uploadFile = async (
     file: File, 
     folder: string = '',
     onProgress?: (progress: number, speed?: string, timeRemaining?: string) => void
   ): Promise<string> => {
-    console.log(`🚀 DIRECT UPLOAD START: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
-    console.log(`📊 File details:`, {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      lastModified: new Date(file.lastModified)
-    });
+    console.log(`🚀 SUPER SIMPLE UPLOAD: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
     
-    const overallStartTime = Date.now();
+    const startTime = Date.now();
     
-    // Step 1: Get user (should be cached after first call)
-    const userStartTime = Date.now();
-    const user = await getCachedUser();
-    const userTime = Date.now() - userStartTime;
-    console.log(`👤 User retrieval: ${userTime}ms`);
-    
-    // Step 2: Generate file path
-    const pathStartTime = Date.now();
-    const fileExt = file.name.split('.').pop();
-    const timestamp = Date.now();
-    const fileName = `${timestamp}.${fileExt}`;
-    const filePath = folder ? `${user.id}/${folder}/${fileName}` : `${user.id}/${fileName}`;
-    const pathTime = Date.now() - pathStartTime;
-    console.log(`📁 Path generation: ${pathTime}ms, Path: ${filePath}`);
-
     try {
-      // Step 3: Use DIRECT upload for better performance
-      const directUploadStartTime = Date.now();
-      console.log(`📤 Starting direct upload to Supabase Storage...`);
+      // Get user - no caching, just direct call
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error('Authentication failed');
       
+      // Simple file path
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      const fileName = `${timestamp}.${fileExt}`;
+      const filePath = folder ? `${user.id}/${folder}/${fileName}` : `${user.id}/${fileName}`;
+      
+      console.log(`📤 Direct upload to: ${filePath}`);
+      
+      // Direct upload - no signed URLs, no XMLHttpRequest, just basic Supabase
       const { data, error } = await supabase.storage
         .from('design-files')
         .upload(filePath, file, {
@@ -81,26 +50,22 @@ export const useHighPerformanceUpload = () => {
           upsert: false
         });
 
-      const directUploadTime = Date.now() - directUploadStartTime;
-      const totalTime = Date.now() - overallStartTime;
-      
-      console.log(`⚡ Direct upload completed: ${directUploadTime}ms`);
-      console.log(`🏁 TOTAL TIME: ${totalTime}ms (${(totalTime/1000).toFixed(1)}s)`);
-      
       if (error) {
-        console.error(`❌ Direct upload error:`, error);
+        console.error(`❌ Upload error:`, error);
         throw error;
       }
 
-      const speed = (file.size / 1024 / 1024 / (directUploadTime / 1000)).toFixed(1);
-      console.log(`⚡ Average speed: ${speed} MB/s`);
+      const totalTime = Date.now() - startTime;
+      const speed = (file.size / 1024 / 1024 / (totalTime / 1000)).toFixed(1);
+      
+      console.log(`✅ Upload completed in ${totalTime}ms (${speed} MB/s)`);
       onProgress?.(100, `${speed} MB/s`, '0s');
       
       return data.path;
 
     } catch (error) {
-      const totalTime = Date.now() - overallStartTime;
-      console.error(`❌ Upload error after ${totalTime}ms:`, error);
+      const totalTime = Date.now() - startTime;
+      console.error(`❌ Upload failed after ${totalTime}ms:`, error);
       throw error;
     }
   };
@@ -113,7 +78,7 @@ export const useHighPerformanceUpload = () => {
     setUploading(true);
     const results: { file: File; path?: string; error?: string }[] = [];
     
-    console.log(`🚀 Starting DIRECT upload of ${files.length} files`);
+    console.log(`🚀 Starting upload of ${files.length} files`);
     
     try {
       // Initialize progress tracking
@@ -131,13 +96,13 @@ export const useHighPerformanceUpload = () => {
       });
       setUploadProgress(progressMap);
 
-      // Upload files sequentially for better performance (avoid overloading Supabase)
+      // Upload files one by one
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileId = `${i}-${file.name}`;
         
         try {
-          console.log(`\n📂 === UPLOADING FILE ${i + 1}/${files.length}: ${file.name} ===`);
+          console.log(`📂 Uploading file ${i + 1}/${files.length}: ${file.name}`);
           
           setUploadProgress(prev => ({
             ...prev,
@@ -169,10 +134,10 @@ export const useHighPerformanceUpload = () => {
           }));
 
           results.push({ file, path });
-          console.log(`✅ File ${i + 1} completed successfully`);
+          console.log(`✅ File ${i + 1} completed`);
           
         } catch (error) {
-          console.error(`❌ Error uploading file ${i + 1} (${file.name}):`, error);
+          console.error(`❌ Error uploading file ${i + 1}:`, error);
           
           setUploadProgress(prev => ({
             ...prev,
@@ -194,7 +159,7 @@ export const useHighPerformanceUpload = () => {
       const successful = results.filter(r => r.path).length;
       const failed = results.filter(r => r.error).length;
 
-      console.log(`\n🏁 UPLOAD SUMMARY: ${successful} successful, ${failed} failed`);
+      console.log(`🏁 Upload summary: ${successful} successful, ${failed} failed`);
 
       if (successful > 0) {
         toast({
@@ -206,7 +171,7 @@ export const useHighPerformanceUpload = () => {
       return results;
     } finally {
       setUploading(false);
-      // Clear progress after 3 seconds for better UX
+      // Clear progress after 3 seconds
       setTimeout(() => setUploadProgress({}), 3000);
     }
   };
