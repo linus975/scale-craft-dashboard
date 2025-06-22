@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -120,10 +119,9 @@ export const useHighPerformanceUpload = () => {
       const user = await getAuthenticatedUser();
       console.log(`👤 Auth check: ${Date.now() - startTime}ms`);
       
-      // Generate file path - restore original structure
-      const fileExt = file.name.split('.').pop();
+      // Generate file path with original filename
       const timestamp = Date.now();
-      const fileName = `${timestamp}.${fileExt}`;
+      const fileName = `${timestamp}_${file.name}`;
       
       // Use specific folder structure for gcode files
       let filePath: string;
