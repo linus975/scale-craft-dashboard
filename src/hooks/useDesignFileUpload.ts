@@ -86,19 +86,11 @@ export const useDesignFileUpload = () => {
 
     const filesToUpload = Array.from(files);
     
-    // Validate files first
+    // Quick validation - no complex size checks
     const validFiles = filesToUpload.filter(file => {
-      // File size validation - warn for files larger than 50MB
-      if (file.size > 50 * 1024 * 1024) {
-        toast({
-          title: "Große Datei erkannt",
-          description: `${file.name} ist ${(file.size / 1024 / 1024).toFixed(1)}MB. Hochgeschwindigkeits-Upload wird verwendet!`,
-        });
-      }
-
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
       
-      // Validate file type if expectedFileType is specified
+      // Simple file type validation
       if (expectedFileType) {
         if (expectedFileType === 'f3d' && fileExtension !== 'f3d') {
           toast({
@@ -137,9 +129,9 @@ export const useDesignFileUpload = () => {
     }
 
     try {
-      console.log(`🚀 Starting high-speed upload for ${validFiles.length} files`);
+      console.log(`🚀 TURBO UPLOAD: ${validFiles.length} files`);
       
-      // Use high-performance parallel upload
+      // Use lightning-fast parallel upload
       const folderPath = partId ? `parts/${partId}` : 'general';
       const uploadResults = await uploadMultipleFiles(validFiles, folderPath);
       
@@ -170,7 +162,7 @@ export const useDesignFileUpload = () => {
         }
       });
 
-      // Remove existing files of the same type and part
+      // Update uploaded files
       setUploadedFiles(prev => {
         const filteredPrev = prev.filter(existingFile => {
           const newFileTypes = newFiles.map(nf => ({ 
@@ -188,7 +180,7 @@ export const useDesignFileUpload = () => {
       });
 
     } catch (error) {
-      console.error('Error uploading files:', error);
+      console.error('Upload error:', error);
       toast({
         title: "Upload-Fehler",
         description: "Es gab einen Fehler beim Hochladen der Dateien.",
@@ -243,34 +235,34 @@ export const useDesignFileUpload = () => {
     return gcodeFiles[partId] || null;
   };
 
-  // Optimized preview image upload
+  // Blazing fast preview image upload
   const uploadPreviewImage = async (): Promise<string | null> => {
     if (!previewImage) return null;
     
     try {
-      console.log('📸 Uploading preview image with high-speed upload:', previewImage.name);
+      console.log('📸 TURBO PREVIEW UPLOAD:', previewImage.name);
       const path = await uploadFile(previewImage, 'previews');
-      console.log('✅ Preview image uploaded in record time:', path);
+      console.log('✅ Preview uploaded at light speed:', path);
       return path;
     } catch (error) {
-      console.error('❌ Error uploading preview image:', error);
+      console.error('❌ Preview upload error:', error);
       throw error;
     }
   };
 
-  // Optimized G-Code upload
+  // Lightning fast G-Code upload
   const uploadGcodeFile = async (partId: string): Promise<{ path: string | null; content: string | null }> => {
     const gcodeFile = gcodeFiles[partId];
     if (!gcodeFile) return { path: null, content: null };
 
     try {
-      console.log('⚙️ Uploading G-Code file with high-speed upload:', gcodeFile.name);
+      console.log('⚙️ TURBO GCODE UPLOAD:', gcodeFile.name);
       const path = await uploadFile(gcodeFile, 'gcode');
-      console.log('✅ G-Code file uploaded in record time:', path);
+      console.log('✅ G-Code uploaded at light speed:', path);
       
       return { path, content: null };
     } catch (error) {
-      console.error('❌ Error uploading G-Code file:', error);
+      console.error('❌ G-Code upload error:', error);
       throw error;
     }
   };
@@ -281,7 +273,7 @@ export const useDesignFileUpload = () => {
     uploadProgress,
     previewImage,
     gcodeFiles,
-    uploadFile, // Now expose the high-performance uploadFile method
+    uploadFile, // Expose the turbo upload method
     setUploadedFiles,
     handlePreviewImageDrop,
     handlePreviewImageChange,

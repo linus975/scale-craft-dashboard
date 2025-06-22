@@ -15,12 +15,6 @@ interface UploadProgress {
   error?: string;
 }
 
-interface ChunkUploadResult {
-  success: boolean;
-  path?: string;
-  error?: string;
-}
-
 export const useHighPerformanceUpload = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, UploadProgress>>({});
@@ -28,164 +22,114 @@ export const useHighPerformanceUpload = () => {
   
   // Cache user to avoid repeated auth calls
   const userCache = useRef<any>(null);
-  const authPromise = useRef<Promise<any> | null>(null);
 
   const getCachedUser = useCallback(async () => {
     if (userCache.current) {
       return userCache.current;
     }
     
-    if (!authPromise.current) {
-      authPromise.current = supabase.auth.getUser();
-    }
-    
-    const { data: { user }, error } = await authPromise.current;
+    const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) throw new Error('User not authenticated');
     
     userCache.current = user;
     return user;
   }, []);
 
-  const uploadChunk = async (
-    chunk: Blob,
-    chunkIndex: number,
-    fileName: string,
-    filePath: string
-  ): Promise<ChunkUploadResult> => {
-    try {
-      const chunkFile = new File([chunk], `${fileName}_chunk_${chunkIndex}`, { type: chunk.type });
-      const chunkPath = `${filePath}_chunk_${chunkIndex}`;
-      
-      const { data, error } = await supabase.storage
-        .from('design-files')
-        .upload(chunkPath, chunkFile, {
-          cacheControl: '31536000', // 1 year cache
-          upsert: false
-        });
-
-      if (error) throw error;
-      return { success: true, path: data.path };
-    } catch (error) {
-      console.error(`❌ Chunk ${chunkIndex} upload failed:`, error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Chunk upload failed' 
-      };
-    }
-  };
-
-  const reassembleChunks = async (
-    chunkPaths: string[],
-    finalPath: string,
-    fileName: string
-  ): Promise<string> => {
-    // For now, we'll use single upload but with optimized settings
-    // In a real implementation, you'd reassemble chunks server-side
-    console.log('🔄 Using optimized single upload instead of chunk reassembly');
-    return finalPath;
-  };
-
   const uploadFile = async (
     file: File, 
     folder: string = '',
     onProgress?: (progress: number, speed?: string, timeRemaining?: string) => void
   ): Promise<string> => {
-    console.log(`🚀 Starting high-performance upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+    console.log(`🚀 FAST UPLOAD START: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
     
     const startTime = Date.now();
     const user = await getCachedUser();
     
-    // Optimized filename generation
+    // Optimized filename - no complex logic
     const fileExt = file.name.split('.').pop();
-    const timestamp = Date.now();
-    const fileName = `${timestamp}.${fileExt}`;
+    const fileName = `${Date.now()}.${fileExt}`;
     const filePath = folder ? `${user.id}/${folder}/${fileName}` : `${user.id}/${fileName}`;
 
-    // For files smaller than 10MB, use direct upload with optimizations
-    if (file.size < 10 * 1024 * 1024) {
-      console.log('📁 Using direct optimized upload');
-      
-      // Simulate progress for better UX
-      const progressInterval = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const estimatedTotal = Math.max(2000, file.size / (1024 * 1024)); // At least 2 seconds
-        const progress = Math.min(95, (elapsed / estimatedTotal) * 100);
-        const speed = ((file.size * progress / 100) / 1024 / 1024 / (elapsed / 1000)).toFixed(1);
-        const remaining = ((100 - progress) / progress) * elapsed / 1000;
-        
-        onProgress?.(progress, `${speed} MB/s`, remaining > 0 ? `${remaining.toFixed(0)}s` : '0s');
-      }, 100);
+    console.log(`📁 Upload path: ${filePath}`);
 
-      try {
+    try {
+      // Create a custom XMLHttpRequest for real progress tracking
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Get upload URL from Supabase
+      const { data: urlData, error: urlError } = await supabase.storage
+        .from('design-files')
+        .createSignedUploadUrl(filePath);
+
+      if (urlError) {
+        console.log('🔄 Fallback to direct upload method');
+        
+        // Direct upload with optimized settings
         const { data, error } = await supabase.storage
           .from('design-files')
           .upload(filePath, file, {
-            cacheControl: '31536000', // 1 year cache
-            upsert: false,
-            duplex: 'half' // Optimize for upload
+            cacheControl: '3600',
+            upsert: false
           });
 
-        clearInterval(progressInterval);
-        
         if (error) throw error;
 
         const endTime = Date.now();
         const duration = (endTime - startTime) / 1000;
         const speed = (file.size / 1024 / 1024 / duration).toFixed(1);
         
+        console.log(`✅ Direct upload completed in ${duration.toFixed(1)}s at ${speed} MB/s`);
         onProgress?.(100, `${speed} MB/s`, '0s');
-        console.log(`✅ Upload completed in ${duration.toFixed(1)}s at ${speed} MB/s`);
         
         return data.path;
-      } catch (error) {
-        clearInterval(progressInterval);
-        throw error;
       }
-    }
 
-    // For larger files, use chunked upload
-    console.log('🧩 Using chunked upload for large file');
-    const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    const chunkPaths: string[] = [];
-    
-    let uploadedBytes = 0;
-    
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * CHUNK_SIZE;
-      const end = Math.min(start + CHUNK_SIZE, file.size);
-      const chunk = file.slice(start, end);
-      
-      const result = await uploadChunk(chunk, i, fileName, filePath);
-      
-      if (!result.success) {
-        throw new Error(result.error || `Chunk ${i} upload failed`);
-      }
-      
-      if (result.path) {
-        chunkPaths.push(result.path);
-      }
-      
-      uploadedBytes += chunk.size;
-      const progress = (uploadedBytes / file.size) * 100;
-      const elapsed = (Date.now() - startTime) / 1000;
-      const speed = (uploadedBytes / 1024 / 1024 / elapsed).toFixed(1);
-      const remaining = ((file.size - uploadedBytes) / (uploadedBytes / elapsed) / 1000).toFixed(0);
-      
-      onProgress?.(progress, `${speed} MB/s`, `${remaining}s`);
-      
-      console.log(`📤 Chunk ${i + 1}/${totalChunks} uploaded (${progress.toFixed(1)}%)`);
+      // Use signed URL for faster upload with progress tracking
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const progress = (e.loaded / e.total) * 100;
+            const elapsed = (Date.now() - startTime) / 1000;
+            const speed = (e.loaded / 1024 / 1024 / elapsed).toFixed(1);
+            const remaining = ((e.total - e.loaded) / (e.loaded / elapsed) / 1000).toFixed(0);
+            
+            console.log(`📤 Upload progress: ${progress.toFixed(1)}% at ${speed} MB/s`);
+            onProgress?.(progress, `${speed} MB/s`, `${remaining}s`);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const endTime = Date.now();
+            const duration = (endTime - startTime) / 1000;
+            const speed = (file.size / 1024 / 1024 / duration).toFixed(1);
+            
+            console.log(`✅ Signed URL upload completed in ${duration.toFixed(1)}s at ${speed} MB/s`);
+            onProgress?.(100, `${speed} MB/s`, '0s');
+            resolve(filePath);
+          } else {
+            console.error('❌ Upload failed with status:', xhr.status);
+            reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          console.error('❌ Upload error');
+          reject(new Error('Upload failed'));
+        });
+
+        xhr.open('PUT', urlData.signedUrl);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
+      });
+
+    } catch (error) {
+      console.error('❌ Upload error:', error);
+      throw error;
     }
-    
-    // Reassemble chunks (simplified for now)
-    const finalPath = await reassembleChunks(chunkPaths, filePath, fileName);
-    
-    const endTime = Date.now();
-    const duration = (endTime - startTime) / 1000;
-    const speed = (file.size / 1024 / 1024 / duration).toFixed(1);
-    
-    console.log(`✅ Chunked upload completed in ${duration.toFixed(1)}s at ${speed} MB/s`);
-    return finalPath;
   };
 
   const uploadMultipleFiles = async (
@@ -197,6 +141,8 @@ export const useHighPerformanceUpload = () => {
     const results: { file: File; path?: string; error?: string }[] = [];
     
     try {
+      console.log(`🚀 Starting parallel upload of ${files.length} files`);
+      
       // Initialize progress tracking
       const progressMap: Record<string, UploadProgress> = {};
       files.forEach((file, index) => {
@@ -206,13 +152,13 @@ export const useHighPerformanceUpload = () => {
           fileName: file.name,
           progress: 0,
           status: 'pending',
-          totalBytes: file.size
+          totalBytes: file.size,
+          bytesUploaded: 0
         };
       });
       setUploadProgress(progressMap);
 
-      // Upload with higher concurrency for better performance
-      const concurrentUploads = Math.min(5, files.length); // Max 5 concurrent uploads
+      // Upload files in parallel (max 3 concurrent for optimal performance)
       const uploadPromises = files.map(async (file, index) => {
         const fileId = `${index}-${file.name}`;
         
@@ -263,8 +209,8 @@ export const useHighPerformanceUpload = () => {
         }
       });
 
-      // Process uploads with optimized concurrency
-      const chunkSize = concurrentUploads;
+      // Process uploads with concurrency limit (3 at a time)
+      const chunkSize = 3;
       for (let i = 0; i < uploadPromises.length; i += chunkSize) {
         const chunk = uploadPromises.slice(i, i + chunkSize);
         const chunkResults = await Promise.all(chunk);
@@ -281,7 +227,7 @@ export const useHighPerformanceUpload = () => {
 
       if (successful > 0) {
         toast({
-          title: "Upload erfolgreich",
+          title: "Blitzschneller Upload!",
           description: `${successful} Datei(en) in Rekordzeit hochgeladen${failed > 0 ? `, ${failed} fehlgeschlagen` : ''}.`,
         });
       }
