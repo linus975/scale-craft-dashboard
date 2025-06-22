@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useOptimizedFileUpload } from '@/hooks/useOptimizedFileUpload';
+import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
 
 interface UploadedFile {
   id: string;
@@ -25,7 +24,7 @@ export const useDesignFileUpload = () => {
   const [gcodeFiles, setGcodeFiles] = useState<Record<string, File>>({});
   
   const { toast } = useToast();
-  const { uploadFile, uploadMultipleFiles, uploading, uploadProgress } = useOptimizedFileUpload();
+  const { uploadFile, uploadMultipleFiles, uploading, uploadProgress } = useHighPerformanceUpload();
 
   const handlePreviewImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -92,8 +91,8 @@ export const useDesignFileUpload = () => {
       // File size validation - warn for files larger than 50MB
       if (file.size > 50 * 1024 * 1024) {
         toast({
-          title: "Large file detected",
-          description: `${file.name} is ${(file.size / 1024 / 1024).toFixed(1)}MB. This might take longer to upload.`,
+          title: "Große Datei erkannt",
+          description: `${file.name} ist ${(file.size / 1024 / 1024).toFixed(1)}MB. Hochgeschwindigkeits-Upload wird verwendet!`,
         });
       }
 
@@ -103,8 +102,8 @@ export const useDesignFileUpload = () => {
       if (expectedFileType) {
         if (expectedFileType === 'f3d' && fileExtension !== 'f3d') {
           toast({
-            title: "Wrong file type",
-            description: "Please upload a .f3d file for CAD.",
+            title: "Falscher Dateityp",
+            description: "Bitte laden Sie eine .f3d Datei für CAD hoch.",
             variant: "destructive",
           });
           return false;
@@ -112,8 +111,8 @@ export const useDesignFileUpload = () => {
         
         if (expectedFileType === 'ini' && fileExtension !== 'ini') {
           toast({
-            title: "Wrong file type", 
-            description: "Please upload a .ini file for configuration.",
+            title: "Falscher Dateityp", 
+            description: "Bitte laden Sie eine .ini Datei für die Konfiguration hoch.",
             variant: "destructive",
           });
           return false;
@@ -121,8 +120,8 @@ export const useDesignFileUpload = () => {
         
         if (expectedFileType === 'gcode' && !['gcode', 'g'].includes(fileExtension || '')) {
           toast({
-            title: "Wrong file type",
-            description: "Please upload a .gcode or .g file.",
+            title: "Falscher Dateityp",
+            description: "Bitte laden Sie eine .gcode oder .g Datei hoch.",
             variant: "destructive",
           });
           return false;
@@ -138,9 +137,9 @@ export const useDesignFileUpload = () => {
     }
 
     try {
-      console.log(`🚀 Starting optimized upload for ${validFiles.length} files`);
+      console.log(`🚀 Starting high-speed upload for ${validFiles.length} files`);
       
-      // Use optimized parallel upload
+      // Use high-performance parallel upload
       const folderPath = partId ? `parts/${partId}` : 'general';
       const uploadResults = await uploadMultipleFiles(validFiles, folderPath);
       
@@ -191,8 +190,8 @@ export const useDesignFileUpload = () => {
     } catch (error) {
       console.error('Error uploading files:', error);
       toast({
-        title: "Upload error",
-        description: "There was an error uploading the files.",
+        title: "Upload-Fehler",
+        description: "Es gab einen Fehler beim Hochladen der Dateien.",
         variant: "destructive",
       });
     }
@@ -249,9 +248,9 @@ export const useDesignFileUpload = () => {
     if (!previewImage) return null;
     
     try {
-      console.log('📸 Uploading preview image:', previewImage.name);
+      console.log('📸 Uploading preview image with high-speed upload:', previewImage.name);
       const path = await uploadFile(previewImage, 'previews');
-      console.log('✅ Preview image uploaded to path:', path);
+      console.log('✅ Preview image uploaded in record time:', path);
       return path;
     } catch (error) {
       console.error('❌ Error uploading preview image:', error);
@@ -265,9 +264,9 @@ export const useDesignFileUpload = () => {
     if (!gcodeFile) return { path: null, content: null };
 
     try {
-      console.log('⚙️ Uploading G-Code file:', gcodeFile.name);
+      console.log('⚙️ Uploading G-Code file with high-speed upload:', gcodeFile.name);
       const path = await uploadFile(gcodeFile, 'gcode');
-      console.log('✅ G-Code file uploaded to path:', path);
+      console.log('✅ G-Code file uploaded in record time:', path);
       
       return { path, content: null };
     } catch (error) {
@@ -282,7 +281,7 @@ export const useDesignFileUpload = () => {
     uploadProgress,
     previewImage,
     gcodeFiles,
-    uploadFile, // Now expose the uploadFile method
+    uploadFile, // Now expose the high-performance uploadFile method
     setUploadedFiles,
     handlePreviewImageDrop,
     handlePreviewImageChange,
