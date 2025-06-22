@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { File, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import DesignInformationSection from './design-edit/DesignInformationSection';
+import UploadProgressDisplay from './design-edit/UploadProgressDisplay';
 import { useDesigns } from '@/hooks/useDesigns';
 import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +18,6 @@ import { useDesignParts } from '@/hooks/useDesignParts';
 import { useDesignFormValidation } from '@/hooks/useDesignFormValidation';
 import { useDesignDataCreation } from '@/hooks/useDesignDataCreation';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
-import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface AddDesignFormProps {
   onCancel: () => void;
@@ -37,7 +38,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { createDesign } = useDesigns();
   const { machines } = useMachines();
   const { toast } = useToast();
-  const { uploadFile } = useFileUpload();
   
   // State for color and machine
   const [colorValue, setColorValue] = useState('');
@@ -117,44 +117,57 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       }
 
       setProgress(20);
-      setCurrentStep('Uploading preview image...');
+      setCurrentStep('Uploading files...');
 
-      // Step 2: Upload preview image if exists
+      // Step 2: Upload files in parallel
       let previewImagePath = null;
-      if (fileUpload.previewImage) {
-        previewImagePath = await fileUpload.uploadPreviewImage();
-        setProgress(40);
-      }
-
-      // Step 3: Upload multi-images if exists
-      if (multiImageUpload.images.length > 0) {
-        setCurrentStep('Uploading images...');
-        // Upload first image as preview if no preview image was set
-        if (!previewImagePath && multiImageUpload.images[0]) {
-          const firstImageFile = multiImageUpload.images[0].file;
-          try {
-            previewImagePath = await uploadFile(firstImageFile, 'previews');
-          } catch (error) {
-            console.error('❌ Error uploading first multi-image as preview:', error);
-          }
-        }
-        setProgress(60);
-      }
-
-      // Step 4: Upload G-Code file (optimized)
       let gcodeFilePath = null;
       let gcodeFileName = null;
-      
+
+      const uploadPromises = [];
+
+      // Upload preview image
+      if (fileUpload.previewImage) {
+        uploadPromises.push(
+          fileUpload.uploadPreviewImage().then(path => {
+            previewImagePath = path;
+            console.log('✅ Preview image uploaded:', path);
+          })
+        );
+      }
+
+      // Upload G-Code file
       const mainPartGcodeFile = fileUpload.getGcodeFileForPart(designParts.activePart);
       if (mainPartGcodeFile) {
-        setCurrentStep('Uploading G-Code file...');
-        const gcodeResult = await fileUpload.uploadGcodeFile(designParts.activePart);
-        gcodeFilePath = gcodeResult.path;
-        gcodeFileName = mainPartGcodeFile.name;
+        uploadPromises.push(
+          fileUpload.uploadGcodeFile(designParts.activePart).then(result => {
+            gcodeFilePath = result.path;
+            gcodeFileName = mainPartGcodeFile.name;
+            console.log('✅ G-Code file uploaded:', result.path);
+          })
+        );
+      }
+
+      // Upload multi-images as preview if no preview image
+      if (multiImageUpload.images.length > 0 && !previewImagePath) {
+        const firstImageFile = multiImageUpload.images[0].file;
+        uploadPromises.push(
+          fileUpload.uploadFile(firstImageFile, 'previews').then(path => {
+            previewImagePath = path;
+            console.log('✅ First multi-image uploaded as preview:', path);
+          }).catch(error => {
+            console.error('❌ Error uploading first multi-image as preview:', error);
+          })
+        );
+      }
+
+      // Wait for all uploads to complete
+      if (uploadPromises.length > 0) {
+        await Promise.all(uploadPromises);
         setProgress(80);
       }
 
-      // Step 5: Prepare design data
+      // Step 3: Prepare design data
       setCurrentStep('Preparing design data...');
       const designDataWithColorMachine = {
         ...data,
@@ -169,14 +182,14 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         ...designData,
         preview_image_path: previewImagePath,
         gcode_file_path: gcodeFilePath,
-        gcode: null, // Don't store content anymore
+        gcode: null,
         category: data.category.trim() || 'Allgemein'
       };
 
       setProgress(90);
       setCurrentStep('Saving to database...');
 
-      // Step 6: Save design to database (no print job creation)
+      // Step 4: Save design to database
       const savedDesign = await createDesign(designData);
       setProgress(100);
       setCurrentStep('Complete!');
@@ -278,6 +291,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onGcodeFileChange={fileUpload.handleGcodeFileChange}
                 onRemoveGcodeFile={fileUpload.removeGcodeFile}
                 getGcodeFileForPart={fileUpload.getGcodeFileForPart}
+              />
+              
+              {/* Upload Progress Display */}
+              <UploadProgressDisplay 
+                uploadProgress={fileUpload.uploadProgress}
+                uploading={fileUpload.uploading}
               />
             </CardContent>
           </Card>

@@ -1,16 +1,30 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useFileUpload } from '@/hooks/useFileUpload';
+import { useOptimizedFileUpload } from '@/hooks/useOptimizedFileUpload';
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  uploadDate: string;
+  path: string;
+  originalName?: string;
+  partId?: string;
+  designType?: 'static' | 'personalized';
+  fileExtension?: string;
+  isF3DFile?: boolean;
+  isINIFile?: boolean;
+  uploadContext?: string;
+}
 
 export const useDesignFileUpload = () => {
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [gcodeFiles, setGcodeFiles] = useState<Record<string, File>>({});
   
   const { toast } = useToast();
-  const { uploadFile } = useFileUpload();
+  const { uploadFile, uploadMultipleFiles, uploading, uploadProgress } = useOptimizedFileUpload();
 
   const handlePreviewImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -62,78 +76,99 @@ export const useDesignFileUpload = () => {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partId?: string, expectedFileType?: 'f3d' | 'ini' | 'gcode') => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>, 
+    partId?: string, 
+    expectedFileType?: 'f3d' | 'ini' | 'gcode'
+  ) => {
     const files = event.target.files;
     if (!files) return;
 
-    setUploading(true);
+    const filesToUpload = Array.from(files);
     
-    try {
-      const newFiles = [];
-      
-      for (const file of Array.from(files)) {
-        // File size validation - warn for files larger than 50MB
-        if (file.size > 50 * 1024 * 1024) {
-          toast({
-            title: "Large file detected",
-            description: `${file.name} is ${(file.size / 1024 / 1024).toFixed(1)}MB. This might take longer to upload.`,
-          });
-        }
-
-        const fileExtension = file.name.split('.').pop()?.toLowerCase();
-        
-        // Validate file type if expectedFileType is specified
-        if (expectedFileType) {
-          if (expectedFileType === 'f3d' && fileExtension !== 'f3d') {
-            toast({
-              title: "Wrong file type",
-              description: "Please upload a .f3d file for CAD.",
-              variant: "destructive",
-            });
-            continue;
-          }
-          
-          if (expectedFileType === 'ini' && fileExtension !== 'ini') {
-            toast({
-              title: "Wrong file type", 
-              description: "Please upload a .ini file for configuration.",
-              variant: "destructive",
-            });
-            continue;
-          }
-          
-          if (expectedFileType === 'gcode' && !['gcode', 'g'].includes(fileExtension || '')) {
-            toast({
-              title: "Wrong file type",
-              description: "Please upload a .gcode or .g file.",
-              variant: "destructive",
-            });
-            continue;
-          }
-        }
-
-        // Simplified upload to optimized folder structure
-        const folderPath = partId ? `parts/${partId}` : 'general';
-        const filePath = await uploadFile(file, folderPath);
-        
-        const newFile = {
-          id: Date.now() + Math.random() + '',
-          name: file.name,
-          type: getFileType(file.name),
-          size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-          uploadDate: new Date().toISOString().split('T')[0],
-          path: filePath,
-          originalName: file.name,
-          partId: partId || 'main',
-          designType: 'static' as const,
-          fileExtension: fileExtension,
-          isF3DFile: fileExtension === 'f3d',
-          isINIFile: fileExtension === 'ini',
-          uploadContext: expectedFileType || 'general'
-        };
-
-        newFiles.push(newFile);
+    // Validate files first
+    const validFiles = filesToUpload.filter(file => {
+      // File size validation - warn for files larger than 50MB
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "Large file detected",
+          description: `${file.name} is ${(file.size / 1024 / 1024).toFixed(1)}MB. This might take longer to upload.`,
+        });
       }
+
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      
+      // Validate file type if expectedFileType is specified
+      if (expectedFileType) {
+        if (expectedFileType === 'f3d' && fileExtension !== 'f3d') {
+          toast({
+            title: "Wrong file type",
+            description: "Please upload a .f3d file for CAD.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
+        if (expectedFileType === 'ini' && fileExtension !== 'ini') {
+          toast({
+            title: "Wrong file type", 
+            description: "Please upload a .ini file for configuration.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
+        if (expectedFileType === 'gcode' && !['gcode', 'g'].includes(fileExtension || '')) {
+          toast({
+            title: "Wrong file type",
+            description: "Please upload a .gcode or .g file.",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    if (validFiles.length === 0) {
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      console.log(`🚀 Starting optimized upload for ${validFiles.length} files`);
+      
+      // Use optimized parallel upload
+      const folderPath = partId ? `parts/${partId}` : 'general';
+      const uploadResults = await uploadMultipleFiles(validFiles, folderPath);
+      
+      // Process successful uploads
+      const newFiles: UploadedFile[] = [];
+      uploadResults.forEach((result, index) => {
+        if (result.path) {
+          const file = result.file;
+          const fileExtension = file.name.split('.').pop()?.toLowerCase();
+          
+          const newFile: UploadedFile = {
+            id: Date.now() + Math.random() + index + '',
+            name: file.name,
+            type: getFileType(file.name),
+            size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+            uploadDate: new Date().toISOString().split('T')[0],
+            path: result.path,
+            originalName: file.name,
+            partId: partId || 'main',
+            designType: 'static' as const,
+            fileExtension: fileExtension,
+            isF3DFile: fileExtension === 'f3d',
+            isINIFile: fileExtension === 'ini',
+            uploadContext: expectedFileType || 'general'
+          };
+
+          newFiles.push(newFile);
+        }
+      });
 
       // Remove existing files of the same type and part
       setUploadedFiles(prev => {
@@ -152,10 +187,6 @@ export const useDesignFileUpload = () => {
         return [...filteredPrev, ...newFiles];
       });
 
-      toast({
-        title: "Files uploaded",
-        description: `${newFiles.length} file(s) were successfully uploaded.`,
-      });
     } catch (error) {
       console.error('Error uploading files:', error);
       toast({
@@ -163,8 +194,6 @@ export const useDesignFileUpload = () => {
         description: "There was an error uploading the files.",
         variant: "destructive",
       });
-    } finally {
-      setUploading(false);
     }
 
     event.target.value = '';
@@ -190,7 +219,7 @@ export const useDesignFileUpload = () => {
     }
   };
 
-  const handleFileRemove = (file: any) => {
+  const handleFileRemove = (file: UploadedFile) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
     toast({
       title: "File deleted",
@@ -198,7 +227,7 @@ export const useDesignFileUpload = () => {
     });
   };
 
-  const handleFileDownload = (file: any) => {
+  const handleFileDownload = (file: UploadedFile) => {
     console.log('Downloading file:', file.name);
   };
 
@@ -239,7 +268,6 @@ export const useDesignFileUpload = () => {
       const path = await uploadFile(gcodeFile, 'gcode');
       console.log('✅ G-Code file uploaded to path:', path);
       
-      // Don't read content anymore - just return the path
       return { path, content: null };
     } catch (error) {
       console.error('❌ Error uploading G-Code file:', error);
@@ -250,6 +278,7 @@ export const useDesignFileUpload = () => {
   return {
     uploadedFiles,
     uploading,
+    uploadProgress,
     previewImage,
     gcodeFiles,
     setUploadedFiles,
