@@ -36,7 +36,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
         uploading={uploading}
         onFileUpload={onFileUpload}
         uploadedFiles={uploadedFiles}
-        onPartSpecificationChange={onPartSpecificationChange}
       />
     );
   }
@@ -48,7 +47,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
       uploading={uploading}
       onFileUpload={onFileUpload}
       uploadedFiles={uploadedFiles}
-      onPartSpecificationChange={onPartSpecificationChange}
       gcodeFile={gcodeFile}
       onGcodeFileChange={onGcodeFileChange}
       onRemoveGcodeFile={onRemoveGcodeFile}

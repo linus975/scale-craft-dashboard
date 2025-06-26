@@ -59,7 +59,6 @@ const PartSelector: React.FC<PartSelectorProps> = ({
 
   const handleAddPart = (name: string) => {
     onAddPart(name);
-    // The parent component should handle switching to the new part
   };
 
   const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
@@ -68,6 +67,18 @@ const PartSelector: React.FC<PartSelectorProps> = ({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-12 gap-4 items-end">
+        {/* Tausche Position: Zuerst Controls, dann Part Type und Select Part */}
+        <PartControls
+          designParts={designParts}
+          activePart={activePart}
+          currentPartName={currentPart?.name || ''}
+          isEditing={isEditing}
+          onStartEditing={() => startEditingPart(activePart, currentPart?.name || '')}
+          onSavePartName={savePartName}
+          onAddPart={handleAddPart}
+          onRemovePart={onRemovePart}
+        />
+
         <PartTypeSelector
           partType={currentPart?.partType || 'static'}
           onPartTypeChange={(partType) => onPartTypeChange(activePart, partType)}
@@ -84,20 +95,9 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           onSavePartName={savePartName}
           validatePartFiles={validatePartFiles}
         />
-        
-        <PartControls
-          designParts={designParts}
-          activePart={activePart}
-          currentPartName={currentPart?.name || ''}
-          isEditing={isEditing}
-          onStartEditing={() => startEditingPart(activePart, currentPart?.name || '')}
-          onSavePartName={savePartName}
-          onAddPart={handleAddPart}
-          onRemovePart={onRemovePart}
-        />
       </div>
 
-      {/* Software Selection only for personalized parts */}
+      {/* Software Selection nur für personalized parts */}
       {currentPart?.partType === 'personalized' && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">

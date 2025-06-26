@@ -1,9 +1,6 @@
 
 import React from 'react';
 import FileUploadSection from './FileUploadSection';
-import CADParametersInputs from './CADParametersInputs';
-import NozzleDiameterInput from './NozzleDiameterInput';
-import FilamentSelector from './FilamentSelector';
 
 interface PersonalizedPartUploadProps {
   partName: string;
@@ -11,7 +8,6 @@ interface PersonalizedPartUploadProps {
   uploading: boolean;
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, partId?: string, expectedFileType?: 'f3d' | 'ini' | 'gcode') => void;
   uploadedFiles: any[];
-  onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
 }
 
 const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
@@ -19,21 +15,8 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
   partId,
   uploading,
   onFileUpload,
-  uploadedFiles,
-  onPartSpecificationChange
+  uploadedFiles
 }) => {
-  const handleNozzleDiameterChange = (value: string) => {
-    if (onPartSpecificationChange) {
-      onPartSpecificationChange(partId, 'nozzleDiameter', value);
-    }
-  };
-
-  const handleFilamentTypeChange = (value: string) => {
-    if (onPartSpecificationChange) {
-      onPartSpecificationChange(partId, 'filamentType', value);
-    }
-  };
-
   // Separate upload handlers for CAD and INI files
   const handleCADFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFileUpload(event, partId, 'f3d');
@@ -73,23 +56,6 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
           uploadedFiles={uploadedFiles}
           onFileUpload={handleINIFileUpload}
           expectedFileType="ini"
-        />
-      </div>
-
-      {/* CAD Parameters */}
-      <CADParametersInputs partId={partId} />
-
-      {/* Nozzle Diameter and Filament Type */}
-      <div className="grid grid-cols-2 gap-4">
-        <NozzleDiameterInput
-          id={`personalizedNozzleDiameter-${partId}`}
-          required={false}
-          onChange={handleNozzleDiameterChange}
-        />
-        <FilamentSelector
-          id={`personalizedFilamentType-${partId}`}
-          required={false}
-          onChange={handleFilamentTypeChange}
         />
       </div>
     </div>

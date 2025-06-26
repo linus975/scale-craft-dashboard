@@ -4,6 +4,7 @@ import FileUpload from './FileUpload';
 import FileList from './FileList';
 import ParameterConfig from './ParameterConfig';
 import ValidationInfo from './ValidationInfo';
+import ColorMachineFields from './ColorMachineFields';
 
 interface UploadedFile {
   id: string;
@@ -29,6 +30,10 @@ interface DesignPart {
   };
   cadSoftware?: string;
   slicer?: string;
+  nozzleDiameter?: string;
+  filamentType?: string;
+  color?: string;
+  machine?: string;
 }
 
 interface FileManagerContentProps {
@@ -41,10 +46,13 @@ interface FileManagerContentProps {
   onFileRemove: (file: UploadedFile) => void;
   onFileDownload: (file: UploadedFile) => void;
   onPartParametersChange: (partId: string, field: string, value: string) => void;
-  onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
+  onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType' | 'color' | 'machine', value: string) => void;
   gcodeFile?: File | null;
   onGcodeFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveGcodeFile?: () => void;
+  machines?: Array<{ id: string; name: string }>;
+  designParts?: DesignPart[];
+  activePart?: string;
 }
 
 const FileManagerContent: React.FC<FileManagerContentProps> = ({
@@ -60,7 +68,10 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   onPartSpecificationChange,
   gcodeFile,
   onGcodeFileChange,
-  onRemoveGcodeFile
+  onRemoveGcodeFile,
+  machines = [],
+  designParts = [],
+  activePart
 }) => {
   const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalized') => {
     console.log(`Changing file ${fileId} to ${designType}`);
@@ -73,6 +84,14 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         hasPersonalizedFiles={validation.hasPersonalizedFiles}
         hasF3D={validation.hasF3D}
         hasINI={validation.hasINI}
+      />
+
+      {/* Part-spezifische Felder: Farbe, Maschine, Nozzle Diameter, Filament Type */}
+      <ColorMachineFields
+        partId={currentPart.id}
+        designParts={designParts}
+        machines={machines}
+        onPartSpecificationChange={onPartSpecificationChange}
       />
 
       <FileUpload
@@ -88,11 +107,14 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         onRemoveGcodeFile={onRemoveGcodeFile}
       />
 
-      <ParameterConfig
-        currentPart={currentPart}
-        hasPersonalizedFiles={validation.hasPersonalizedFiles}
-        onPartParametersChange={onPartParametersChange}
-      />
+      {/* Parameter Config nur für personalized parts */}
+      {currentPart.partType === 'personalized' && (
+        <ParameterConfig
+          currentPart={currentPart}
+          hasPersonalizedFiles={validation.hasPersonalizedFiles}
+          onPartParametersChange={onPartParametersChange}
+        />
+      )}
 
       {(loadingFiles || currentPart.files.length > 0) && (
         <FileList
