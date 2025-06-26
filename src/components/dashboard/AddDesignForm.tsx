@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -42,6 +41,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { toast } = useToast();
   const { saveDesignAsProduct } = useDesignToProduct();
   
+  // Remove global color and machine state - now part-specific
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
@@ -219,6 +219,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onPartSpecificationChange={designParts.handlePartSpecificationChange}
                 validatePartFiles={(part) => designParts.validatePartFiles(part, fileUpload.uploadedFiles)}
                 machines={machines}
+                formControl={form.control}
                 gcodeFiles={fileUpload.gcodeFiles}
                 onGcodeFileChange={fileUpload.handleGcodeFileChange}
                 onRemoveGcodeFile={fileUpload.removeGcodeFile}

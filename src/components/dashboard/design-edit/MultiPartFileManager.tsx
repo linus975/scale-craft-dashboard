@@ -30,10 +30,6 @@ interface DesignPart {
   };
   cadSoftware?: string;
   slicer?: string;
-  nozzleDiameter?: string;
-  filamentType?: string;
-  color?: string;
-  machine?: string;
 }
 
 interface MultiPartFileManagerProps {
@@ -54,9 +50,14 @@ interface MultiPartFileManagerProps {
   onRenamePart?: (partId: string, newName: string) => void;
   onPartTypeChange?: (partId: string, partType: 'static' | 'personalized') => void;
   onPartSoftwareChange?: (partId: string, field: 'cadSoftware' | 'slicer', value: string) => void;
-  onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType' | 'color' | 'machine', value: string) => void;
+  onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
   validatePartFiles?: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };
+  colorValue?: string;
+  machineValue?: string;
+  onColorChange?: (value: string) => void;
+  onMachineChange?: (value: string) => void;
   machines?: Array<{ id: string; name: string }>;
+  formControl?: any;
   gcodeFiles?: Record<string, File>;
   onGcodeFileChange?: (event: React.ChangeEvent<HTMLInputElement>, partId: string) => void;
   onRemoveGcodeFile?: (partId: string) => void;
@@ -83,7 +84,12 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   onPartSoftwareChange: externalOnPartSoftwareChange,
   onPartSpecificationChange,
   validatePartFiles: externalValidatePartFiles,
+  colorValue,
+  machineValue,
+  onColorChange,
+  onMachineChange,
   machines = [],
+  formControl,
   gcodeFiles,
   onGcodeFileChange,
   onRemoveGcodeFile,
@@ -136,10 +142,12 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       />
 
       <ColorMachineFields
-        partId={activePart}
-        designParts={designParts}
+        colorValue={colorValue}
+        machineValue={machineValue}
+        formControl={formControl}
         machines={machines}
-        onPartSpecificationChange={onPartSpecificationChange}
+        onColorChange={onColorChange}
+        onMachineChange={onMachineChange}
       />
 
       {currentPart && (
