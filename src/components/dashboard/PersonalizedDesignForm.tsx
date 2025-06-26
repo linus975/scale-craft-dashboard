@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Save, Loader2, Image } from 'lucide-react';
-import { useDesigns } from '@/hooks/useDesigns';
-import { useFileUpload } from '@/hooks/useFileUpload';
+import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
 import { useToast } from '@/hooks/use-toast';
+import { useDesignToProduct } from '@/hooks/useDesignToProduct';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 
 interface PersonalizedDesignFormProps {
@@ -29,8 +29,8 @@ interface UploadedFile {
 }
 
 const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCancel, onSave }) => {
-  const { createDesign } = useDesigns();
-  const { uploadFile, uploading } = useFileUpload();
+  const { uploadFile, uploading } = useHighPerformanceUpload();
+  const { saveDesignAsProduct } = useDesignToProduct();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
@@ -47,13 +47,16 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
     description: '',
     category: '',
     cadSoftware: '',
-    slicerSoftware: ''
+    slicerSoftware: '',
+    color: '',
+    machine: '',
+    material: '',
+    nozzleDiameter: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Only check required basic fields - files and software are now optional
     if (!formData.name || !formData.trackingNumber || !formData.category) {
       toast({
         title: "Fehlende Angaben",
@@ -65,31 +68,40 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
 
     setLoading(true);
     try {
-      const mainPartFiles = uploadedFiles.filter(f => f.partId === 'main' || !f.partId);
-      const f3dFile = mainPartFiles.find(f => f.name.toLowerCase().endsWith('.f3d'));
-      const iniFile = mainPartFiles.find(f => f.name.toLowerCase().endsWith('.ini'));
-
-      let previewImagePath = null;
-      if (previewImage) {
-        previewImagePath = await uploadFile(previewImage, 'preview-images');
-      }
-
       const mainPartParams = partParameters.main || { sketchName: '', replacementValue: '' };
 
-      await createDesign({
+      const designFormData = {
         name: formData.name,
-        description: formData.description || null,
+        description: formData.description,
         category: formData.category,
-        design_type: 'personalized',
-        ean_number: formData.trackingNumber,
-        tracking_type: formData.trackingType,
-        cad_software: formData.cadSoftware || null,
-        sketch_name: mainPartParams.sketchName || null,
-        replacement_value: mainPartParams.replacementValue || null,
-        cad_file_path: f3dFile?.path || null,
-        ini_file_path: iniFile?.path || null,
-        preview_image_path: previewImagePath
-      });
+        trackingType: formData.trackingType,
+        eanNumber: formData.trackingNumber,
+        color: formData.color,
+        machine: formData.machine,
+        material: formData.material,
+        nozzleDiameter: formData.nozzleDiameter,
+        cadSoftware: formData.cadSoftware,
+        slicer: formData.slicerSoftware,
+        sketchName: mainPartParams.sketchName,
+        replacementValue: mainPartParams.replacementValue
+      };
+
+      // Create a personalized part structure
+      const designParts = [{
+        id: 'main',
+        name: 'Main',
+        type: 'personalized' as const,
+        software: formData.cadSoftware,
+        specifications: ''
+      }];
+
+      await saveDesignAsProduct(
+        designFormData,
+        designParts,
+        uploadedFiles,
+        previewImage || undefined,
+        []
+      );
 
       onSave(formData);
     } catch (error) {
@@ -205,19 +217,19 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Personalisierbares Design hinzufügen</CardTitle>
+        <CardTitle>Personalisierbares Produkt hinzufügen</CardTitle>
         <CardDescription>
-          Erstellen Sie ein neues personalisierbares Design. Dateien sind optional und können später hinzugefügt werden.
+          Erstellen Sie ein neues personalisierbares Produkt. Dateien sind optional und können später hinzugefügt werden.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Design Name */}
+          {/* Product Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Design-Name *</Label>
+            <Label htmlFor="name">Produkt-Name *</Label>
             <Input
               id="name"
-              placeholder="Geben Sie einen Namen für Ihr Design ein"
+              placeholder="Geben Sie einen Namen für Ihr Produkt ein"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               required
@@ -285,7 +297,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
               <Label htmlFor="description">Beschreibung (optional)</Label>
               <Textarea
                 id="description"
-                placeholder="Beschreiben Sie Ihr Design..."
+                placeholder="Beschreiben Sie Ihr Produkt..."
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 className="min-h-20"
@@ -304,7 +316,7 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
             </div>
           </div>
 
-          {/* CAD and Slicer Software - now optional */}
+          {/* CAD and Slicer Software */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cadSoftware">CAD-Software (optional)</Label>
@@ -338,6 +350,35 @@ const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCance
                   <SelectItem value="slic3r">Slic3r</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Personalization Parameters */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="sketchName">Sketch-Name (optional)</Label>
+              <Input
+                id="sketchName"
+                placeholder="Name des zu ändernden Sketches"
+                value={partParameters.main?.sketchName || ''}
+                onChange={(e) => handlePartParametersChange('main', {
+                  ...partParameters.main,
+                  sketchName: e.target.value
+                })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="replacementValue">Ersetzungswert (optional)</Label>
+              <Input
+                id="replacementValue"
+                placeholder="Wert der ersetzt werden soll"
+                value={partParameters.main?.replacementValue || ''}
+                onChange={(e) => handlePartParametersChange('main', {
+                  ...partParameters.main,
+                  replacementValue: e.target.value
+                })}
+              />
             </div>
           </div>
 

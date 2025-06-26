@@ -9,15 +9,14 @@ import { Progress } from '@/components/ui/progress';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import DesignInformationSection from './design-edit/DesignInformationSection';
 import UploadProgressDisplay from './design-edit/UploadProgressDisplay';
-import { useDesigns } from '@/hooks/useDesigns';
 import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
 import { useCategoryManager } from '@/hooks/useCategoryManager';
 import { useDesignFileUpload } from '@/hooks/useDesignFileUpload';
 import { useDesignParts } from '@/hooks/useDesignParts';
 import { useDesignFormValidation } from '@/hooks/useDesignFormValidation';
-import { useDesignDataCreation } from '@/hooks/useDesignDataCreation';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
+import { useDesignToProduct } from '@/hooks/useDesignToProduct';
 
 interface AddDesignFormProps {
   onCancel: () => void;
@@ -32,12 +31,16 @@ interface FormData {
   category: string;
   color: string;
   machine: string;
+  cadSoftware: string;
+  slicer: string;
+  nozzleDiameter: string;
+  material: string;
 }
 
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
-  const { createDesign } = useDesigns();
   const { machines } = useMachines();
   const { toast } = useToast();
+  const { saveDesignAsProduct } = useDesignToProduct();
   
   // State for color and machine
   const [colorValue, setColorValue] = useState('');
@@ -54,7 +57,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       description: '',
       category: '',
       color: '',
-      machine: ''
+      machine: '',
+      cadSoftware: '',
+      slicer: '',
+      nozzleDiameter: '',
+      material: ''
     }
   });
 
@@ -65,7 +72,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const fileUpload = useDesignFileUpload();
   const designParts = useDesignParts();
   const { validateForm } = useDesignFormValidation(designParts, fileUpload);
-  const { createDesignData } = useDesignDataCreation(designParts, fileUpload);
   const multiImageUpload = useMultiImageUpload();
 
   // Clean up image previews on unmount
@@ -92,24 +98,19 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   };
 
   const onSubmit = async (data: FormData) => {
-    if (saving) return; // Prevent double submission
+    if (saving) return;
     
-    console.log('🚀 Starting optimized design save process...', data);
+    console.log('🚀 Starting optimized product save process...', data);
     setSaving(true);
     setProgress(0);
     setCurrentStep('Validating...');
     
     try {
       // Step 1: Basic validation - only name is required
-      const basicValidationErrors: string[] = [];
       if (!data.name.trim()) {
-        basicValidationErrors.push("Design name is required");
-      }
-      
-      if (basicValidationErrors.length > 0) {
         toast({
           title: "Validation Error",
-          description: basicValidationErrors.join(", "),
+          description: "Design name is required",
           variant: "destructive",
         });
         setSaving(false);
@@ -120,99 +121,46 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setCurrentStep('Uploading files...');
 
       // Step 2: Upload files in parallel
-      let previewImagePath = null;
-      let gcodeFilePath = null;
-      let gcodeFileName = null;
-
-      const uploadPromises = [];
-
-      // Upload preview image
+      let previewImageFile = null;
       if (fileUpload.previewImage) {
-        uploadPromises.push(
-          fileUpload.uploadPreviewImage().then(path => {
-            previewImagePath = path;
-            console.log('✅ Preview image uploaded:', path);
-          })
-        );
+        previewImageFile = fileUpload.previewImage;
+      } else if (multiImageUpload.images.length > 0) {
+        previewImageFile = multiImageUpload.images[0].file;
       }
 
-      // Upload G-Code file
-      const mainPartGcodeFile = fileUpload.getGcodeFileForPart(designParts.activePart);
-      if (mainPartGcodeFile) {
-        uploadPromises.push(
-          fileUpload.uploadGcodeFile(designParts.activePart).then(result => {
-            gcodeFilePath = result.path;
-            gcodeFileName = mainPartGcodeFile.name;
-            console.log('✅ G-Code file uploaded:', result.path);
-          })
-        );
-      }
+      setProgress(60);
+      setCurrentStep('Saving product...');
 
-      // Upload multi-images as preview if no preview image
-      if (multiImageUpload.images.length > 0 && !previewImagePath) {
-        const firstImageFile = multiImageUpload.images[0].file;
-        uploadPromises.push(
-          fileUpload.uploadFile(firstImageFile, 'previews').then(path => {
-            previewImagePath = path;
-            console.log('✅ First multi-image uploaded as preview:', path);
-          }).catch(error => {
-            console.error('❌ Error uploading first multi-image as preview:', error);
-          })
-        );
-      }
-
-      // Wait for all uploads to complete
-      if (uploadPromises.length > 0) {
-        await Promise.all(uploadPromises);
-        setProgress(80);
-      }
-
-      // Step 3: Prepare design data
-      setCurrentStep('Preparing design data...');
-      const designDataWithColorMachine = {
+      // Step 3: Save as product with new structure
+      const formDataWithMachine = {
         ...data,
         color: colorValue,
-        machine: machineValue
+        machine: machineValue,
+        cadSoftware: data.cadSoftware,
+        slicer: data.slicer,
+        nozzleDiameter: data.nozzleDiameter,
+        material: data.material
       };
 
-      let designData = createDesignData(designDataWithColorMachine);
-      
-      // Override with uploaded file paths
-      designData = {
-        ...designData,
-        preview_image_path: previewImagePath,
-        gcode_file_path: gcodeFilePath,
-        gcode: null,
-        category: data.category.trim() || 'Allgemein'
-      };
+      await saveDesignAsProduct(
+        formDataWithMachine,
+        designParts.designParts,
+        fileUpload.uploadedFiles,
+        previewImageFile || undefined,
+        multiImageUpload.images
+      );
 
-      setProgress(90);
-      setCurrentStep('Saving to database...');
-
-      // Step 4: Save design to database
-      const savedDesign = await createDesign(designData);
       setProgress(100);
       setCurrentStep('Complete!');
 
-      // Show success message
-      let successMessage = `Das Design "${data.name}" wurde erfolgreich gespeichert.`;
-      if (gcodeFileName) {
-        successMessage += ` G-Code-Datei "${gcodeFileName}" wurde hochgeladen.`;
-      }
-      
-      toast({
-        title: "Design erfolgreich erstellt",
-        description: successMessage,
-      });
-      
       // Close the dialog immediately after successful save
       onSave();
       
     } catch (error) {
-      console.error('❌ Error creating design:', error);
+      console.error('❌ Error creating product:', error);
       toast({
-        title: "Fehler beim Erstellen des Designs",
-        description: error instanceof Error ? error.message : "Es gab einen Fehler beim Speichern des Designs. Bitte versuchen Sie es erneut.",
+        title: "Fehler beim Erstellen des Produkts",
+        description: error instanceof Error ? error.message : "Es gab einen Fehler beim Speichern des Produkts. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {
@@ -312,7 +260,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   </div>
                   <Progress value={progress} className="w-full" />
                   <p className="text-xs text-muted-foreground">
-                    Design wird gespeichert... Bitte warten Sie.
+                    Produkt wird gespeichert... Bitte warten Sie.
                   </p>
                 </div>
               </CardContent>
@@ -325,7 +273,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               Abbrechen
             </Button>
             <Button type="submit" disabled={saving || fileUpload.uploading}>
-              {saving ? 'Wird gespeichert...' : 'Design speichern'}
+              {saving ? 'Wird gespeichert...' : 'Produkt speichern'}
             </Button>
           </div>
         </form>

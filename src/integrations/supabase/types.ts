@@ -463,6 +463,71 @@ export type Database = {
         }
         Relationships: []
       }
+      parts: {
+        Row: {
+          cad_software: string | null
+          color: string | null
+          created_at: string | null
+          f3d_file_path: string | null
+          filament_type: string | null
+          gcode_path: string | null
+          ini_file_path: string | null
+          is_customizable: boolean
+          nozzle_diameter: number | null
+          part_name: string
+          printer_model: string | null
+          product_id: string | null
+          replacement_type: string | null
+          sketch_name: string | null
+          slicer_software: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cad_software?: string | null
+          color?: string | null
+          created_at?: string | null
+          f3d_file_path?: string | null
+          filament_type?: string | null
+          gcode_path?: string | null
+          ini_file_path?: string | null
+          is_customizable: boolean
+          nozzle_diameter?: number | null
+          part_name: string
+          printer_model?: string | null
+          product_id?: string | null
+          replacement_type?: string | null
+          sketch_name?: string | null
+          slicer_software?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cad_software?: string | null
+          color?: string | null
+          created_at?: string | null
+          f3d_file_path?: string | null
+          filament_type?: string | null
+          gcode_path?: string | null
+          ini_file_path?: string | null
+          is_customizable?: boolean
+          nozzle_diameter?: number | null
+          part_name?: string
+          printer_model?: string | null
+          product_id?: string | null
+          replacement_type?: string | null
+          sketch_name?: string | null
+          slicer_software?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           content: string | null
@@ -659,6 +724,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_images: {
+        Row: {
+          created_at: string | null
+          image_id: number
+          image_path: string
+          product_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          image_id?: number
+          image_path: string
+          product_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          image_id?: number
+          image_path?: string
+          product_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category: string | null
+          description: string | null
+          identifier_type: string | null
+          identifier_value: string
+          name: string
+          product_id: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          description?: string | null
+          identifier_type?: string | null
+          identifier_value: string
+          name: string
+          product_id?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          description?: string | null
+          identifier_type?: string | null
+          identifier_value?: string
+          name?: string
+          product_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

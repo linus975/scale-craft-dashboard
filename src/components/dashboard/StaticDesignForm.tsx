@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Save, Loader2, Image } from 'lucide-react';
-import { useDesigns } from '@/hooks/useDesigns';
-import { useFileUpload } from '@/hooks/useFileUpload';
+import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
 import { useToast } from '@/hooks/use-toast';
+import { useDesignToProduct } from '@/hooks/useDesignToProduct';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 
 interface StaticDesignFormProps {
@@ -29,8 +29,8 @@ interface UploadedFile {
 }
 
 const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave }) => {
-  const { createDesign } = useDesigns();
-  const { uploadFile, uploading } = useFileUpload();
+  const { uploadFile, uploading } = useHighPerformanceUpload();
+  const { saveDesignAsProduct } = useDesignToProduct();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
@@ -42,13 +42,18 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     trackingType: 'ean' as 'ean' | 'sku',
     trackingNumber: '',
     description: '',
-    category: ''
+    category: '',
+    color: '',
+    machine: '',
+    material: '',
+    nozzleDiameter: '',
+    cadSoftware: '',
+    slicer: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Only check required fields - files are now optional
     if (!formData.name || !formData.trackingNumber || !formData.category) {
       toast({
         title: "Fehlende Angaben",
@@ -60,24 +65,36 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
 
     setLoading(true);
     try {
-      const gcodeFiles = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.gcode') || f.name.toLowerCase().endsWith('.g'));
-      const mainGcodeFile = gcodeFiles.length > 0 ? gcodeFiles[0] : null;
-
-      let previewImagePath = null;
-      if (previewImage) {
-        previewImagePath = await uploadFile(previewImage, 'preview-images');
-      }
-
-      await createDesign({
+      const designFormData = {
         name: formData.name,
-        description: formData.description || null,
+        description: formData.description,
         category: formData.category,
-        design_type: 'static',
-        gcode_file_path: mainGcodeFile?.path || null,
-        ean_number: formData.trackingNumber,
-        tracking_type: formData.trackingType,
-        preview_image_path: previewImagePath
-      });
+        trackingType: formData.trackingType,
+        eanNumber: formData.trackingNumber,
+        color: formData.color,
+        machine: formData.machine,
+        material: formData.material,
+        nozzleDiameter: formData.nozzleDiameter,
+        cadSoftware: formData.cadSoftware,
+        slicer: formData.slicer
+      };
+
+      // Create a simple static part structure
+      const designParts = [{
+        id: 'main',
+        name: 'Main',
+        type: 'static' as const,
+        software: formData.cadSoftware,
+        specifications: ''
+      }];
+
+      await saveDesignAsProduct(
+        designFormData,
+        designParts,
+        uploadedFiles,
+        previewImage || undefined,
+        []
+      );
 
       onSave(formData);
     } catch (error) {
@@ -179,19 +196,19 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Statisches Design hinzufügen</CardTitle>
+        <CardTitle>Statisches Produkt hinzufügen</CardTitle>
         <CardDescription>
-          Erstellen Sie ein neues statisches Design. Dateien sind optional und können später hinzugefügt werden.
+          Erstellen Sie ein neues statisches Produkt. Dateien sind optional und können später hinzugefügt werden.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Design Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Design-Name *</Label>
+            <Label htmlFor="name">Produkt-Name *</Label>
             <Input
               id="name"
-              placeholder="Geben Sie einen Namen für Ihr Design ein"
+              placeholder="Geben Sie einen Namen für Ihr Produkt ein"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               required
@@ -259,7 +276,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
               <Label htmlFor="description">Beschreibung (optional)</Label>
               <Textarea
                 id="description"
-                placeholder="Beschreiben Sie Ihr Design..."
+                placeholder="Beschreiben Sie Ihr Produkt..."
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 className="min-h-20"
@@ -274,6 +291,29 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
                 value={formData.category}
                 onChange={(e) => handleInputChange('category', e.target.value)}
                 required
+              />
+            </div>
+          </div>
+
+          {/* Additional Product Details */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="color">Farbe (optional)</Label>
+              <Input
+                id="color"
+                placeholder="z.B. Rot, Blau, Schwarz"
+                value={formData.color}
+                onChange={(e) => handleInputChange('color', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="material">Material (optional)</Label>
+              <Input
+                id="material"
+                placeholder="z.B. PLA, ABS, PETG"
+                value={formData.material}
+                onChange={(e) => handleInputChange('material', e.target.value)}
               />
             </div>
           </div>
@@ -310,7 +350,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Design speichern
+                  Produkt speichern
                 </>
               )}
             </Button>
