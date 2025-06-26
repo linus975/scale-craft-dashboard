@@ -25,6 +25,10 @@ interface DesignPart {
   type: 'static' | 'personalized';
   software?: string;
   specifications?: string;
+  cadSoftware?: string;
+  slicer?: string;
+  nozzleDiameter?: string;
+  filamentType?: string;
 }
 
 interface UploadedFile {
@@ -87,7 +91,7 @@ export const useDesignToProduct = () => {
         }
       }
 
-      // 4. Create parts for each design part
+      // 4. Create parts for each design part with part-specific settings
       for (const designPart of designParts) {
         try {
           // Get files for this part
@@ -102,12 +106,14 @@ export const useDesignToProduct = () => {
             product_id: product.product_id,
             part_name: designPart.name,
             is_customizable: designPart.type === 'personalized',
-            cad_software: formData.cadSoftware || designPart.software || null,
-            slicer_software: formData.slicer || null,
-            color: formData.color || null,
-            printer_model: formData.machine || null,
-            nozzle_diameter: formData.nozzleDiameter ? parseFloat(formData.nozzleDiameter) : null,
-            filament_type: formData.material || null,
+            // Use part-specific settings first, then fallback to global form data
+            cad_software: designPart.cadSoftware || formData.cadSoftware || null,
+            slicer_software: designPart.slicer || formData.slicer || null,
+            color: formData.color || null, // This will be updated to be part-specific
+            printer_model: formData.machine || null, // This will be updated to be part-specific
+            nozzle_diameter: designPart.nozzleDiameter ? parseFloat(designPart.nozzleDiameter) : 
+                           (formData.nozzleDiameter ? parseFloat(formData.nozzleDiameter) : null),
+            filament_type: designPart.filamentType || formData.material || null,
             f3d_file_path: f3dFile?.path || null,
             ini_file_path: iniFile?.path || null,
             gcode_path: gcodeFile?.path || null,

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -42,9 +41,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { toast } = useToast();
   const { saveDesignAsProduct } = useDesignToProduct();
   
-  // State for color and machine
-  const [colorValue, setColorValue] = useState('');
-  const [machineValue, setMachineValue] = useState('');
+  // Remove global color and machine state - now part-specific
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
@@ -87,16 +84,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     fileUpload.setUploadedFiles(prev => prev.filter(file => file.partId !== partId));
   };
 
-  const handleColorChange = (value: string) => {
-    setColorValue(value);
-    form.setValue('color', value);
-  };
-
-  const handleMachineChange = (value: string) => {
-    setMachineValue(value);
-    form.setValue('machine', value);
-  };
-
   const onSubmit = async (data: FormData) => {
     if (saving) return;
     
@@ -131,20 +118,22 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(60);
       setCurrentStep('Saving product...');
 
-      // Step 3: Save as product with new structure
-      const formDataWithMachine = {
-        ...data,
-        color: colorValue,
-        machine: machineValue,
-        cadSoftware: data.cadSoftware,
-        slicer: data.slicer,
-        nozzleDiameter: data.nozzleDiameter,
-        material: data.material
-      };
+      // Step 3: Save as product with new structure - map design parts to the correct interface
+      const mappedDesignParts = designParts.designParts.map(part => ({
+        id: part.id,
+        name: part.name,
+        type: part.partType || 'static' as const,
+        software: part.cadSoftware,
+        specifications: '',
+        cadSoftware: part.cadSoftware,
+        slicer: part.slicer,
+        nozzleDiameter: part.nozzleDiameter,
+        filamentType: part.filamentType
+      }));
 
       await saveDesignAsProduct(
-        formDataWithMachine,
-        designParts.designParts,
+        data,
+        mappedDesignParts,
         fileUpload.uploadedFiles,
         previewImageFile || undefined,
         multiImageUpload.images
@@ -229,12 +218,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 onPartSoftwareChange={designParts.handlePartSoftwareChange}
                 onPartSpecificationChange={designParts.handlePartSpecificationChange}
                 validatePartFiles={(part) => designParts.validatePartFiles(part, fileUpload.uploadedFiles)}
-                colorValue={colorValue}
-                machineValue={machineValue}
                 machines={machines}
                 formControl={form.control}
-                onColorChange={handleColorChange}
-                onMachineChange={handleMachineChange}
                 gcodeFiles={fileUpload.gcodeFiles}
                 onGcodeFileChange={fileUpload.handleGcodeFileChange}
                 onRemoveGcodeFile={fileUpload.removeGcodeFile}

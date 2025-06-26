@@ -15,6 +15,8 @@ interface DesignPart {
   slicer?: string;
   nozzleDiameter?: string;
   filamentType?: string;
+  color?: string;
+  machine?: string;
 }
 
 export const useDesignParts = () => {
@@ -28,7 +30,9 @@ export const useDesignParts = () => {
       cadSoftware: '',
       slicer: '',
       nozzleDiameter: '',
-      filamentType: ''
+      filamentType: '',
+      color: '',
+      machine: ''
     }
   ]);
   const [activePart, setActivePart] = useState<string>('main');
@@ -62,7 +66,9 @@ export const useDesignParts = () => {
       cadSoftware: '',
       slicer: '',
       nozzleDiameter: '',
-      filamentType: ''
+      filamentType: '',
+      color: '',
+      machine: ''
     };
     setDesignParts(prev => [...prev, newPart]);
     setActivePart(newPart.id);
@@ -101,7 +107,7 @@ export const useDesignParts = () => {
     ));
   };
 
-  const handlePartSpecificationChange = (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => {
+  const handlePartSpecificationChange = (partId: string, field: 'nozzleDiameter' | 'filamentType' | 'color' | 'machine', value: string) => {
     setDesignParts(prev => prev.map(part =>
       part.id === partId ? { ...part, [field]: value } : part
     ));
