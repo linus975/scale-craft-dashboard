@@ -28,11 +28,17 @@ interface PersonalizedDesignFormData {
   replacementValue?: string;
 }
 
+interface ImageFile {
+  file: File;
+  id: string;
+  preview?: string;
+}
+
 const PersonalizedDesignForm: React.FC = () => {
   const { toast } = useToast();
   const form = useForm<PersonalizedDesignFormData>();
   const [previewImage, setPreviewImage] = useState<File | null>(null);
-  const [multiImages, setMultiImages] = useState<Array<{ file: File }>>([]);
+  const [multiImages, setMultiImages] = useState<ImageFile[]>([]);
 
   const {
     designParts,
@@ -127,7 +133,7 @@ const PersonalizedDesignForm: React.FC = () => {
     }
   };
 
-  const handleImagesChange = (images: Array<{ file: File }>) => {
+  const handleImagesChange = (images: ImageFile[]) => {
     setMultiImages(images);
   };
 
@@ -136,9 +142,10 @@ const PersonalizedDesignForm: React.FC = () => {
     const files = Array.from(e.dataTransfer.files);
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     
-    const newImages = imageFiles.map(file => ({
+    const newImages: ImageFile[] = imageFiles.map(file => ({
       file,
-      id: Date.now() + Math.random() + ''
+      id: Date.now() + Math.random() + '',
+      preview: URL.createObjectURL(file)
     }));
     
     setMultiImages(prev => [...prev, ...newImages]);
@@ -149,9 +156,10 @@ const PersonalizedDesignForm: React.FC = () => {
     if (!files) return;
     
     const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-    const newImages = imageFiles.map(file => ({
+    const newImages: ImageFile[] = imageFiles.map(file => ({
       file,
-      id: Date.now() + Math.random() + ''
+      id: Date.now() + Math.random() + '',
+      preview: URL.createObjectURL(file)
     }));
     
     setMultiImages(prev => [...prev, ...newImages]);
@@ -166,7 +174,7 @@ const PersonalizedDesignForm: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <DesignInformationSection 
-              control={form.control}
+              control={form.control as any}
               trackingType="personalized"
               categories={[]}
               editingCategory={null}

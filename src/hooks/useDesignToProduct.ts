@@ -74,7 +74,7 @@ export const useDesignToProduct = () => {
       // 2. Upload and save preview image (mark as preview)
       if (previewImage) {
         try {
-          const previewPath = await uploadFile(previewImage, 'product-previews');
+          const previewPath = await uploadFile(previewImage, 'product-images');
           await createProductImage({
             product_id: product.product_id,
             image_path: previewPath,

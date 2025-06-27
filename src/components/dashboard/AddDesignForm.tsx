@@ -38,7 +38,7 @@ interface DesignFormData {
 
 interface FileManagementData {
   selectedPart: string;
-  partType: 'static' | 'customisable';
+  partType: 'static' | 'personalizable';
   cadSoftware: string;
   slicerSoftware: string;
   partColor: string;
@@ -130,7 +130,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               color: newData.partColor,
               machine: newData.machineType,
               nozzleDiameter: newData.nozzleDiameter,
-              filamentType: newData.filamentType
+              filamentType: newData.filamentType,
+              parameters: {
+                ...part.parameters,
+                sketchName: newData.sketchName,
+                replacementType: newData.replacementType
+              }
             }
           : part
       ));
@@ -176,7 +181,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       const mappedDesignParts = designParts.designParts.map(part => ({
         id: part.id,
         name: part.name,
-        type: part.partType || 'static' as 'static' | 'customisable',
+        type: part.partType || 'static' as 'static' | 'personalizable',
         software: part.cadSoftware,
         specifications: '',
         cadSoftware: part.cadSoftware,

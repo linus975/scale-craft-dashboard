@@ -10,7 +10,7 @@ import { usePresetManager } from '@/hooks/usePresetManager';
 
 interface FileManagementData {
   selectedPart: string;
-  partType: 'static' | 'customisable';
+  partType: 'static' | 'personalizable';
   cadSoftware: string;
   slicerSoftware: string;
   partColor: string;
@@ -24,13 +24,18 @@ interface FileManagementData {
 interface DesignPart {
   id: string;
   name: string;
-  partType?: 'static' | 'customisable';
+  partType?: 'static' | 'personalizable';
   cadSoftware?: string;
   slicer?: string;
   nozzleDiameter?: string;
   filamentType?: string;
   color?: string;
   machine?: string;
+  parameters?: {
+    sketchName?: string;
+    replacementValue?: string;
+    replacementType?: 'text' | 'dimension';
+  };
 }
 
 interface FileManagementSectionProps {
@@ -42,7 +47,7 @@ interface FileManagementSectionProps {
   onAddPart: (name: string) => void;
   onRemovePart: (partId: string) => void;
   onRenamePart: (partId: string, newName: string) => void;
-  onPartTypeChange: (partId: string, partType: 'static' | 'customisable') => void;
+  onPartTypeChange: (partId: string, partType: 'static' | 'personalizable') => void;
 }
 
 const FileManagementSection: React.FC<FileManagementSectionProps> = ({ 
@@ -94,7 +99,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   // Get current part data
   const currentPart = designParts.find(part => part.id === activePart);
 
-  // Update data when part changes - use part-specific values
+  // Update data when part changes - use part-specific values INCLUDING sketch name and replacement type
   useEffect(() => {
     if (currentPart) {
       onChange({
@@ -106,7 +111,10 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
         partColor: currentPart.color || '',
         machineType: currentPart.machine || '',
         nozzleDiameter: currentPart.nozzleDiameter || '',
-        filamentType: currentPart.filamentType || ''
+        filamentType: currentPart.filamentType || '',
+        // Part-specific sketch name and replacement type
+        sketchName: currentPart.parameters?.sketchName || '',
+        replacementType: (currentPart.parameters?.replacementType as 'text' | 'dimension') || 'text'
       });
     }
   }, [activePart, currentPart]);
@@ -153,66 +161,44 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     }
   };
 
-  const handlePartTypeChange = (value: 'static' | 'customisable') => {
+  const handlePartTypeChange = (value: 'static' | 'personalizable') => {
     updateData('partType', value);
     onPartTypeChange(activePart, value);
+  };
+
+  // Sketch Name Handler - part specific
+  const handleSketchNameChange = (value: string) => {
+    updateData('sketchName', value);
+  };
+
+  // Replacement Type Handler - part specific
+  const handleReplacementTypeChange = (value: 'text' | 'dimension') => {
+    updateData('replacementType', value);
   };
 
   // Updated handlers to save part-specific data
   const handleColorChange = (value: string) => {
     updateData('partColor', value);
-    // Save to the specific part
-    if (currentPart) {
-      const updatedParts = designParts.map(part => 
-        part.id === activePart ? { ...part, color: value } : part
-      );
-      // This component does not manage designParts state directly, so no setState here
-    }
   };
 
   const handleMachineChange = (value: string) => {
     updateData('machineType', value);
-    if (currentPart) {
-      const updatedParts = designParts.map(part => 
-        part.id === activePart ? { ...part, machine: value } : part
-      );
-    }
   };
 
   const handleNozzleChange = (value: string) => {
     updateData('nozzleDiameter', value);
-    if (currentPart) {
-      const updatedParts = designParts.map(part => 
-        part.id === activePart ? { ...part, nozzleDiameter: value } : part
-      );
-    }
   };
 
   const handleFilamentChange = (value: string) => {
     updateData('filamentType', value);
-    if (currentPart) {
-      const updatedParts = designParts.map(part => 
-        part.id === activePart ? { ...part, filamentType: value } : part
-      );
-    }
   };
 
   const handleCADSoftwareChange = (value: string) => {
     updateData('cadSoftware', value);
-    if (currentPart) {
-      const updatedParts = designParts.map(part => 
-        part.id === activePart ? { ...part, cadSoftware: value } : part
-      );
-    }
   };
 
   const handleSlicerChange = (value: string) => {
     updateData('slicerSoftware', value);
-    if (currentPart) {
-      const updatedParts = designParts.map(part => 
-        part.id === activePart ? { ...part, slicer: value } : part
-      );
-    }
   };
 
   // Color preset management handlers
@@ -443,14 +429,14 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="static">Static</SelectItem>
-                <SelectItem value="customisable">Customisable</SelectItem>
+                <SelectItem value="personalizable">Personalizable</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Conditional Row: CAD and Slicer Software (only for customisable) */}
-        {(currentPart?.partType === 'customisable') && (
+        {/* Conditional Row: CAD and Slicer Software (only for personalizable) */}
+        {(currentPart?.partType === 'personalizable') && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>CAD Software</Label>
@@ -735,7 +721,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
             </div>
           </div>
         ) : (
-          // CAD and INI File Upload for Customisable Parts
+          // CAD and INI File Upload for Personalizable Parts
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>CAD File (.f3d)</Label>
@@ -801,21 +787,21 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Sketch Name and Replacement Type (only for customisable) */}
-        {data.partType === 'customisable' && (
+        {/* Sketch Name and Replacement Type (only for personalizable) - NOW PART SPECIFIC */}
+        {data.partType === 'personalizable' && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Sketch Name</Label>
               <Input
                 placeholder="Enter sketch name"
                 value={data.sketchName}
-                onChange={(e) => updateData('sketchName', e.target.value)}
+                onChange={(e) => handleSketchNameChange(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
               <Label>Replacement Type</Label>
-              <Select value={data.replacementType} onValueChange={(value: 'text' | 'dimension') => updateData('replacementType', value)}>
+              <Select value={data.replacementType} onValueChange={handleReplacementTypeChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
