@@ -30,7 +30,6 @@ import SystemLogPage from './SystemLogPage';
 import WhitelabelCatalogPage from './WhitelabelCatalogPage';
 import RecentOrdersPage from './RecentOrdersPage';
 import AllOrdersPage from './AllOrdersPage';
-import StorageDebugger from '@/components/StorageDebugger';
 
 interface DashboardProps {
   user: { email: string };
@@ -104,11 +103,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
           <p className="text-gray-600">Verwalten Sie Ihre Designs, Aufträge und Maschinen</p>
-        </div>
-
-        {/* Temporary Storage Debugger - remove this after fixing the issue */}
-        <div className="mb-8">
-          <StorageDebugger />
         </div>
 
         {/* Header */}
