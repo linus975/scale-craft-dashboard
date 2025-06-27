@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -133,11 +132,11 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     onPartTypeChange(activePart, value);
   };
 
-  // Color preset functions
+  // Updated color preset functions to auto-select new values
   const handleAddColor = () => {
     if (newColorName.trim()) {
       presetManager.addPreset('colors', newColorName.trim());
-      // Automatically select the newly added color
+      // Automatisch das neu hinzugefügte Element auswählen
       updateData('partColor', newColorName.trim());
       setNewColorName('');
       setShowAddColorDialog(false);
@@ -167,11 +166,11 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     presetManager.removePreset('colors', index);
   };
 
-  // Machine preset functions
+  // Updated machine preset functions to auto-select new values
   const handleAddMachine = () => {
     if (newMachineName.trim()) {
       presetManager.addPreset('machineTypes', newMachineName.trim());
-      // Automatically select the newly added machine
+      // Automatisch das neu hinzugefügte Element auswählen
       updateData('machineType', newMachineName.trim());
       setNewMachineName('');
       setShowAddMachineDialog(false);
@@ -201,11 +200,11 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     presetManager.removePreset('machineTypes', index);
   };
 
-  // Filament preset functions
+  // Updated filament preset functions to auto-select new values
   const handleAddFilament = () => {
     if (newFilamentName.trim()) {
       presetManager.addPreset('filamentTypes', newFilamentName.trim());
-      // Automatically select the newly added filament
+      // Automatisch das neu hinzugefügte Element auswählen
       updateData('filamentType', newFilamentName.trim());
       setNewFilamentName('');
       setShowAddFilamentDialog(false);
@@ -391,7 +390,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Color and Machine Type Row with Preset Management */}
+        {/* Color and Machine Type Row with Preset Management - mit automatischer Auswahl */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Color</Label>
