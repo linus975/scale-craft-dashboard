@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -24,7 +25,7 @@ interface FileManagementData {
 interface DesignPart {
   id: string;
   name: string;
-  partType?: 'static' | 'personalized';
+  partType?: 'static' | 'customisable';
 }
 
 interface FileManagementSectionProps {
@@ -36,7 +37,7 @@ interface FileManagementSectionProps {
   onAddPart: (name: string) => void;
   onRemovePart: (partId: string) => void;
   onRenamePart: (partId: string, newName: string) => void;
-  onPartTypeChange: (partId: string, partType: 'static' | 'personalized') => void;
+  onPartTypeChange: (partId: string, partType: 'static' | 'customisable') => void;
 }
 
 const FileManagementSection: React.FC<FileManagementSectionProps> = ({ 
@@ -129,8 +130,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
 
   const handlePartTypeChange = (value: 'static' | 'customisable') => {
     updateData('partType', value);
-    const mappedType = value === 'static' ? 'static' : 'personalized';
-    onPartTypeChange(activePart, mappedType);
+    onPartTypeChange(activePart, value);
   };
 
   // Color preset functions
