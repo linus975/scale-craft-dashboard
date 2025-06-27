@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import FileManagementSection from './design-edit/FileManagementSection';
 import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
 import { useCategoryManager } from '@/hooks/useCategoryManager';
-import { useDesignFileUpload } from '@/hooks/useDesignFileUpload';
+import { useSimpleFileUpload } from '@/hooks/useSimpleFileUpload';
 import { useDesignParts } from '@/hooks/useDesignParts';
 import { useDesignFormValidation } from '@/hooks/useDesignFormValidation';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
@@ -90,7 +89,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
   // Use custom hooks
   const categoryManager = useCategoryManager(form);
-  const fileUpload = useDesignFileUpload();
+  const fileUpload = useSimpleFileUpload();
   const designParts = useDesignParts();
   const { validateForm } = useDesignFormValidation(designParts, fileUpload);
   const multiImageUpload = useMultiImageUpload();

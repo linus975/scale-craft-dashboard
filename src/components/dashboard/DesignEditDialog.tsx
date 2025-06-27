@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDesignFiles } from '@/hooks/useDesignFiles';
+import { useSimpleFileUpload } from '@/hooks/useSimpleFileUpload';
 import DesignForm from './design-edit/DesignForm';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import ActionsPanel from './design-edit/ActionsPanel';
@@ -45,7 +44,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
     handleFileRemove,
     handleFileDownload,
     getFilesForPart // NEW: Function to get files for specific part
-  } = useDesignFiles(design, isOpen);
+  } = useSimpleFileUpload(design, isOpen);
 
   const idleMachines = machines.filter(machine => machine.status === 'idle');
 

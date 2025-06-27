@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Save, Loader2, Image } from 'lucide-react';
-import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
+import { useSimpleFileUpload } from '@/hooks/useSimpleFileUpload';
 import { useToast } from '@/hooks/use-toast';
 import { useDesignToProduct } from '@/hooks/useDesignToProduct';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
