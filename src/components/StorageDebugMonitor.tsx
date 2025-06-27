@@ -36,18 +36,18 @@ const StorageDebugMonitor: React.FC = () => {
         console.log('✅ [StorageDebug] Available buckets:', buckets?.map(b => ({ id: b.id, name: b.name, public: b.public })));
       }
 
-      // Check user files in user-storage bucket
+      // Check user files in design-files bucket
       let userFiles = [];
       let tempFiles = [];
       let storageErrors = [];
       
-      const userStorageBucket = buckets?.find(b => b.id === 'user-storage');
-      if (userStorageBucket) {
-        console.log('📂 [StorageDebug] user-storage bucket found, checking user files...');
+      const designFilesBucket = buckets?.find(b => b.id === 'design-files');
+      if (designFilesBucket) {
+        console.log('📂 [StorageDebug] design-files bucket found, checking user files...');
         
         // List user's root folder
         const { data: rootFiles, error: rootError } = await supabase.storage
-          .from('user-storage')
+          .from('design-files')
           .list(user.id, { limit: 100 });
 
         if (rootError) {
@@ -58,21 +58,21 @@ const StorageDebugMonitor: React.FC = () => {
           userFiles = rootFiles || [];
         }
 
-        // List user's temp folder specifically
+        // List user's temp-parts folder specifically
         const { data: tempFilesData, error: tempError } = await supabase.storage
-          .from('user-storage')
-          .list(`${user.id}/temp`, { limit: 100 });
+          .from('design-files')
+          .list(`${user.id}/temp-parts`, { limit: 100 });
 
         if (tempError) {
-          console.error('❌ [StorageDebug] Error listing temp folder:', tempError);
-          storageErrors.push(`Temp folder error: ${tempError.message}`);
+          console.error('❌ [StorageDebug] Error listing temp-parts folder:', tempError);
+          storageErrors.push(`Temp-parts folder error: ${tempError.message}`);
         } else {
-          console.log('🗂️ [StorageDebug] User temp files:', tempFilesData?.map(f => f.name));
+          console.log('🗂️ [StorageDebug] User temp-parts files:', tempFilesData?.map(f => f.name));
           tempFiles = tempFilesData || [];
         }
       } else {
-        console.error('❌ [StorageDebug] user-storage bucket not found!');
-        storageErrors.push('user-storage bucket not found');
+        console.error('❌ [StorageDebug] design-files bucket not found!');
+        storageErrors.push('design-files bucket not found');
       }
 
       setStorageInfo({
@@ -110,19 +110,19 @@ const StorageDebugMonitor: React.FC = () => {
       }
 
       const testContent = new Blob(['Test file content'], { type: 'text/plain' });
-      const testPath = `${user.id}/test-${Date.now()}.txt`;
+      const testPath = `${user.id}/temp-parts/test-${Date.now()}.txt`;
 
       console.log('🧪 [StorageDebug] Testing upload to:', testPath);
 
       const { data, error } = await supabase.storage
-        .from('user-storage')
+        .from('design-files')
         .upload(testPath, testContent);
 
       if (error) {
         console.error('❌ [StorageDebug] Test upload failed:', error);
         toast({
           title: "Test-Upload fehlgeschlagen",
-          description: `${error.message} (Status: ${error.statusCode})`,
+          description: `${error.message}`,
           variant: "destructive",
         });
       } else {
@@ -134,7 +134,7 @@ const StorageDebugMonitor: React.FC = () => {
 
         // Clean up test file
         setTimeout(async () => {
-          await supabase.storage.from('user-storage').remove([testPath]);
+          await supabase.storage.from('design-files').remove([testPath]);
           console.log('🧹 [StorageDebug] Test file cleaned up');
         }, 2000);
       }
@@ -159,7 +159,7 @@ const StorageDebugMonitor: React.FC = () => {
       
       // Test listing permission
       const { data: listTest, error: listError } = await supabase.storage
-        .from('user-storage')
+        .from('design-files')
         .list('', { limit: 1 });
         
       if (listError) {
@@ -231,7 +231,7 @@ const StorageDebugMonitor: React.FC = () => {
             <div>
               <strong>Buckets:</strong>{' '}
               {storageInfo.buckets.map((bucket: any) => (
-                <Badge key={bucket.id} variant={bucket.id === 'user-storage' ? 'default' : 'secondary'} className="mr-1">
+                <Badge key={bucket.id} variant={bucket.id === 'design-files' ? 'default' : 'secondary'} className="mr-1">
                   {bucket.id}
                 </Badge>
               ))}
@@ -242,7 +242,7 @@ const StorageDebugMonitor: React.FC = () => {
             </div>
 
             <div>
-              <strong>Temp Files:</strong> {storageInfo.tempFiles.length} items
+              <strong>Temp-Parts Files:</strong> {storageInfo.tempFiles.length} items
             </div>
 
             {storageInfo.storageErrors && storageInfo.storageErrors.length > 0 && (

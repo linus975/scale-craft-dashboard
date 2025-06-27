@@ -58,7 +58,7 @@ export const useUserStorageUpload = () => {
 
       const fileCategory = getFileCategory(file.name);
       const fileName = `${Date.now()}-${file.name}`;
-      const tempPath = `${user.id}/temp/${partId}/${fileCategory}/${fileName}`;
+      const tempPath = `${user.id}/temp-parts/${partId}/${fileCategory}/${fileName}`;
       
       console.log('📤 [UserStorageUpload] Upload details:');
       console.log('  - File:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)} MB)`);
@@ -67,26 +67,26 @@ export const useUserStorageUpload = () => {
       console.log('  - Temp path:', tempPath);
       console.log('  - User ID:', user.id);
 
-      // Check if user-storage bucket exists
+      // Check if design-files bucket exists
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       if (bucketsError) {
         console.error('❌ [UserStorageUpload] Error listing buckets:', bucketsError);
         throw new Error(`Bucket-Fehler: ${bucketsError.message}`);
       }
 
-      const userStorageBucket = buckets?.find(bucket => bucket.id === 'user-storage');
-      if (!userStorageBucket) {
-        console.error('❌ [UserStorageUpload] user-storage bucket not found');
+      const designFilesBucket = buckets?.find(bucket => bucket.id === 'design-files');
+      if (!designFilesBucket) {
+        console.error('❌ [UserStorageUpload] design-files bucket not found');
         console.log('📋 [UserStorageUpload] Available buckets:', buckets?.map(b => b.id));
-        throw new Error('user-storage Bucket nicht gefunden');
+        throw new Error('design-files Bucket nicht gefunden');
       }
 
-      console.log('✅ [UserStorageUpload] user-storage bucket found:', userStorageBucket.name);
+      console.log('✅ [UserStorageUpload] design-files bucket found:', designFilesBucket.name);
 
       // Enhanced error handling for upload
       console.log('🚀 [UserStorageUpload] Starting file upload to:', tempPath);
       const { data, error } = await supabase.storage
-        .from('user-storage')
+        .from('design-files')
         .upload(tempPath, file, {
           cacheControl: '3600',
           upsert: true
@@ -95,9 +95,7 @@ export const useUserStorageUpload = () => {
       if (error) {
         console.error('❌ [UserStorageUpload] Upload error details:', {
           message: error.message,
-          statusCode: error.statusCode,
-          error: error.error,
-          cause: error.cause
+          name: error.name
         });
         
         // Check if it's a policy error
@@ -106,7 +104,7 @@ export const useUserStorageUpload = () => {
           
           // Test if we can list the user's folder
           const { data: testList, error: testError } = await supabase.storage
-            .from('user-storage')
+            .from('design-files')
             .list(user.id, { limit: 1 });
             
           if (testError) {
@@ -123,8 +121,8 @@ export const useUserStorageUpload = () => {
 
       // Verify upload by trying to get the file info
       const { data: fileInfo, error: infoError } = await supabase.storage
-        .from('user-storage')
-        .list(user.id + '/temp/' + partId + '/' + fileCategory);
+        .from('design-files')
+        .list(user.id + '/temp-parts/' + partId + '/' + fileCategory);
         
       if (infoError) {
         console.warn('⚠️ [UserStorageUpload] Could not verify upload:', infoError);
@@ -208,7 +206,7 @@ export const useUserStorageUpload = () => {
           
           // Check if source file exists
           const { data: sourceList, error: sourceError } = await supabase.storage
-            .from('user-storage')
+            .from('design-files')
             .list(file.path.substring(0, file.path.lastIndexOf('/')), { limit: 100 });
             
           if (sourceError) {
@@ -227,7 +225,7 @@ export const useUserStorageUpload = () => {
           // Download from temp location
           console.log('  📥 Downloading from temp location...');
           const { data: fileData, error: downloadError } = await supabase.storage
-            .from('user-storage')
+            .from('design-files')
             .download(file.path);
 
           if (downloadError) {
@@ -240,7 +238,7 @@ export const useUserStorageUpload = () => {
           // Upload to final location
           console.log('  📤 Uploading to final location...');
           const { error: uploadError } = await supabase.storage
-            .from('user-storage')
+            .from('design-files')
             .upload(finalPath, fileData, {
               cacheControl: '3600',
               upsert: true
@@ -256,7 +254,7 @@ export const useUserStorageUpload = () => {
           // Delete temp file
           console.log('  🗑️ Cleaning up temp file...');
           const { error: deleteError } = await supabase.storage
-            .from('user-storage')
+            .from('design-files')
             .remove([file.path]);
 
           if (deleteError) {
