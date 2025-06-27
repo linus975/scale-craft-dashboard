@@ -14,7 +14,7 @@ export const useFileUploadManagerWithDatabase = () => {
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>, 
-    partId: string, // This is now the real database part_id UUID
+    partId: string, // CRITICAL: This must be the real database part_id UUID
     expectedFileType?: ExpectedFileType
   ) => {
     const files = event.target.files;
@@ -23,28 +23,31 @@ export const useFileUploadManagerWithDatabase = () => {
       return;
     }
 
-    console.log(`🎯 CRITICAL: Upload ONLY to DATABASE part: ${partId}`);
+    console.log(`🎯 UPLOAD TARGET: Database part ID: ${partId}`);
     console.log(`📁 Files to upload: ${files.length}`);
+    console.log(`🔍 Expected file type: ${expectedFileType || 'any'}`);
 
     const filesToUpload = Array.from(files);
     const validFiles = validateFiles(filesToUpload, expectedFileType);
 
     if (validFiles.length === 0) {
+      console.log('❌ No valid files found');
       event.target.value = '';
       return;
     }
 
     try {
-      console.log(`✅ Valid files for DATABASE part ${partId}: ${validFiles.length}`);
+      console.log(`✅ Processing ${validFiles.length} valid files for part ${partId}`);
       
       const newFiles: UploadedFile[] = [];
       
       for (const file of validFiles) {
         const fileTypeFolder = getFileTypeFolder(file.name);
-        // Use the real database part_id in the upload path
+        // CRITICAL: Use the real database part_id in the upload path
         const folderPath = `parts/${partId}/${fileTypeFolder}`;
         
         try {
+          console.log(`📤 Uploading ${file.name} to ${folderPath}`);
           const uploadPath = await uploadFile(file, folderPath);
           const fileExtension = file.name.split('.').pop()?.toLowerCase();
           
@@ -56,7 +59,7 @@ export const useFileUploadManagerWithDatabase = () => {
             uploadDate: new Date().toISOString().split('T')[0],
             path: uploadPath,
             originalName: file.name,
-            partId: partId, // Store the real database part_id
+            partId: partId, // CRITICAL: Store the exact database part_id
             designType: 'static' as const,
             fileExtension: fileExtension,
             isF3DFile: fileExtension === 'f3d',
@@ -65,42 +68,47 @@ export const useFileUploadManagerWithDatabase = () => {
           };
 
           newFiles.push(newFile);
-          console.log(`✅ File uploaded to DATABASE part ${partId}: ${folderPath}/${file.name}`);
+          console.log(`✅ File uploaded successfully for part ${partId}: ${file.name}`);
         } catch (uploadError) {
           console.error(`❌ Error uploading ${file.name}:`, uploadError);
         }
       }
 
-      setPartFiles(prev => {
-        const currentPartFiles = prev[partId] || [];
-        
-        const filteredFiles = currentPartFiles.filter(existingFile => {
-          const newFileTypes = newFiles.map(nf => ({ 
-            extension: nf?.fileExtension, 
-            uploadContext: nf?.uploadContext
-          }));
-          return !newFileTypes.some(nf => 
-            nf.extension === existingFile.fileExtension && 
-            nf.uploadContext === existingFile.uploadContext
-          );
+      if (newFiles.length > 0) {
+        // CRITICAL: Update files for this specific part only
+        setPartFiles(prev => {
+          const currentPartFiles = prev[partId] || [];
+          
+          // Remove existing files of the same type and context to prevent duplicates
+          const filteredFiles = currentPartFiles.filter(existingFile => {
+            const newFileTypes = newFiles.map(nf => ({ 
+              extension: nf?.fileExtension, 
+              uploadContext: nf?.uploadContext
+            }));
+            return !newFileTypes.some(nf => 
+              nf.extension === existingFile.fileExtension && 
+              nf.uploadContext === existingFile.uploadContext
+            );
+          });
+          
+          const updatedPartFiles = [...filteredFiles, ...newFiles];
+          
+          console.log(`📂 Updated files for part ${partId}:`, updatedPartFiles.map(f => f.name));
+          
+          return {
+            ...prev,
+            [partId]: updatedPartFiles
+          };
         });
-        
-        const updatedFiles = {
-          ...prev,
-          [partId]: [...filteredFiles, ...newFiles]
-        };
 
-        console.log(`📂 Updated files for DATABASE part ${partId}:`, updatedFiles[partId]);
-        return updatedFiles;
-      });
-
-      toast({
-        title: "Dateien hochgeladen",
-        description: `${newFiles.length} Datei(en) für Part erfolgreich hochgeladen.`,
-      });
+        toast({
+          title: "Dateien hochgeladen",
+          description: `${newFiles.length} Datei(en) für Part erfolgreich hochgeladen.`,
+        });
+      }
 
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('❌ Upload error:', error);
       toast({
         title: "Upload-Fehler",
         description: "Es gab einen Fehler beim Hochladen der Dateien.",
@@ -108,13 +116,17 @@ export const useFileUploadManagerWithDatabase = () => {
       });
     }
 
+    // Clear the input to allow re-uploading the same file
     event.target.value = '';
   };
 
   const handleFileRemove = (file: UploadedFile) => {
-    if (!file.partId) return;
+    if (!file.partId) {
+      console.log('❌ Cannot remove file: no partId');
+      return;
+    }
     
-    console.log(`🗑️ Removing file ${file.name} from DATABASE part ${file.partId}`);
+    console.log(`🗑️ Removing file ${file.name} from part ${file.partId}`);
     
     setPartFiles(prev => ({
       ...prev,
@@ -128,18 +140,18 @@ export const useFileUploadManagerWithDatabase = () => {
   };
 
   const handleFileDownload = (file: UploadedFile) => {
-    console.log('Downloading file:', file.name, 'from path:', file.path);
+    console.log('📥 Downloading file:', file.name, 'from path:', file.path);
   };
 
   const getFilesForPart = (partId: string): UploadedFile[] => {
     const files = partFiles[partId] || [];
-    console.log(`📋 Getting files for DATABASE part ${partId}:`, files);
+    console.log(`📋 Getting files for part ${partId}:`, files.map(f => f.name));
     return files;
   };
 
   const getAllFiles = (): UploadedFile[] => {
     const allFiles = Object.values(partFiles).flat();
-    console.log('📋 All files:', allFiles);
+    console.log('📋 All files across all parts:', allFiles.map(f => ({ name: f.name, partId: f.partId })));
     return allFiles;
   };
 

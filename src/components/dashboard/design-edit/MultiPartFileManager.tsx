@@ -76,10 +76,13 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     onPartSelect
   });
 
-  // CRITICAL FIX: Always use activePart for uploads and FILTER files by exact partId
+  // CRITICAL: Ensure file upload is always targeted to the active part
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
-    console.log(`🎯 UPLOAD: Uploading file for ACTIVE part: ${activePart}`);
+    console.log(`🎯 CRITICAL: MultiPartFileManager uploading to ACTIVE part: ${activePart}`);
+    console.log(`📝 Event target files:`, event.target.files?.length || 0);
+    
+    // Always pass the current active part to ensure proper file assignment
     onFileUpload(event, activePart);
   };
 
@@ -91,11 +94,17 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     return <div>No part selected</div>;
   }
 
-  console.log(`📁 Current part: ${currentPart.name} (${currentPart.id})`);
+  console.log(`📋 MultiPartFileManager - Active part: ${activePart}`);
+  console.log(`📂 Current part: ${currentPart.name} (${currentPart.id})`);
   
-  // CRITICAL: Only show files that belong EXACTLY to the current part
-  const currentPartFiles = uploadedFiles.filter(file => file.partId === currentPart.id);
-  console.log(`📂 Files for EXACT current part ${currentPart.id}:`, currentPartFiles);
+  // CRITICAL: Filter files to show ONLY files for the current active part
+  const currentPartFiles = uploadedFiles.filter(file => {
+    const belongsToCurrentPart = file.partId === currentPart.id;
+    console.log(`📁 File ${file.name}: partId=${file.partId}, currentPartId=${currentPart.id}, belongs=${belongsToCurrentPart}`);
+    return belongsToCurrentPart;
+  });
+  
+  console.log(`🎯 Filtered files for part ${currentPart.id}:`, currentPartFiles.map(f => f.name));
   
   const validation = currentPart ? 
     (externalValidatePartFiles ? externalValidatePartFiles(currentPart) : validatePartFiles(currentPart)) : 
@@ -110,7 +119,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         designParts={designParts}
         activePart={activePart}
         onPartChange={(value) => {
-          console.log(`🔄 Switching to part: ${value}`);
+          console.log(`🔄 Switching from part ${activePart} to part: ${value}`);
           handlePartChange(value, externalOnPartChange);
         }}
         onAddPart={(name) => addNewPart(name, externalOnAddPart)}

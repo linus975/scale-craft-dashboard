@@ -45,11 +45,22 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   designParts = [],
   activePart
 }) => {
+  // CRITICAL: Filter files to show ONLY files that belong to the current part
+  const currentPartFiles = uploadedFiles.filter(file => file.partId === currentPart.id);
+  
+  console.log(`📂 FileManagerContent - Current part: ${currentPart.id} (${currentPart.name})`);
+  console.log(`📁 All uploaded files:`, uploadedFiles.map(f => ({ name: f.name, partId: f.partId })));
+  console.log(`🎯 Files for current part ${currentPart.id}:`, currentPartFiles.map(f => f.name));
+
   const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalizable') => {
-    console.log(`Changing file ${fileId} to ${designType}`);
+    console.log(`🔄 Changing file ${fileId} to ${designType} for part ${currentPart.id}`);
   };
 
-  console.log(`📂 FileManagerContent: Displaying ${uploadedFiles.length} files for part ${currentPart.id}`);
+  // Create a wrapper for file upload that ensures proper part assignment
+  const handlePartSpecificFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log(`🎯 UPLOAD: FileManagerContent uploading for part: ${currentPart.id}`);
+    onFileUpload(event);
+  };
 
   return (
     <>
@@ -72,8 +83,8 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         partId={currentPart.id}
         partType={currentPart.partType === 'personalizable' ? 'personalized' : 'static'}
         uploading={uploading}
-        onFileUpload={onFileUpload}
-        uploadedFiles={uploadedFiles}
+        onFileUpload={handlePartSpecificFileUpload}
+        uploadedFiles={currentPartFiles} // CRITICAL: Pass only current part files
         onPartSpecificationChange={onPartSpecificationChange}
         gcodeFile={gcodeFile}
         onGcodeFileChange={onGcodeFileChange}
@@ -89,9 +100,9 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         />
       )}
 
-      {(loadingFiles || uploadedFiles.length > 0) && (
+      {(loadingFiles || currentPartFiles.length > 0) && (
         <FileList
-          files={uploadedFiles}
+          files={currentPartFiles} // CRITICAL: Show only current part files
           partName={currentPart.name}
           loadingFiles={loadingFiles}
           onFileRemove={onFileRemove}
