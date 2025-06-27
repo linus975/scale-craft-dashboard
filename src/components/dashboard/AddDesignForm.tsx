@@ -103,10 +103,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
   // Handler for when a new part is added - automatically select it
   const handleAddPart = (name: string) => {
-    const newPartId = designParts.handleAddPart(name);
-    if (newPartId) {
-      designParts.handlePartSelect(newPartId);
-      setFileManagementData(prev => ({ ...prev, selectedPart: newPartId }));
+    designParts.handleAddPart(name);
+    // Get the latest part from designParts after adding
+    const latestPart = designParts.designParts[designParts.designParts.length - 1];
+    if (latestPart) {
+      designParts.handlePartSelect(latestPart.id);
+      setFileManagementData(prev => ({ ...prev, selectedPart: latestPart.id }));
     }
   };
 
@@ -196,7 +198,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Design Information Section */}
           <DesignInformationSection
-            control={form.control}
+            control={form.control as any}
             trackingType={trackingType}
             categories={categoryManager.categories}
             editingCategory={categoryManager.editingCategory}
