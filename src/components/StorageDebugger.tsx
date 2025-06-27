@@ -21,9 +21,26 @@ const StorageDebugger: React.FC = () => {
     setDebugResults([]);
     
     try {
-      addDebugMessage('🔍 Starting Storage Diagnostic...');
+      addDebugMessage('🔍 Starting Enhanced Storage Diagnostic...');
       
-      // Test 1: Authentication
+      // Test 1: Check Supabase Client Configuration
+      addDebugMessage('🔧 Checking Supabase client configuration...');
+      const supabaseUrl = 'https://xuxgxkemywnyranlhsjh.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1eGd4a2VteXdueXJhbmxoc2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMzQyMTUsImV4cCI6MjA2MzkxMDIxNX0.ilp_enK4vvX2Vy8EpogSh9XGQN-GaMI0Yb8YyVPtIqc';
+      
+      if (supabase.supabaseUrl === supabaseUrl) {
+        addDebugMessage('✅ Supabase URL is correct');
+      } else {
+        addDebugMessage(`❌ Supabase URL mismatch: expected ${supabaseUrl}, got ${supabase.supabaseUrl}`);
+      }
+      
+      if (supabase.supabaseKey === supabaseKey) {
+        addDebugMessage('✅ Supabase key is correct');
+      } else {
+        addDebugMessage('❌ Supabase key mismatch');
+      }
+
+      // Test 2: Authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError) {
         addDebugMessage(`❌ Auth Error: ${authError.message}`);
@@ -34,82 +51,90 @@ const StorageDebugger: React.FC = () => {
         return;
       }
       addDebugMessage(`✅ User authenticated: ${user.id}`);
+      addDebugMessage(`📧 User email: ${user.email}`);
 
-      // Test 2: List buckets
+      // Test 3: Direct API call to check buckets
+      addDebugMessage('🌐 Testing direct API call to Supabase...');
+      try {
+        const response = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'apikey': supabaseKey,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const buckets = await response.json();
+          addDebugMessage(`✅ Direct API call successful, found ${buckets.length} buckets`);
+          buckets.forEach((bucket: any) => {
+            addDebugMessage(`  - ${bucket.id} (${bucket.public ? 'public' : 'private'})`);
+          });
+        } else {
+          addDebugMessage(`❌ Direct API call failed: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          addDebugMessage(`❌ Error details: ${errorText}`);
+        }
+      } catch (fetchError) {
+        addDebugMessage(`❌ Direct API call exception: ${fetchError}`);
+      }
+
+      // Test 4: List buckets using Supabase client
+      addDebugMessage('📂 Testing Supabase client listBuckets...');
       const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
       if (bucketError) {
         addDebugMessage(`❌ Bucket error: ${bucketError.message}`);
-        return;
-      }
-      addDebugMessage(`✅ Found ${buckets?.length || 0} buckets`);
-      buckets?.forEach(bucket => {
-        addDebugMessage(`  - ${bucket.id} (${bucket.public ? 'public' : 'private'})`);
-      });
-
-      // Test 3: Check design-files bucket
-      const designBucket = buckets?.find(b => b.id === 'design-files');
-      if (!designBucket) {
-        addDebugMessage('❌ design-files bucket not found');
-        return;
-      }
-      addDebugMessage('✅ design-files bucket exists');
-
-      // Test 4: List user's root folder
-      const { data: userRoot, error: rootError } = await supabase.storage
-        .from('design-files')
-        .list(user.id, { limit: 100 });
-      
-      if (rootError) {
-        addDebugMessage(`⚠️ User root folder error: ${rootError.message}`);
+        addDebugMessage(`❌ Full bucket error: ${JSON.stringify(bucketError)}`);
       } else {
-        addDebugMessage(`✅ User root folder accessible, contains ${userRoot?.length || 0} items`);
-        userRoot?.forEach(item => {
-          addDebugMessage(`  - ${item.name}`);
+        addDebugMessage(`✅ Supabase client found ${buckets?.length || 0} buckets`);
+        buckets?.forEach(bucket => {
+          addDebugMessage(`  - ${bucket.id} (${bucket.public ? 'public' : 'private'})`);
         });
       }
 
-      // Test 5: Check temp folder
-      const { data: tempFolder, error: tempError } = await supabase.storage
-        .from('design-files')
-        .list(`${user.id}/temp`, { limit: 100 });
-      
-      if (tempError) {
-        addDebugMessage(`⚠️ Temp folder error: ${tempError.message}`);
-        addDebugMessage('💡 This is normal if no files have been uploaded yet');
-      } else {
-        addDebugMessage(`✅ Temp folder accessible, contains ${tempFolder?.length || 0} items`);
-        tempFolder?.forEach(item => {
-          addDebugMessage(`  - ${item.name}`);
-        });
+      // Test 5: Check specific design-files bucket
+      if (buckets && buckets.length > 0) {
+        const designBucket = buckets.find(b => b.id === 'design-files');
+        if (designBucket) {
+          addDebugMessage('✅ design-files bucket found via client');
+          addDebugMessage(`  - Public: ${designBucket.public}`);
+          addDebugMessage(`  - Created: ${designBucket.created_at}`);
+          addDebugMessage(`  - Updated: ${designBucket.updated_at}`);
+        } else {
+          addDebugMessage('❌ design-files bucket not found in client results');
+        }
       }
 
-      // Test 6: Try a test upload
-      addDebugMessage('🧪 Attempting test upload...');
-      const testContent = new Blob(['Test file content'], { type: 'text/plain' });
-      const testFile = new File([testContent], 'test-upload.txt', { type: 'text/plain' });
-      const testPath = `${user.id}/temp/CAD/test-${Date.now()}.txt`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // Test 6: Test direct access to design-files
+      addDebugMessage('🧪 Testing direct access to design-files bucket...');
+      const { data: designFiles, error: designError } = await supabase.storage
         .from('design-files')
-        .upload(testPath, testFile);
+        .list('', { limit: 1 });
       
-      if (uploadError) {
-        addDebugMessage(`❌ Test upload failed: ${uploadError.message}`);
-        addDebugMessage(`❌ Error details: ${JSON.stringify(uploadError)}`);
+      if (designError) {
+        addDebugMessage(`❌ design-files access error: ${designError.message}`);
+        addDebugMessage(`❌ Full error: ${JSON.stringify(designError)}`);
       } else {
-        addDebugMessage(`✅ Test upload successful: ${uploadData.path}`);
-        
-        // Clean up test file
-        await supabase.storage
-          .from('design-files')
-          .remove([testPath]);
-        addDebugMessage('🧹 Test file cleaned up');
+        addDebugMessage(`✅ design-files bucket accessible, contains ${designFiles?.length || 0} root items`);
       }
 
-      addDebugMessage('✅ Diagnostic complete');
+      // Test 7: Test user folder access
+      const { data: userFolder, error: userError } = await supabase.storage
+        .from('design-files')
+        .list(user.id, { limit: 1 });
+      
+      if (userError) {
+        addDebugMessage(`⚠️ User folder error: ${userError.message} (might be normal if empty)`);
+      } else {
+        addDebugMessage(`✅ User folder accessible, contains ${userFolder?.length || 0} items`);
+      }
+
+      addDebugMessage('✅ Enhanced diagnostic complete');
       
     } catch (error) {
       addDebugMessage(`❌ Diagnostic failed: ${error}`);
+      console.error('Full diagnostic error:', error);
     } finally {
       setIsDebugging(false);
     }
@@ -122,7 +147,7 @@ const StorageDebugger: React.FC = () => {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Supabase Storage Debugger</CardTitle>
+        <CardTitle>Enhanced Supabase Storage Debugger</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2">
@@ -130,7 +155,7 @@ const StorageDebugger: React.FC = () => {
             onClick={runFullDiagnostic} 
             disabled={isDebugging}
           >
-            {isDebugging ? 'Running...' : 'Run Full Diagnostic'}
+            {isDebugging ? 'Running Enhanced Diagnostic...' : 'Run Enhanced Diagnostic'}
           </Button>
           <Button 
             variant="outline" 
@@ -142,7 +167,7 @@ const StorageDebugger: React.FC = () => {
         
         {debugResults.length > 0 && (
           <div className="bg-gray-100 p-4 rounded-md max-h-96 overflow-y-auto">
-            <h3 className="font-semibold mb-2">Diagnostic Results:</h3>
+            <h3 className="font-semibold mb-2">Enhanced Diagnostic Results:</h3>
             {debugResults.map((result, index) => (
               <div key={index} className="text-sm font-mono mb-1">
                 {result}
