@@ -136,7 +136,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleAddColor = () => {
     if (newColorName.trim()) {
       presetManager.addPreset('colors', newColorName.trim());
-      // Automatisch das neu hinzugefügte Element auswählen
+      // Auto-select the newly added color
       updateData('partColor', newColorName.trim());
       setNewColorName('');
       setShowAddColorDialog(false);
@@ -151,9 +151,10 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
 
   const handleSaveColorEdit = () => {
     if (editingColorIndex !== null && editColorName.trim()) {
+      const oldValue = presetManager.presets.colors[editingColorIndex];
       presetManager.updatePreset('colors', editingColorIndex, editColorName.trim());
       // Update the selected value if it was the one being edited
-      if (data.partColor === presetManager.presets.colors[editingColorIndex]) {
+      if (data.partColor === oldValue) {
         updateData('partColor', editColorName.trim());
       }
       setEditingColorIndex(null);
@@ -163,14 +164,19 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   };
 
   const handleDeleteColor = (index: number) => {
+    const deletedValue = presetManager.presets.colors[index];
     presetManager.removePreset('colors', index);
+    // Clear selection if deleted item was selected
+    if (data.partColor === deletedValue) {
+      updateData('partColor', '');
+    }
   };
 
   // Updated machine preset functions to auto-select new values
   const handleAddMachine = () => {
     if (newMachineName.trim()) {
       presetManager.addPreset('machineTypes', newMachineName.trim());
-      // Automatisch das neu hinzugefügte Element auswählen
+      // Auto-select the newly added machine
       updateData('machineType', newMachineName.trim());
       setNewMachineName('');
       setShowAddMachineDialog(false);
@@ -185,9 +191,10 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
 
   const handleSaveMachineEdit = () => {
     if (editingMachineIndex !== null && editMachineName.trim()) {
+      const oldValue = presetManager.presets.machineTypes[editingMachineIndex];
       presetManager.updatePreset('machineTypes', editingMachineIndex, editMachineName.trim());
       // Update the selected value if it was the one being edited
-      if (data.machineType === presetManager.presets.machineTypes[editingMachineIndex]) {
+      if (data.machineType === oldValue) {
         updateData('machineType', editMachineName.trim());
       }
       setEditingMachineIndex(null);
@@ -197,14 +204,19 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   };
 
   const handleDeleteMachine = (index: number) => {
+    const deletedValue = presetManager.presets.machineTypes[index];
     presetManager.removePreset('machineTypes', index);
+    // Clear selection if deleted item was selected
+    if (data.machineType === deletedValue) {
+      updateData('machineType', '');
+    }
   };
 
   // Updated filament preset functions to auto-select new values
   const handleAddFilament = () => {
     if (newFilamentName.trim()) {
       presetManager.addPreset('filamentTypes', newFilamentName.trim());
-      // Automatisch das neu hinzugefügte Element auswählen
+      // Auto-select the newly added filament
       updateData('filamentType', newFilamentName.trim());
       setNewFilamentName('');
       setShowAddFilamentDialog(false);
@@ -219,9 +231,10 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
 
   const handleSaveFilamentEdit = () => {
     if (editingFilamentIndex !== null && editFilamentName.trim()) {
+      const oldValue = presetManager.presets.filamentTypes[editingFilamentIndex];
       presetManager.updatePreset('filamentTypes', editingFilamentIndex, editFilamentName.trim());
       // Update the selected value if it was the one being edited
-      if (data.filamentType === presetManager.presets.filamentTypes[editingFilamentIndex]) {
+      if (data.filamentType === oldValue) {
         updateData('filamentType', editFilamentName.trim());
       }
       setEditingFilamentIndex(null);
@@ -231,7 +244,12 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   };
 
   const handleDeleteFilament = (index: number) => {
+    const deletedValue = presetManager.presets.filamentTypes[index];
     presetManager.removePreset('filamentTypes', index);
+    // Clear selection if deleted item was selected
+    if (data.filamentType === deletedValue) {
+      updateData('filamentType', '');
+    }
   };
 
   const currentPart = designParts.find(part => part.id === activePart);
@@ -390,7 +408,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Color and Machine Type Row with Preset Management - mit automatischer Auswahl */}
+        {/* Color and Machine Type Row with Preset Management - with automatic selection */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Color</Label>
@@ -491,7 +509,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                     const selectedIndex = presetManager.presets.colors.findIndex(color => color === data.partColor);
                     if (selectedIndex !== -1) {
                       handleDeleteColor(selectedIndex);
-                      updateData('partColor', '');
                     }
                   }}
                   disabled={!data.partColor || presetManager.presets.colors.length <= 1}
@@ -601,7 +618,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                     const selectedIndex = presetManager.presets.machineTypes.findIndex(machine => machine === data.machineType);
                     if (selectedIndex !== -1) {
                       handleDeleteMachine(selectedIndex);
-                      updateData('machineType', '');
                     }
                   }}
                   disabled={!data.machineType || presetManager.presets.machineTypes.length <= 1}
@@ -854,7 +870,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                     const selectedIndex = presetManager.presets.filamentTypes.findIndex(filament => filament === data.filamentType);
                     if (selectedIndex !== -1) {
                       handleDeleteFilament(selectedIndex);
-                      updateData('filamentType', '');
                     }
                   }}
                   disabled={!data.filamentType || presetManager.presets.filamentTypes.length <= 1}
