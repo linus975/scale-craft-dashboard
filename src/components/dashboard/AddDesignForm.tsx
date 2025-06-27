@@ -201,6 +201,13 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           <FileManagementSection
             data={fileManagementData}
             onChange={setFileManagementData}
+            designParts={designParts.designParts}
+            activePart={designParts.activePart}
+            onPartChange={designParts.handlePartSelect}
+            onAddPart={designParts.handleAddPart}
+            onRemovePart={designParts.handleRemovePart}
+            onRenamePart={designParts.handleRenamePart}
+            onPartTypeChange={designParts.handlePartTypeChange}
           />
 
           {/* Progress Indicator when saving */}

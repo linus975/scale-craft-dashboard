@@ -5,8 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Upload, FileText, Settings2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Upload, FileText, Settings2, Plus, Edit, Trash } from 'lucide-react';
 
 interface FileManagementData {
   selectedPart: string;
@@ -21,9 +21,22 @@ interface FileManagementData {
   filamentType: string;
 }
 
+interface DesignPart {
+  id: string;
+  name: string;
+  partType?: 'static' | 'personalized';
+}
+
 interface FileManagementSectionProps {
   data: FileManagementData;
   onChange: (data: FileManagementData) => void;
+  designParts: DesignPart[];
+  activePart: string;
+  onPartChange: (partId: string) => void;
+  onAddPart: (name: string) => void;
+  onRemovePart: (partId: string) => void;
+  onRenamePart: (partId: string, newName: string) => void;
+  onPartTypeChange: (partId: string, partType: 'static' | 'personalized') => void;
 }
 
 const colorPresets = [
@@ -38,10 +51,24 @@ const filamentPresets = [
   'PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'HIPS', 'PC', 'Nylon', 'Wood Fill', 'Carbon Fiber'
 ];
 
-const FileManagementSection: React.FC<FileManagementSectionProps> = ({ data, onChange }) => {
+const FileManagementSection: React.FC<FileManagementSectionProps> = ({ 
+  data, 
+  onChange, 
+  designParts,
+  activePart,
+  onPartChange,
+  onAddPart,
+  onRemovePart,
+  onRenamePart,
+  onPartTypeChange
+}) => {
   const [gcodeFile, setGcodeFile] = useState<File | null>(null);
   const [cadFile, setCadFile] = useState<File | null>(null);
   const [iniFile, setIniFile] = useState<File | null>(null);
+  const [showAddPartDialog, setShowAddPartDialog] = useState(false);
+  const [newPartName, setNewPartName] = useState('');
+  const [editingPart, setEditingPart] = useState<string | null>(null);
+  const [editPartName, setEditPartName] = useState('');
 
   const updateData = (field: keyof FileManagementData, value: string) => {
     onChange({ ...data, [field]: value });
@@ -68,6 +95,35 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({ data, onC
     }
   };
 
+  const handleAddPart = () => {
+    if (newPartName.trim()) {
+      onAddPart(newPartName.trim());
+      setNewPartName('');
+      setShowAddPartDialog(false);
+    }
+  };
+
+  const handleEditPart = (partId: string, currentName: string) => {
+    setEditingPart(partId);
+    setEditPartName(currentName);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingPart && editPartName.trim()) {
+      onRenamePart(editingPart, editPartName.trim());
+      setEditingPart(null);
+      setEditPartName('');
+    }
+  };
+
+  const handlePartTypeChange = (value: 'static' | 'customisable') => {
+    updateData('partType', value);
+    const mappedType = value === 'static' ? 'static' : 'personalized';
+    onPartTypeChange(activePart, mappedType);
+  };
+
+  const currentPart = designParts.find(part => part.id === activePart);
+
   return (
     <Card>
       <CardHeader>
@@ -77,38 +133,117 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({ data, onC
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* First Row: Select Part and Part Type */}
+        {/* First Row: Select Part with Controls and Part Type */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Select Part</Label>
-            <Select value={data.selectedPart} onValueChange={(value) => updateData('selectedPart', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select part" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="main">Main Part</SelectItem>
-                <SelectItem value="support">Support Part</SelectItem>
-                <SelectItem value="base">Base Part</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={activePart} onValueChange={onPartChange}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select part" />
+                </SelectTrigger>
+                <SelectContent>
+                  {designParts.map((part) => (
+                    <SelectItem key={part.id} value={part.id}>
+                      {part.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {/* Part Management Controls */}
+              <div className="flex gap-1">
+                <Dialog open={showAddPartDialog} onOpenChange={setShowAddPartDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-10 w-10 p-0">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Part</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Part Name</Label>
+                        <Input
+                          placeholder="Enter part name"
+                          value={newPartName}
+                          onChange={(e) => setNewPartName(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddPartDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddPart} disabled={!newPartName.trim()}>
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={editingPart !== null} onOpenChange={(open) => !open && setEditingPart(null)}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-10 w-10 p-0"
+                      onClick={() => currentPart && handleEditPart(currentPart.id, currentPart.name)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Part Name</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Part Name</Label>
+                        <Input
+                          placeholder="Enter part name"
+                          value={editPartName}
+                          onChange={(e) => setEditPartName(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setEditingPart(null)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveEdit} disabled={!editPartName.trim()}>
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-10 w-10 p-0"
+                  onClick={() => onRemovePart(activePart)}
+                  disabled={designParts.length <= 1}
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label>Part Type</Label>
-            <RadioGroup
-              value={data.partType}
-              onValueChange={(value: 'static' | 'customisable') => updateData('partType', value)}
-              className="flex gap-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="static" id="static" />
-                <Label htmlFor="static">Static</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="customisable" id="customisable" />
-                <Label htmlFor="customisable">Customisable</Label>
-              </div>
-            </RadioGroup>
+            <Select value={data.partType} onValueChange={handlePartTypeChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select part type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="static">Static</SelectItem>
+                <SelectItem value="customisable">Customisable</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -147,46 +282,46 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({ data, onC
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Color</Label>
-            <div className="flex gap-2">
-              <Select value={data.partColor} onValueChange={(value) => updateData('partColor', value)}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select color" />
-                </SelectTrigger>
-                <SelectContent>
-                  {colorPresets.map((color) => (
-                    <SelectItem key={color} value={color.toLowerCase()}>{color}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Custom color"
-                value={data.partColor}
-                onChange={(e) => updateData('partColor', e.target.value)}
-                className="flex-1"
-              />
-            </div>
+            <Select value={data.partColor} onValueChange={(value) => updateData('partColor', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select or enter color" />
+              </SelectTrigger>
+              <SelectContent>
+                {colorPresets.map((color) => (
+                  <SelectItem key={color} value={color.toLowerCase()}>{color}</SelectItem>
+                ))}
+                <SelectItem value="__custom__">
+                  <Input
+                    placeholder="Enter custom color"
+                    value={data.partColor}
+                    onChange={(e) => updateData('partColor', e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label>Machine Type</Label>
-            <div className="flex gap-2">
-              <Select value={data.machineType} onValueChange={(value) => updateData('machineType', value)}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select machine" />
-                </SelectTrigger>
-                <SelectContent>
-                  {machinePresets.map((machine) => (
-                    <SelectItem key={machine} value={machine}>{machine}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Custom machine"
-                value={data.machineType}
-                onChange={(e) => updateData('machineType', e.target.value)}
-                className="flex-1"
-              />
-            </div>
+            <Select value={data.machineType} onValueChange={(value) => updateData('machineType', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select or enter machine" />
+              </SelectTrigger>
+              <SelectContent>
+                {machinePresets.map((machine) => (
+                  <SelectItem key={machine} value={machine}>{machine}</SelectItem>
+                ))}
+                <SelectItem value="__custom__">
+                  <Input
+                    placeholder="Enter custom machine"
+                    value={data.machineType}
+                    onChange={(e) => updateData('machineType', e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -334,24 +469,24 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({ data, onC
 
           <div className="space-y-2">
             <Label>Filament Type</Label>
-            <div className="flex gap-2">
-              <Select value={data.filamentType} onValueChange={(value) => updateData('filamentType', value)}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select filament" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filamentPresets.map((filament) => (
-                    <SelectItem key={filament} value={filament}>{filament}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Custom filament"
-                value={data.filamentType}
-                onChange={(e) => updateData('filamentType', e.target.value)}
-                className="flex-1"
-              />
-            </div>
+            <Select value={data.filamentType} onValueChange={(value) => updateData('filamentType', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select or enter filament" />
+              </SelectTrigger>
+              <SelectContent>
+                {filamentPresets.map((filament) => (
+                  <SelectItem key={filament} value={filament}>{filament}</SelectItem>
+                ))}
+                <SelectItem value="__custom__">
+                  <Input
+                    placeholder="Enter custom filament"
+                    value={data.filamentType}
+                    onChange={(e) => updateData('filamentType', e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </CardContent>
