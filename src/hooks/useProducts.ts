@@ -62,7 +62,13 @@ export const useProducts = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Check for duplicate identifier error
+        if (error.code === '23505' && error.message.includes('products3_identifier_value_key')) {
+          throw new Error(`Die ${productData.identifier_type === 'ean' ? 'EAN-Nummer' : 'SKU'} "${productData.identifier_value}" ist bereits vergeben. Bitte verwenden Sie eine andere Nummer.`);
+        }
+        throw error;
+      }
 
       setProducts(prev => [data, ...prev]);
       return data;
