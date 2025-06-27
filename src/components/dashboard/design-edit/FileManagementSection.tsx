@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -269,8 +270,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Color, Machine Type, and Filament Type with Preset Management */}
-        <div className="grid grid-cols-3 gap-4">
+        {/* Color and Machine Type with Preset Management */}
+        <div className="grid grid-cols-2 gap-4">
           <PresetSelector
             label="Color"
             value={data.partColor}
@@ -309,26 +310,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
             onSaveEdit={presetManager.saveEdit}
             onCancelEdit={presetManager.cancelEdit}
             placeholder="Select machine"
-          />
-
-          <PresetSelector
-            label="Filament Type"
-            value={data.filamentType}
-            onChange={(value) => updateData('filamentType', value)}
-            presets={presetManager.presets.filamentTypes}
-            onAddPreset={() => presetManager.openAddDialog('filamentTypes')}
-            onEditPreset={(index, currentValue) => presetManager.startEditing('filamentTypes', index, currentValue)}
-            onRemovePreset={(index) => presetManager.removePreset('filamentTypes', index)}
-            showAddDialog={presetManager.showAddDialog.isOpen && presetManager.showAddDialog.type === 'filamentTypes'}
-            onCloseAddDialog={presetManager.closeAddDialog}
-            newPresetValue={presetManager.newPresetValue}
-            onNewPresetValueChange={presetManager.setNewPresetValue}
-            onSaveNewPreset={presetManager.handleAddPreset}
-            editingPreset={presetManager.editingPreset?.type === 'filamentTypes' ? { index: presetManager.editingPreset.index, value: presetManager.editingPreset.value } : null}
-            onEditValueChange={(value) => presetManager.setEditingPreset(prev => prev ? { ...prev, value } : null)}
-            onSaveEdit={presetManager.saveEdit}
-            onCancelEdit={presetManager.cancelEdit}
-            placeholder="Select filament"
           />
         </div>
 
@@ -459,8 +440,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Nozzle Diameter (always visible) */}
-        <div className="grid grid-cols-1 gap-4">
+        {/* Nozzle Diameter and Filament Type (always visible) */}
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nozzle Diameter (mm)</Label>
             <Input
@@ -472,6 +453,27 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               value={data.nozzleDiameter}
               onChange={(e) => updateData('nozzleDiameter', e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Filament Type</Label>
+            <Select value={data.filamentType} onValueChange={(value) => updateData('filamentType', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select filament type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PLA">PLA</SelectItem>
+                <SelectItem value="ABS">ABS</SelectItem>
+                <SelectItem value="PETG">PETG</SelectItem>
+                <SelectItem value="TPU">TPU</SelectItem>
+                <SelectItem value="WOOD">Wood Fill</SelectItem>
+                <SelectItem value="METAL">Metal Fill</SelectItem>
+                <SelectItem value="CARBON">Carbon Fiber</SelectItem>
+                <SelectItem value="NYLON">Nylon</SelectItem>
+                <SelectItem value="PC">Polycarbonate</SelectItem>
+                <SelectItem value="ASA">ASA</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </CardContent>

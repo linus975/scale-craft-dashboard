@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -29,6 +28,20 @@ interface FormData {
   description: string;
   category: string;
   color: string;
+}
+
+interface DesignFormData {
+  name: string;
+  trackingType: string;
+  eanNumber: string;
+  description: string;
+  category: string;
+  color: string;
+  machine: string;
+  cadSoftware: string;
+  slicer: string;
+  nozzleDiameter: string;
+  material: string;
 }
 
 interface FileManagementData {
@@ -65,14 +78,19 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     filamentType: ''
   });
 
-  const form = useForm<FormData>({
+  const form = useForm<DesignFormData>({
     defaultValues: {
       name: '',
       trackingType: '',
       eanNumber: '',
       description: '',
       category: '',
-      color: ''
+      color: '',
+      machine: '',
+      cadSoftware: '',
+      slicer: '',
+      nozzleDiameter: '',
+      material: ''
     }
   });
 
@@ -92,7 +110,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     };
   }, []);
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
     
     console.log('🚀 Starting optimized product save process...', data);
