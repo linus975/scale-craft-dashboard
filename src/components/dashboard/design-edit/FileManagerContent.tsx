@@ -15,14 +15,14 @@ interface UploadedFile {
   path: string;
   originalName?: string;
   partId?: string;
-  designType?: 'static' | 'customisable';
+  designType?: 'static' | 'personalized';
 }
 
 interface DesignPart {
   id: string;
   name: string;
   files: UploadedFile[];
-  partType?: 'static' | 'customisable';
+  partType?: 'static' | 'personalized';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -73,7 +73,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   designParts = [],
   activePart
 }) => {
-  const handleFileTypeChange = (fileId: string, designType: 'static' | 'customisable') => {
+  const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalized') => {
     console.log(`Changing file ${fileId} to ${designType}`);
   };
 
@@ -108,8 +108,8 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         currentPart={currentPart}
       />
 
-      {/* Parameter Config nur für customisable parts */}
-      {currentPart.partType === 'customisable' && (
+      {/* Parameter Config nur für personalized parts */}
+      {currentPart.partType === 'personalized' && (
         <ParameterConfig
           currentPart={currentPart}
           hasPersonalizedFiles={validation.hasPersonalizedFiles}

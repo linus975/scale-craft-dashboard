@@ -9,7 +9,7 @@ interface DesignPart {
   id: string;
   name: string;
   files: any[];
-  partType?: 'static' | 'customisable';
+  partType?: 'static' | 'personalized';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -25,7 +25,7 @@ interface PartSelectorProps {
   onAddPart: (name: string) => void;
   onRemovePart: (partId: string) => void;
   onRenamePart: (partId: string, newName: string) => void;
-  onPartTypeChange: (partId: string, partType: 'static' | 'customisable') => void;
+  onPartTypeChange: (partId: string, partType: 'static' | 'personalized') => void;
   onPartSoftwareChange: (partId: string, field: 'cadSoftware' | 'slicer', value: string) => void;
   validatePartFiles: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };
 }
@@ -99,8 +99,8 @@ const PartSelector: React.FC<PartSelectorProps> = ({
         />
       </div>
 
-      {/* Software Selection nur für customisable parts */}
-      {currentPart?.partType === 'customisable' && (
+      {/* Software Selection nur für personalized parts */}
+      {currentPart?.partType === 'personalized' && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <SoftwareSelectors
