@@ -15,14 +15,14 @@ interface UploadedFile {
   path: string;
   originalName?: string;
   partId?: string;
-  designType?: 'static' | 'customisable';
+  designType?: 'static' | 'personalizable';
 }
 
 interface DesignPart {
   id: string;
   name: string;
   files: UploadedFile[];
-  partType?: 'static' | 'customisable';
+  partType?: 'static' | 'personalizable';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -73,7 +73,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   designParts = [],
   activePart
 }) => {
-  const handleFileTypeChange = (fileId: string, designType: 'static' | 'customisable') => {
+  const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalizable') => {
     console.log(`Changing file ${fileId} to ${designType}`);
   };
 
@@ -97,7 +97,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
       <FileUpload
         partName={currentPart.name}
         partId={currentPart.id}
-        partType={currentPart.partType === 'customisable' ? 'personalized' : 'static'}
+        partType={currentPart.partType === 'personalizable' ? 'personalized' : 'static'}
         uploading={uploading}
         onFileUpload={onFileUpload}
         uploadedFiles={uploadedFiles.filter(file => file.partId === currentPart.id)}
@@ -108,8 +108,8 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         currentPart={currentPart}
       />
 
-      {/* Parameter Config for customisable parts with part-specific values */}
-      {currentPart.partType === 'customisable' && (
+      {/* Parameter Config for personalizable parts with part-specific values */}
+      {currentPart.partType === 'personalizable' && (
         <ParameterConfig
           currentPart={currentPart}
           hasPersonalizedFiles={validation.hasPersonalizedFiles}
@@ -125,8 +125,8 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
           onFileRemove={onFileRemove}
           onFileDownload={onFileDownload}
           onFileTypeChange={(fileId: string, designType: 'static' | 'personalized') => {
-            // Map 'personalized' to 'customisable' for consistency
-            const mappedType = designType === 'personalized' ? 'customisable' : 'static';
+            // Map 'personalized' to 'personalizable' for consistency
+            const mappedType = designType === 'personalized' ? 'personalizable' : 'static';
             handleFileTypeChange(fileId, mappedType);
           }}
         />

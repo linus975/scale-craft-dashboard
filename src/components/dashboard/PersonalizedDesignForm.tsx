@@ -9,7 +9,7 @@ import { usePartSpecificFileUpload } from '@/hooks/usePartSpecificFileUpload';
 import { useDesignToProduct } from '@/hooks/useDesignToProduct';
 import { useMachines } from '@/hooks/useMachines';
 import DesignInformationSection from './design-edit/DesignInformationSection';
-import FileManagementSection from './design-edit/FileManagementSection';
+import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import PreviewImageUpload from './design-edit/MultiImageUpload';
 
 interface PersonalizedDesignFormData {
@@ -31,7 +31,7 @@ interface PersonalizedDesignFormData {
 interface ImageFile {
   file: File;
   id: string;
-  preview?: string;
+  preview: string;
 }
 
 const PersonalizedDesignForm: React.FC = () => {
@@ -203,13 +203,16 @@ const PersonalizedDesignForm: React.FC = () => {
               onImageUpload={handleImageUpload}
             />
 
-            <FileManagementSection
-              designParts={designParts}
-              activePart={activePart}
+            <MultiPartFileManager
+              uploadedFiles={getAllFiles()}
               loadingFiles={false}
               uploading={uploading}
-              machines={machines}
-              onPartSelect={handlePartSelect}
+              onFileUpload={handleFileUpload}
+              onFileRemove={handleFileRemove}
+              onFileDownload={handleFileDownload}
+              designParts={designParts}
+              activePart={activePart}
+              onPartChange={handlePartSelect}
               onAddPart={handleAddPart}
               onRemovePart={handleRemovePart}
               onRenamePart={handleRenamePart}
@@ -217,12 +220,10 @@ const PersonalizedDesignForm: React.FC = () => {
               onPartSoftwareChange={handlePartSoftwareChange}
               onPartSpecificationChange={handlePartSpecificationChange}
               onPartParametersChange={handlePartParametersChange}
-              onFileUpload={handleFileUpload}
-              onFileRemove={handleFileRemove}
-              onFileDownload={handleFileDownload}
+              machines={machines}
+              gcodeFiles={gcodeFiles}
               onGcodeFileChange={handleGcodeFileChange}
               onRemoveGcodeFile={removeGcodeFile}
-              getFilesForPart={getFilesForPart}
               getGcodeFileForPart={getGcodeFileForPart}
             />
 
