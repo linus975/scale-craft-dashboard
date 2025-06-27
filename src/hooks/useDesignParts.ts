@@ -5,7 +5,7 @@ interface DesignPart {
   id: string;
   name: string;
   files: any[];
-  partType?: 'static' | 'personalized';
+  partType?: 'static' | 'customisable';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -95,7 +95,7 @@ export const useDesignParts = () => {
     ));
   };
 
-  const handlePartTypeChange = (partId: string, partType: 'static' | 'personalized') => {
+  const handlePartTypeChange = (partId: string, partType: 'static' | 'customisable') => {
     setDesignParts(prev => prev.map(part =>
       part.id === partId ? { ...part, partType } : part
     ));
