@@ -76,7 +76,7 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
         />
       </div>
 
-      {/* Nozzle Diameter and Filament Type */}
+      {/* Nozzle Diameter and Filament Type below uploads */}
       <div className="grid grid-cols-2 gap-4">
         <NozzleDiameterInput
           id={`nozzle-${partId}`}

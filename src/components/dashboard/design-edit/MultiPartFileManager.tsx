@@ -1,6 +1,5 @@
-
 import React from 'react';
-import PartSelector from './PartSelector';
+import PartManagementHeader from './PartManagementHeader';
 import FileManagerContent from './FileManagerContent';
 import { useMultiPartManager } from '@/hooks/useMultiPartManager';
 import { organizeFilesByParts, validatePartFiles } from '@/utils/fileOrganization';
@@ -122,7 +121,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
 
   return (
     <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-      <PartSelector
+      <PartManagementHeader
         designParts={designParts}
         activePart={activePart}
         onPartChange={(value) => handlePartChange(value, externalOnPartChange)}
@@ -130,7 +129,6 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         onRemovePart={(partId) => removePart(partId, externalOnRemovePart)}
         onRenamePart={(partId, newName) => renamePart(partId, newName, externalOnRenamePart)}
         onPartTypeChange={(partId, partType) => handlePartTypeChange(partId, partType, externalOnPartTypeChange)}
-        onPartSoftwareChange={(partId, field, value) => handlePartSoftwareChange(partId, field, value, externalOnPartSoftwareChange)}
         validatePartFiles={externalValidatePartFiles || validatePartFiles}
       />
 
