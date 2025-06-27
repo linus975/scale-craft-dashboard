@@ -12,7 +12,7 @@ interface DesignPart {
   id: string;
   name: string;
   files: any[];
-  partType?: 'static' | 'personalized';
+  partType?: 'static' | 'customisable';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -28,7 +28,7 @@ interface PartManagementHeaderProps {
   onAddPart: (name: string) => void;
   onRemovePart: (partId: string) => void;
   onRenamePart: (partId: string, newName: string) => void;
-  onPartTypeChange: (partId: string, partType: 'static' | 'personalized') => void;
+  onPartTypeChange: (partId: string, partType: 'static' | 'customisable') => void;
   validatePartFiles: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };
 }
 

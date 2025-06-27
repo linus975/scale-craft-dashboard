@@ -5,7 +5,7 @@ interface DesignPart {
   id: string;
   name: string;
   files: any[];
-  partType?: 'static' | 'personalized';
+  partType?: 'static' | 'customisable';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -94,7 +94,7 @@ export const useMultiPartManager = ({
     }
   };
 
-  const handlePartTypeChange = (partId: string, partType: 'static' | 'personalized', externalOnPartTypeChange?: (partId: string, partType: 'static' | 'personalized') => void) => {
+  const handlePartTypeChange = (partId: string, partType: 'static' | 'customisable', externalOnPartTypeChange?: (partId: string, partType: 'static' | 'customisable') => void) => {
     if (externalOnPartTypeChange) {
       externalOnPartTypeChange(partId, partType);
     } else {
