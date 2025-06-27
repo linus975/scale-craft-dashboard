@@ -20,7 +20,6 @@ interface FormData {
   description: string;
   category: string;
   color: string;
-  machine: string;
 }
 
 interface ImageFile {
