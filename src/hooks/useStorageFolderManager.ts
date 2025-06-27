@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +19,26 @@ export const useStorageFolderManager = () => {
 
       console.log('🔍 [StorageFolderManager] Checking storage structure for user:', user.id);
 
+      // Check if design-files bucket exists
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      if (bucketsError) {
+        console.error('❌ [StorageFolderManager] Error listing buckets:', bucketsError);
+        return;
+      }
+
+      const designFilesBucket = buckets?.find(bucket => bucket.id === 'design-files');
+      if (!designFilesBucket) {
+        console.error('❌ [StorageFolderManager] design-files bucket not found');
+        toast({
+          title: "Storage-Fehler",
+          description: "Der design-files Bucket wurde nicht gefunden.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('✅ [StorageFolderManager] design-files bucket exists:', designFilesBucket.name);
+
       // Check main user folder
       const { data: userFiles, error: userError } = await supabase.storage
         .from('design-files')
@@ -37,7 +58,7 @@ export const useStorageFolderManager = () => {
 
       if (tempPartsError) {
         console.error('❌ [StorageFolderManager] Error checking temp-parts folder:', tempPartsError);
-        console.log('🔧 [StorageFolderManager] temp-parts folder might not exist yet');
+        console.log('🔧 [StorageFolderManager] temp-parts folder might not exist yet, will be created on first upload');
       } else {
         console.log('📂 [StorageFolderManager] temp-parts folder contents:', tempPartsFiles?.map(f => f.name) || []);
         setFolders(tempPartsFiles?.map(f => f.name) || []);
@@ -66,6 +87,9 @@ export const useStorageFolderManager = () => {
 
       const folderPath = `${user.id}/temp-parts/${partName}`;
       
+      console.log(`🔧 [StorageFolderManager] Ensuring temp-parts folder exists for part: ${partName}`);
+      console.log(`📂 [StorageFolderManager] Folder path: ${folderPath}`);
+      
       // Try to create a placeholder file to ensure folder exists
       const placeholderContent = new Blob(['# Placeholder file to create folder structure'], { type: 'text/plain' });
       
@@ -82,6 +106,7 @@ export const useStorageFolderManager = () => {
       }
 
       console.log(`✅ [StorageFolderManager] Ensured temp-parts folder exists for part: ${partName}`);
+      console.log('📁 [StorageFolderManager] Upload result:', data);
       return true;
     } catch (error) {
       console.error('❌ [StorageFolderManager] Error ensuring temp-parts folder:', error);
@@ -123,11 +148,43 @@ export const useStorageFolderManager = () => {
     }
   };
 
+  const testStorageAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('❌ [StorageFolderManager] User not authenticated for test');
+        return false;
+      }
+
+      // Test if we can list the root of design-files bucket
+      const { data, error } = await supabase.storage
+        .from('design-files')
+        .list('', { limit: 1 });
+
+      if (error) {
+        console.error('❌ [StorageFolderManager] Storage access test failed:', error);
+        toast({
+          title: "Storage-Zugriff fehlgeschlagen",
+          description: `Kann nicht auf design-files bucket zugreifen: ${error.message}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log('✅ [StorageFolderManager] Storage access test successful');
+      return true;
+    } catch (error) {
+      console.error('❌ [StorageFolderManager] Storage test error:', error);
+      return false;
+    }
+  };
+
   return {
     folders,
     loading,
     checkStorageStructure,
     ensureTempPartsFolder,
-    cleanupEmptyFolders
+    cleanupEmptyFolders,
+    testStorageAccess
   };
 };

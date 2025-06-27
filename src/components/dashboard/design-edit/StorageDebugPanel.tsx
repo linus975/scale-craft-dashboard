@@ -3,16 +3,22 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useStorageFolderManager } from '@/hooks/useStorageFolderManager';
-import { RefreshCw, FolderOpen } from 'lucide-react';
+import { RefreshCw, FolderOpen, TestTube } from 'lucide-react';
 
 interface StorageDebugPanelProps {
   isOpen: boolean;
 }
 
 const StorageDebugPanel: React.FC<StorageDebugPanelProps> = ({ isOpen }) => {
-  const { folders, loading, checkStorageStructure, cleanupEmptyFolders } = useStorageFolderManager();
+  const { folders, loading, checkStorageStructure, cleanupEmptyFolders, testStorageAccess } = useStorageFolderManager();
 
   if (!isOpen) return null;
+
+  const handleTestStorage = async () => {
+    console.log('🧪 [StorageDebugPanel] Testing storage access...');
+    const result = await testStorageAccess();
+    console.log('🧪 [StorageDebugPanel] Storage test result:', result);
+  };
 
   return (
     <Card className="border-orange-200 bg-orange-50">
@@ -23,7 +29,16 @@ const StorageDebugPanel: React.FC<StorageDebugPanelProps> = ({ isOpen }) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleTestStorage}
+            className="text-xs"
+          >
+            <TestTube className="h-3 w-3 mr-1" />
+            Storage testen
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -55,12 +70,12 @@ const StorageDebugPanel: React.FC<StorageDebugPanelProps> = ({ isOpen }) => {
               ))}
             </ul>
           ) : (
-            <div className="text-orange-600 italic">Keine temp-parts Ordner gefunden</div>
+            <div className="text-orange-600 italic">Keine temp-parts Ordner gefunden (werden beim ersten Upload erstellt)</div>
           )}
         </div>
         
         <div className="text-xs text-orange-600 bg-orange-100 p-2 rounded">
-          <strong>Debug Info:</strong> Öffne die Browser-Konsole für detaillierte Logs zur Ordnerstruktur.
+          <strong>Debug Info:</strong> Öffne die Browser-Konsole für detaillierte Logs zur Ordnerstruktur und Storage-Zugriff.
         </div>
       </CardContent>
     </Card>
