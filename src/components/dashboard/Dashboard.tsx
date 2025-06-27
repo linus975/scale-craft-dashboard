@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -99,95 +100,95 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
-                  <Cpu className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    ScaleCraft
-                  </h1>
-                  <p className="text-xs text-slate-500">Production Dashboard</p>
-                </div>
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
+                <Cpu className="h-5 w-5 text-white" />
               </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600">
-                  <User className="h-4 w-4" />
-                  <span>{user.email}</span>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={onLogout}
-                  className="flex items-center gap-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">Sign Out</span>
-                </Button>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  ScaleCraft
+                </h1>
+                <p className="text-xs text-slate-500">Production Dashboard</p>
               </div>
             </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {showBusinessMetrics ? (
-            <BusinessMetricsPage onBack={handleBackToOverview} />
-          ) : showSystemLog ? (
-            <SystemLogPage onBack={handleBackToOverview} />
-          ) : showWhitelabelCatalog ? (
-            <WhitelabelCatalogPage onBack={handleBackToOverview} />
-          ) : showRecentOrders ? (
-            <RecentOrdersPage onBack={handleBackToOverview} />
-          ) : showAllOrders ? (
-            <AllOrdersPage onBack={handleBackToOverview} />
-          ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              {/* Desktop Navigation */}
-              <TabsList className="hidden lg:grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 mb-8">
-                {tabItems.map((item) => (
-                  <TabsTrigger key={item.value} value={item.value} className="flex items-center gap-2">
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {/* Mobile Navigation Dropdown */}
-              <div className="lg:hidden mb-8">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
-                      <div className="flex items-center gap-2">
-                        {currentTabItem && (
-                          <currentTabItem.icon className="h-4 w-4" />
-                        )}
-                        {currentTabItem?.label}
-                      </div>
-                      <Menu className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-full bg-white border border-slate-200 shadow-md">
-                    {tabItems.map((item) => (
-                      <DropdownMenuItem 
-                        key={item.value} 
-                        onClick={() => setActiveTab(item.value)}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {item.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+            
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600">
+                <User className="h-4 w-4" />
+                <span>{user.email}</span>
               </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
 
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {showBusinessMetrics ? (
+          <BusinessMetricsPage onBack={handleBackToOverview} />
+        ) : showSystemLog ? (
+          <SystemLogPage onBack={handleBackToOverview} />
+        ) : showWhitelabelCatalog ? (
+          <WhitelabelCatalogPage onBack={handleBackToOverview} />
+        ) : showRecentOrders ? (
+          <RecentOrdersPage onBack={handleBackToOverview} />
+        ) : showAllOrders ? (
+          <AllOrdersPage onBack={handleBackToOverview} />
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            {/* Desktop Navigation */}
+            <TabsList className="hidden lg:grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 mt-6">
+              {tabItems.map((item) => (
+                <TabsTrigger key={item.value} value={item.value} className="flex items-center gap-2">
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {/* Mobile Navigation Dropdown */}
+            <div className="lg:hidden mt-6">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <div className="flex items-center gap-2">
+                      {currentTabItem && (
+                        <currentTabItem.icon className="h-4 w-4" />
+                      )}
+                      {currentTabItem?.label}
+                    </div>
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-full bg-white border border-slate-200 shadow-md">
+                  {tabItems.map((item) => (
+                    <DropdownMenuItem 
+                      key={item.value} 
+                      onClick={() => setActiveTab(item.value)}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="mt-8">
               <TabsContent value="overview">
                 <OverviewTab 
                   onNavigateToBusinessMetrics={handleBusinessMetricsNavigation}
@@ -219,10 +220,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               <TabsContent value="knowledge">
                 <KnowledgeBaseTab />
               </TabsContent>
-            </Tabs>
-          )}
-        </main>
-      </div>
+            </div>
+          </Tabs>
+        )}
+      </main>
     </div>
   );
 };
