@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Upload, FileText, Settings2, Plus, Edit, Trash } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
 import { usePresetManager } from '@/hooks/usePresetManager';
+import PartManagementControls from './PartManagementControls';
+import PresetManagementControls from './PresetManagementControls';
+import FileUploadArea from './FileUploadArea';
+import PersonalizationFields from './PersonalizationFields';
 
 interface FileManagementData {
   selectedPart: string;
@@ -64,31 +67,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const [gcodeFile, setGcodeFile] = useState<File | null>(null);
   const [cadFile, setCadFile] = useState<File | null>(null);
   const [iniFile, setIniFile] = useState<File | null>(null);
-  const [showAddPartDialog, setShowAddPartDialog] = useState(false);
-  const [newPartName, setNewPartName] = useState('');
-  const [editingPart, setEditingPart] = useState<string | null>(null);
-  const [editPartName, setEditPartName] = useState('');
-
-  // Color preset states
-  const [showAddColorDialog, setShowAddColorDialog] = useState(false);
-  const [showEditColorDialog, setShowEditColorDialog] = useState(false);
-  const [newColorName, setNewColorName] = useState('');
-  const [editColorName, setEditColorName] = useState('');
-  const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
-
-  // Machine preset states
-  const [showAddMachineDialog, setShowAddMachineDialog] = useState(false);
-  const [showEditMachineDialog, setShowEditMachineDialog] = useState(false);
-  const [newMachineName, setNewMachineName] = useState('');
-  const [editMachineName, setEditMachineName] = useState('');
-  const [editingMachineIndex, setEditingMachineIndex] = useState<number | null>(null);
-
-  // Filament preset states
-  const [showAddFilamentDialog, setShowAddFilamentDialog] = useState(false);
-  const [showEditFilamentDialog, setShowEditFilamentDialog] = useState(false);
-  const [newFilamentName, setNewFilamentName] = useState('');
-  const [editFilamentName, setEditFilamentName] = useState('');
-  const [editingFilamentIndex, setEditingFilamentIndex] = useState<number | null>(null);
 
   const presetManager = usePresetManager();
 
@@ -99,7 +77,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   // Get current part data
   const currentPart = designParts.find(part => part.id === activePart);
 
-  // Update data when part changes - use part-specific values INCLUDING sketch name and replacement type
+  // Update data when part changes - use part-specific values
   useEffect(() => {
     if (currentPart) {
       onChange({
@@ -112,7 +90,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
         machineType: currentPart.machine || '',
         nozzleDiameter: currentPart.nozzleDiameter || '',
         filamentType: currentPart.filamentType || '',
-        // Part-specific sketch name and replacement type
         sketchName: currentPart.parameters?.sketchName || '',
         replacementType: (currentPart.parameters?.replacementType as 'text' | 'dimension') || 'text'
       });
@@ -140,176 +117,9 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     }
   };
 
-  const handleAddPart = () => {
-    if (newPartName.trim()) {
-      onAddPart(newPartName.trim());
-      setNewPartName('');
-      setShowAddPartDialog(false);
-    }
-  };
-
-  const handleEditPart = (partId: string, currentName: string) => {
-    setEditingPart(partId);
-    setEditPartName(currentName);
-  };
-
-  const handleSaveEdit = () => {
-    if (editingPart && editPartName.trim()) {
-      onRenamePart(editingPart, editPartName.trim());
-      setEditingPart(null);
-      setEditPartName('');
-    }
-  };
-
   const handlePartTypeChange = (value: 'static' | 'personalizable') => {
     updateData('partType', value);
     onPartTypeChange(activePart, value);
-  };
-
-  // Sketch Name Handler - part specific
-  const handleSketchNameChange = (value: string) => {
-    updateData('sketchName', value);
-  };
-
-  // Replacement Type Handler - part specific
-  const handleReplacementTypeChange = (value: 'text' | 'dimension') => {
-    updateData('replacementType', value);
-  };
-
-  // Updated handlers to save part-specific data
-  const handleColorChange = (value: string) => {
-    updateData('partColor', value);
-  };
-
-  const handleMachineChange = (value: string) => {
-    updateData('machineType', value);
-  };
-
-  const handleNozzleChange = (value: string) => {
-    updateData('nozzleDiameter', value);
-  };
-
-  const handleFilamentChange = (value: string) => {
-    updateData('filamentType', value);
-  };
-
-  const handleCADSoftwareChange = (value: string) => {
-    updateData('cadSoftware', value);
-  };
-
-  const handleSlicerChange = (value: string) => {
-    updateData('slicerSoftware', value);
-  };
-
-  // Color preset management handlers
-  const handleAddColor = () => {
-    if (newColorName.trim()) {
-      presetManager.addPreset('colors', newColorName.trim());
-      updateData('partColor', newColorName.trim());
-      setNewColorName('');
-      setShowAddColorDialog(false);
-    }
-  };
-
-  const handleEditColor = (index: number, currentValue: string) => {
-    setEditingColorIndex(index);
-    setEditColorName(currentValue);
-    setShowEditColorDialog(true);
-  };
-
-  const handleSaveColorEdit = () => {
-    if (editingColorIndex !== null && editColorName.trim()) {
-      const oldValue = presetManager.presets.colors[editingColorIndex];
-      presetManager.updatePreset('colors', editingColorIndex, editColorName.trim());
-      if (data.partColor === oldValue) {
-        updateData('partColor', editColorName.trim());
-      }
-      setEditingColorIndex(null);
-      setEditColorName('');
-      setShowEditColorDialog(false);
-    }
-  };
-
-  const handleDeleteColor = (index: number) => {
-    const deletedValue = presetManager.presets.colors[index];
-    presetManager.removePreset('colors', index);
-    if (data.partColor === deletedValue) {
-      updateData('partColor', '');
-    }
-  };
-
-  // Machine preset management handlers
-  const handleAddMachine = () => {
-    if (newMachineName.trim()) {
-      presetManager.addPreset('machineTypes', newMachineName.trim());
-      updateData('machineType', newMachineName.trim());
-      setNewMachineName('');
-      setShowAddMachineDialog(false);
-    }
-  };
-
-  const handleEditMachine = (index: number, currentValue: string) => {
-    setEditingMachineIndex(index);
-    setEditMachineName(currentValue);
-    setShowEditMachineDialog(true);
-  };
-
-  const handleSaveMachineEdit = () => {
-    if (editingMachineIndex !== null && editMachineName.trim()) {
-      const oldValue = presetManager.presets.machineTypes[editingMachineIndex];
-      presetManager.updatePreset('machineTypes', editingMachineIndex, editMachineName.trim());
-      if (data.machineType === oldValue) {
-        updateData('machineType', editMachineName.trim());
-      }
-      setEditingMachineIndex(null);
-      setEditMachineName('');
-      setShowEditMachineDialog(false);
-    }
-  };
-
-  const handleDeleteMachine = (index: number) => {
-    const deletedValue = presetManager.presets.machineTypes[index];
-    presetManager.removePreset('machineTypes', index);
-    if (data.machineType === deletedValue) {
-      updateData('machineType', '');
-    }
-  };
-
-  // Filament preset management handlers
-  const handleAddFilament = () => {
-    if (newFilamentName.trim()) {
-      presetManager.addPreset('filamentTypes', newFilamentName.trim());
-      updateData('filamentType', newFilamentName.trim());
-      setNewFilamentName('');
-      setShowAddFilamentDialog(false);
-    }
-  };
-
-  const handleEditFilament = (index: number, currentValue: string) => {
-    setEditingFilamentIndex(index);
-    setEditFilamentName(currentValue);
-    setShowEditFilamentDialog(true);
-  };
-
-  const handleSaveFilamentEdit = () => {
-    if (editingFilamentIndex !== null && editFilamentName.trim()) {
-      const oldValue = presetManager.presets.filamentTypes[editingFilamentIndex];
-      presetManager.updatePreset('filamentTypes', editingFilamentIndex, editFilamentName.trim());
-      if (data.filamentType === oldValue) {
-        updateData('filamentType', editFilamentName.trim());
-      }
-      setEditingFilamentIndex(null);
-      setEditFilamentName('');
-      setShowEditFilamentDialog(false);
-    }
-  };
-
-  const handleDeleteFilament = (index: number) => {
-    const deletedValue = presetManager.presets.filamentTypes[index];
-    presetManager.removePreset('filamentTypes', index);
-    if (data.filamentType === deletedValue) {
-      updateData('filamentType', '');
-    }
   };
 
   return (
@@ -339,85 +149,13 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 </SelectContent>
               </Select>
               
-              {/* Part Management Controls */}
-              <div className="flex gap-1">
-                <Dialog open={showAddPartDialog} onOpenChange={setShowAddPartDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-10 w-10 p-0">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Part</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Part Name</Label>
-                        <Input
-                          placeholder="Enter part name"
-                          value={newPartName}
-                          onChange={(e) => setNewPartName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddPartDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleAddPart} disabled={!newPartName.trim()}>
-                          Add
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Dialog open={editingPart !== null} onOpenChange={(open) => !open && setEditingPart(null)}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-10 w-10 p-0"
-                      onClick={() => currentPart && handleEditPart(currentPart.id, currentPart.name)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit Part Name</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Part Name</Label>
-                        <Input
-                          placeholder="Enter part name"
-                          value={editPartName}
-                          onChange={(e) => setEditPartName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setEditingPart(null)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleSaveEdit} disabled={!editPartName.trim()}>
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-10 w-10 p-0"
-                  onClick={() => onRemovePart(activePart)}
-                  disabled={designParts.length <= 1}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
+              <PartManagementControls
+                onAddPart={onAddPart}
+                onEditPart={onRenamePart}
+                onRemovePart={onRemovePart}
+                currentPart={currentPart ? { id: currentPart.id, name: currentPart.name } : null}
+                canRemove={designParts.length > 1}
+              />
             </div>
           </div>
 
@@ -440,7 +178,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>CAD Software</Label>
-              <Select value={currentPart?.cadSoftware || ''} onValueChange={handleCADSoftwareChange}>
+              <Select value={currentPart?.cadSoftware || ''} onValueChange={(value) => updateData('cadSoftware', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select CAD software" />
                 </SelectTrigger>
@@ -452,7 +190,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
 
             <div className="space-y-2">
               <Label>Slicer Software</Label>
-              <Select value={currentPart?.slicer || ''} onValueChange={handleSlicerChange}>
+              <Select value={currentPart?.slicer || ''} onValueChange={(value) => updateData('slicerSoftware', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select slicer" />
                 </SelectTrigger>
@@ -466,12 +204,12 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Color and Machine Type Row - using part-specific values */}
+        {/* Color and Machine Type Row */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Color</Label>
             <div className="flex gap-2">
-              <Select value={currentPart?.color || ''} onValueChange={handleColorChange}>
+              <Select value={currentPart?.color || ''} onValueChange={(value) => updateData('partColor', value)}>
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Select color" />
                 </SelectTrigger>
@@ -484,103 +222,22 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 </SelectContent>
               </Select>
               
-              {/* Color Management Controls */}
-              <div className="flex gap-1">
-                <Dialog open={showAddColorDialog} onOpenChange={setShowAddColorDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-10 w-10 p-0">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Color</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Color Name</Label>
-                        <Input
-                          placeholder="Enter color name"
-                          value={newColorName}
-                          onChange={(e) => setNewColorName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddColorDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleAddColor} disabled={!newColorName.trim()}>
-                          Add
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Dialog open={showEditColorDialog} onOpenChange={setShowEditColorDialog}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-10 w-10 p-0"
-                      onClick={() => {
-                        const selectedIndex = presetManager.presets.colors.findIndex(color => color === data.partColor);
-                        if (selectedIndex !== -1) {
-                          handleEditColor(selectedIndex, data.partColor);
-                        }
-                      }}
-                      disabled={!data.partColor}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit Color</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Color Name</Label>
-                        <Input
-                          placeholder="Enter color name"
-                          value={editColorName}
-                          onChange={(e) => setEditColorName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowEditColorDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleSaveColorEdit} disabled={!editColorName.trim()}>
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-10 w-10 p-0"
-                  onClick={() => {
-                    const selectedIndex = presetManager.presets.colors.findIndex(color => color === data.partColor);
-                    if (selectedIndex !== -1) {
-                      handleDeleteColor(selectedIndex);
-                    }
-                  }}
-                  disabled={!data.partColor || presetManager.presets.colors.length <= 1}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
+              <PresetManagementControls
+                presetType="color"
+                presets={presetManager.presets.colors}
+                currentValue={data.partColor}
+                onAddPreset={(value) => presetManager.addPreset('colors', value)}
+                onEditPreset={(index, value) => presetManager.updatePreset('colors', index, value)}
+                onDeletePreset={(index) => presetManager.removePreset('colors', index)}
+                onValueChange={(value) => updateData('partColor', value)}
+              />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Machine Type</Label>
             <div className="flex gap-2">
-              <Select value={currentPart?.machine || ''} onValueChange={handleMachineChange}>
+              <Select value={currentPart?.machine || ''} onValueChange={(value) => updateData('machineType', value)}>
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Select machine" />
                 </SelectTrigger>
@@ -593,228 +250,41 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 </SelectContent>
               </Select>
               
-              {/* Machine Management Controls */}
-              <div className="flex gap-1">
-                <Dialog open={showAddMachineDialog} onOpenChange={setShowAddMachineDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-10 w-10 p-0">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Machine</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Machine Name</Label>
-                        <Input
-                          placeholder="Enter machine name"
-                          value={newMachineName}
-                          onChange={(e) => setNewMachineName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddMachineDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleAddMachine} disabled={!newMachineName.trim()}>
-                          Add
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Dialog open={showEditMachineDialog} onOpenChange={setShowEditMachineDialog}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-10 w-10 p-0"
-                      onClick={() => {
-                        const selectedIndex = presetManager.presets.machineTypes.findIndex(machine => machine === data.machineType);
-                        if (selectedIndex !== -1) {
-                          handleEditMachine(selectedIndex, data.machineType);
-                        }
-                      }}
-                      disabled={!data.machineType}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit Machine</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Machine Name</Label>
-                        <Input
-                          placeholder="Enter machine name"
-                          value={editMachineName}
-                          onChange={(e) => setEditMachineName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowEditMachineDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleSaveMachineEdit} disabled={!editMachineName.trim()}>
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-10 w-10 p-0"
-                  onClick={() => {
-                    const selectedIndex = presetManager.presets.machineTypes.findIndex(machine => machine === data.machineType);
-                    if (selectedIndex !== -1) {
-                      handleDeleteMachine(selectedIndex);
-                    }
-                  }}
-                  disabled={!data.machineType || presetManager.presets.machineTypes.length <= 1}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
+              <PresetManagementControls
+                presetType="machine"
+                presets={presetManager.presets.machineTypes}
+                currentValue={data.machineType}
+                onAddPreset={(value) => presetManager.addPreset('machineTypes', value)}
+                onEditPreset={(index, value) => presetManager.updatePreset('machineTypes', index, value)}
+                onDeletePreset={(index) => presetManager.removePreset('machineTypes', index)}
+                onValueChange={(value) => updateData('machineType', value)}
+              />
             </div>
           </div>
         </div>
 
         {/* File Upload Row */}
-        {data.partType === 'static' ? (
-          // G-Code Upload for Static Parts
-          <div className="space-y-2">
-            <Label>G-Code File</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-              <div className="text-center">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="mt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById('gcode-upload')?.click()}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Upload G-Code
-                  </Button>
-                  <input
-                    id="gcode-upload"
-                    type="file"
-                    accept=".gcode,.g"
-                    onChange={handleGcodeUpload}
-                    className="hidden"
-                  />
-                </div>
-                {gcodeFile && (
-                  <p className="mt-2 text-sm text-gray-600">
-                    Selected: {gcodeFile.name}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          // CAD and INI File Upload for Personalizable Parts
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>CAD File (.f3d)</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                <div className="text-center">
-                  <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                  <div className="mt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('cad-upload')?.click()}
-                    >
-                      Upload F3D
-                    </Button>
-                    <input
-                      id="cad-upload"
-                      type="file"
-                      accept=".f3d"
-                      onChange={handleCadUpload}
-                      className="hidden"
-                    />
-                  </div>
-                  {cadFile && (
-                    <p className="mt-1 text-xs text-gray-600">
-                      {cadFile.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+        <FileUploadArea
+          partType={data.partType}
+          onGcodeUpload={handleGcodeUpload}
+          onCadUpload={handleCadUpload}
+          onIniUpload={handleIniUpload}
+          gcodeFile={gcodeFile}
+          cadFile={cadFile}
+          iniFile={iniFile}
+        />
 
-            <div className="space-y-2">
-              <Label>INI File</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                <div className="text-center">
-                  <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                  <div className="mt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('ini-upload')?.click()}
-                    >
-                      Upload INI
-                    </Button>
-                    <input
-                      id="ini-upload"
-                      type="file"
-                      accept=".ini"
-                      onChange={handleIniUpload}
-                      className="hidden"
-                    />
-                  </div>
-                  {iniFile && (
-                    <p className="mt-1 text-xs text-gray-600">
-                      {iniFile.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Sketch Name and Replacement Type (only for personalizable) - NOW PART SPECIFIC */}
+        {/* Sketch Name and Replacement Type (only for personalizable) */}
         {data.partType === 'personalizable' && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Sketch Name</Label>
-              <Input
-                placeholder="Enter sketch name"
-                value={data.sketchName}
-                onChange={(e) => handleSketchNameChange(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Replacement Type</Label>
-              <Select value={data.replacementType} onValueChange={handleReplacementTypeChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="text">Text</SelectItem>
-                  <SelectItem value="dimension">Dimension</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <PersonalizationFields
+            sketchName={data.sketchName}
+            replacementType={data.replacementType}
+            onSketchNameChange={(value) => updateData('sketchName', value)}
+            onReplacementTypeChange={(value) => updateData('replacementType', value)}
+          />
         )}
 
-        {/* Nozzle Diameter and Filament Type Row - using part-specific values */}
+        {/* Nozzle Diameter and Filament Type Row */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nozzle Diameter (mm)</Label>
@@ -825,14 +295,14 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               max="2.0"
               placeholder="0.4"
               value={currentPart?.nozzleDiameter || ''}
-              onChange={(e) => handleNozzleChange(e.target.value)}
+              onChange={(e) => updateData('nozzleDiameter', e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
             <Label>Filament Type</Label>
             <div className="flex gap-2">
-              <Select value={currentPart?.filamentType || ''} onValueChange={handleFilamentChange}>
+              <Select value={currentPart?.filamentType || ''} onValueChange={(value) => updateData('filamentType', value)}>
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Select filament" />
                 </SelectTrigger>
@@ -845,96 +315,15 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 </SelectContent>
               </Select>
               
-              {/* Filament Management Controls */}
-              <div className="flex gap-1">
-                <Dialog open={showAddFilamentDialog} onOpenChange={setShowAddFilamentDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-10 w-10 p-0">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Filament</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Filament Name</Label>
-                        <Input
-                          placeholder="Enter filament name"
-                          value={newFilamentName}
-                          onChange={(e) => setNewFilamentName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddFilamentDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleAddFilament} disabled={!newFilamentName.trim()}>
-                          Add
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Dialog open={showEditFilamentDialog} onOpenChange={setShowEditFilamentDialog}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-10 w-10 p-0"
-                      onClick={() => {
-                        const selectedIndex = presetManager.presets.filamentTypes.findIndex(filament => filament === data.filamentType);
-                        if (selectedIndex !== -1) {
-                          handleEditFilament(selectedIndex, data.filamentType);
-                        }
-                      }}
-                      disabled={!data.filamentType}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit Filament</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Filament Name</Label>
-                        <Input
-                          placeholder="Enter filament name"
-                          value={editFilamentName}
-                          onChange={(e) => setEditFilamentName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowEditFilamentDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleSaveFilamentEdit} disabled={!editFilamentName.trim()}>
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-10 w-10 p-0"
-                  onClick={() => {
-                    const selectedIndex = presetManager.presets.filamentTypes.findIndex(filament => filament === data.filamentType);
-                    if (selectedIndex !== -1) {
-                      handleDeleteFilament(selectedIndex);
-                    }
-                  }}
-                  disabled={!data.filamentType || presetManager.presets.filamentTypes.length <= 1}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
+              <PresetManagementControls
+                presetType="filament"
+                presets={presetManager.presets.filamentTypes}
+                currentValue={data.filamentType}
+                onAddPreset={(value) => presetManager.addPreset('filamentTypes', value)}
+                onEditPreset={(index, value) => presetManager.updatePreset('filamentTypes', index, value)}
+                onDeletePreset={(index) => presetManager.removePreset('filamentTypes', index)}
+                onValueChange={(value) => updateData('filamentType', value)}
+              />
             </div>
           </div>
         </div>

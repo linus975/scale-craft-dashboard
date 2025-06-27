@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -163,9 +162,15 @@ const PersonalizedDesignForm: React.FC = () => {
     setMultiImages(prev => [...prev, ...newImages]);
   };
 
-  // Fixed parameter handling function
-  const handlePartParametersChangeFixed = (partId: string, field: string, value: string) => {
-    handlePartParametersChange(partId, field, value);
+  // Fixed parameter handling function to match expected signature
+  const handlePartParametersChangeFixed = (partId: string, parameters: { sketchName: string; replacementValue: string; }) => {
+    // Extract the individual parameters and call the original function
+    if (parameters.sketchName !== undefined) {
+      handlePartParametersChange(partId, 'sketchName', parameters.sketchName);
+    }
+    if (parameters.replacementValue !== undefined) {
+      handlePartParametersChange(partId, 'replacementValue', parameters.replacementValue);
+    }
   };
 
   return (
