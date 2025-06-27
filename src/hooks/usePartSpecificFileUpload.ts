@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
@@ -44,13 +45,14 @@ export const usePartSpecificFileUpload = () => {
     }
   };
 
+  // Fixed: Always use the provided partId for file uploads
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>, 
     partId: string,
     expectedFileType?: 'f3d' | 'ini' | 'gcode'
   ) => {
     const files = event.target.files;
-    if (!files) return;
+    if (!files || !partId) return;
 
     const filesToUpload = Array.from(files);
     
@@ -96,7 +98,7 @@ export const usePartSpecificFileUpload = () => {
     }
 
     try {
-      console.log(`🚀 Part-specific upload for part ${partId}: ${validFiles.length} files`);
+      console.log(`🚀 Part-specific upload for SELECTED part ${partId}: ${validFiles.length} files`);
       
       // Process each file individually with proper folder structure
       const newFiles: UploadedFile[] = [];
@@ -117,7 +119,7 @@ export const usePartSpecificFileUpload = () => {
             uploadDate: new Date().toISOString().split('T')[0],
             path: uploadPath,
             originalName: file.name,
-            partId: partId,
+            partId: partId, // IMPORTANT: Always use the provided partId
             designType: 'static' as const,
             fileExtension: fileExtension,
             isF3DFile: fileExtension === 'f3d',
@@ -126,13 +128,13 @@ export const usePartSpecificFileUpload = () => {
           };
 
           newFiles.push(newFile);
-          console.log(`✅ File uploaded to: ${folderPath}/${file.name}`);
+          console.log(`✅ File uploaded to part ${partId}: ${folderPath}/${file.name}`);
         } catch (uploadError) {
           console.error(`❌ Error uploading ${file.name}:`, uploadError);
         }
       }
 
-      // Update part-specific files
+      // Update part-specific files - ONLY for the selected partId
       setPartFiles(prev => {
         const currentPartFiles = prev[partId] || [];
         const filteredFiles = currentPartFiles.filter(existingFile => {
@@ -154,7 +156,7 @@ export const usePartSpecificFileUpload = () => {
 
       toast({
         title: "Dateien hochgeladen",
-        description: `${newFiles.length} Datei(en) für ${partId} erfolgreich in organisierten Ordnern hochgeladen.`,
+        description: `${newFiles.length} Datei(en) für Part "${partId}" erfolgreich hochgeladen.`,
       });
 
     } catch (error) {
@@ -237,7 +239,7 @@ export const usePartSpecificFileUpload = () => {
       
       toast({
         title: "G-Code Datei ausgewählt",
-        description: `${file.name} wurde erfolgreich für ${partId} ausgewählt.`,
+        description: `${file.name} wurde erfolgreich für Part "${partId}" ausgewählt.`,
       });
     }
   };

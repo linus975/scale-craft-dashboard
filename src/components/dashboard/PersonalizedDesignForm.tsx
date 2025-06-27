@@ -163,6 +163,11 @@ const PersonalizedDesignForm: React.FC = () => {
     setMultiImages(prev => [...prev, ...newImages]);
   };
 
+  // Fixed parameter handling function
+  const handlePartParametersChangeFixed = (partId: string, field: string, value: string) => {
+    handlePartParametersChange(partId, field, value);
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -219,7 +224,7 @@ const PersonalizedDesignForm: React.FC = () => {
               onPartTypeChange={handlePartTypeChange}
               onPartSoftwareChange={handlePartSoftwareChange}
               onPartSpecificationChange={handlePartSpecificationChange}
-              onPartParametersChange={handlePartParametersChange}
+              onPartParametersChange={handlePartParametersChangeFixed}
               machines={machines}
               gcodeFiles={gcodeFiles}
               onGcodeFileChange={handleGcodeFileChange}
