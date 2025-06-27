@@ -108,6 +108,7 @@ export const useDesignParts = () => {
   };
 
   const handlePartSpecificationChange = (partId: string, field: 'nozzleDiameter' | 'filamentType' | 'color' | 'machine', value: string) => {
+    console.log(`Updating part ${partId} field ${field} to value: ${value}`);
     setDesignParts(prev => prev.map(part =>
       part.id === partId ? { ...part, [field]: value } : part
     ));
@@ -129,6 +130,7 @@ export const useDesignParts = () => {
     designParts,
     activePart,
     setActivePart,
+    setDesignParts,
     handlePartParametersChange,
     handlePartSelect,
     handleAddPart,

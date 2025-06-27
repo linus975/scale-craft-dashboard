@@ -116,12 +116,32 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   // Handler for when preset values are added - automatically select them
   const handleFileManagementDataChange = (newData: FileManagementData) => {
     setFileManagementData(newData);
+    
+    // Update the design parts with the current part's data
+    const currentPart = designParts.designParts.find(part => part.id === designParts.activePart);
+    if (currentPart) {
+      designParts.setDesignParts(prev => prev.map(part => 
+        part.id === designParts.activePart 
+          ? { 
+              ...part, 
+              partType: newData.partType,
+              cadSoftware: newData.cadSoftware,
+              slicer: newData.slicerSoftware,
+              color: newData.partColor,
+              machine: newData.machineType,
+              nozzleDiameter: newData.nozzleDiameter,
+              filamentType: newData.filamentType
+            }
+          : part
+      ));
+    }
   };
 
   const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
     
     console.log('🚀 Starting optimized product save process...', data);
+    console.log('🔧 Design parts:', designParts.designParts);
     setSaving(true);
     setProgress(0);
     setCurrentStep('Validating...');
@@ -166,6 +186,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         color: part.color,
         machine: part.machine
       }));
+
+      console.log('📦 Mapped design parts for saving:', mappedDesignParts);
 
       await saveDesignAsProduct(
         data,
@@ -225,7 +247,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             getValues={form.getValues}
           />
 
-          {/* File Management Section */}
+          {/* File Management Section with part-specific handling */}
           <FileManagementSection
             data={fileManagementData}
             onChange={handleFileManagementDataChange}

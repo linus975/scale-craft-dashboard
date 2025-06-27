@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,12 @@ interface DesignPart {
   id: string;
   name: string;
   partType?: 'static' | 'customisable';
+  cadSoftware?: string;
+  slicer?: string;
+  nozzleDiameter?: string;
+  filamentType?: string;
+  color?: string;
+  machine?: string;
 }
 
 interface FileManagementSectionProps {
@@ -85,6 +91,26 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     onChange({ ...data, [field]: value });
   };
 
+  // Get current part data
+  const currentPart = designParts.find(part => part.id === activePart);
+
+  // Update data when part changes - use part-specific values
+  useEffect(() => {
+    if (currentPart) {
+      onChange({
+        ...data,
+        selectedPart: currentPart.id,
+        partType: currentPart.partType || 'static',
+        cadSoftware: currentPart.cadSoftware || '',
+        slicerSoftware: currentPart.slicer || '',
+        partColor: currentPart.color || '',
+        machineType: currentPart.machine || '',
+        nozzleDiameter: currentPart.nozzleDiameter || '',
+        filamentType: currentPart.filamentType || ''
+      });
+    }
+  }, [activePart, currentPart]);
+
   const handleGcodeUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -132,11 +158,67 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     onPartTypeChange(activePart, value);
   };
 
-  // Updated color preset functions to auto-select new values
+  // Updated handlers to save part-specific data
+  const handleColorChange = (value: string) => {
+    updateData('partColor', value);
+    // Save to the specific part
+    if (currentPart) {
+      const updatedParts = designParts.map(part => 
+        part.id === activePart ? { ...part, color: value } : part
+      );
+      // This component does not manage designParts state directly, so no setState here
+    }
+  };
+
+  const handleMachineChange = (value: string) => {
+    updateData('machineType', value);
+    if (currentPart) {
+      const updatedParts = designParts.map(part => 
+        part.id === activePart ? { ...part, machine: value } : part
+      );
+    }
+  };
+
+  const handleNozzleChange = (value: string) => {
+    updateData('nozzleDiameter', value);
+    if (currentPart) {
+      const updatedParts = designParts.map(part => 
+        part.id === activePart ? { ...part, nozzleDiameter: value } : part
+      );
+    }
+  };
+
+  const handleFilamentChange = (value: string) => {
+    updateData('filamentType', value);
+    if (currentPart) {
+      const updatedParts = designParts.map(part => 
+        part.id === activePart ? { ...part, filamentType: value } : part
+      );
+    }
+  };
+
+  const handleCADSoftwareChange = (value: string) => {
+    updateData('cadSoftware', value);
+    if (currentPart) {
+      const updatedParts = designParts.map(part => 
+        part.id === activePart ? { ...part, cadSoftware: value } : part
+      );
+    }
+  };
+
+  const handleSlicerChange = (value: string) => {
+    updateData('slicerSoftware', value);
+    if (currentPart) {
+      const updatedParts = designParts.map(part => 
+        part.id === activePart ? { ...part, slicer: value } : part
+      );
+    }
+  };
+
+  // Color preset management handlers
   const handleAddColor = () => {
     if (newColorName.trim()) {
       presetManager.addPreset('colors', newColorName.trim());
-      // Auto-select the newly added color
       updateData('partColor', newColorName.trim());
       setNewColorName('');
       setShowAddColorDialog(false);
@@ -153,7 +235,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     if (editingColorIndex !== null && editColorName.trim()) {
       const oldValue = presetManager.presets.colors[editingColorIndex];
       presetManager.updatePreset('colors', editingColorIndex, editColorName.trim());
-      // Update the selected value if it was the one being edited
       if (data.partColor === oldValue) {
         updateData('partColor', editColorName.trim());
       }
@@ -166,17 +247,15 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleDeleteColor = (index: number) => {
     const deletedValue = presetManager.presets.colors[index];
     presetManager.removePreset('colors', index);
-    // Clear selection if deleted item was selected
     if (data.partColor === deletedValue) {
       updateData('partColor', '');
     }
   };
 
-  // Updated machine preset functions to auto-select new values
+  // Machine preset management handlers
   const handleAddMachine = () => {
     if (newMachineName.trim()) {
       presetManager.addPreset('machineTypes', newMachineName.trim());
-      // Auto-select the newly added machine
       updateData('machineType', newMachineName.trim());
       setNewMachineName('');
       setShowAddMachineDialog(false);
@@ -193,7 +272,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     if (editingMachineIndex !== null && editMachineName.trim()) {
       const oldValue = presetManager.presets.machineTypes[editingMachineIndex];
       presetManager.updatePreset('machineTypes', editingMachineIndex, editMachineName.trim());
-      // Update the selected value if it was the one being edited
       if (data.machineType === oldValue) {
         updateData('machineType', editMachineName.trim());
       }
@@ -206,17 +284,15 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleDeleteMachine = (index: number) => {
     const deletedValue = presetManager.presets.machineTypes[index];
     presetManager.removePreset('machineTypes', index);
-    // Clear selection if deleted item was selected
     if (data.machineType === deletedValue) {
       updateData('machineType', '');
     }
   };
 
-  // Updated filament preset functions to auto-select new values
+  // Filament preset management handlers
   const handleAddFilament = () => {
     if (newFilamentName.trim()) {
       presetManager.addPreset('filamentTypes', newFilamentName.trim());
-      // Auto-select the newly added filament
       updateData('filamentType', newFilamentName.trim());
       setNewFilamentName('');
       setShowAddFilamentDialog(false);
@@ -233,7 +309,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     if (editingFilamentIndex !== null && editFilamentName.trim()) {
       const oldValue = presetManager.presets.filamentTypes[editingFilamentIndex];
       presetManager.updatePreset('filamentTypes', editingFilamentIndex, editFilamentName.trim());
-      // Update the selected value if it was the one being edited
       if (data.filamentType === oldValue) {
         updateData('filamentType', editFilamentName.trim());
       }
@@ -246,13 +321,10 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleDeleteFilament = (index: number) => {
     const deletedValue = presetManager.presets.filamentTypes[index];
     presetManager.removePreset('filamentTypes', index);
-    // Clear selection if deleted item was selected
     if (data.filamentType === deletedValue) {
       updateData('filamentType', '');
     }
   };
-
-  const currentPart = designParts.find(part => part.id === activePart);
 
   return (
     <Card>
@@ -365,7 +437,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
 
           <div className="space-y-2">
             <Label>Part Type</Label>
-            <Select value={data.partType} onValueChange={handlePartTypeChange}>
+            <Select value={currentPart?.partType || 'static'} onValueChange={handlePartTypeChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select part type" />
               </SelectTrigger>
@@ -378,11 +450,11 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
         </div>
 
         {/* Conditional Row: CAD and Slicer Software (only for customisable) */}
-        {data.partType === 'customisable' && (
+        {(currentPart?.partType === 'customisable') && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>CAD Software</Label>
-              <Select value={data.cadSoftware} onValueChange={(value) => updateData('cadSoftware', value)}>
+              <Select value={currentPart?.cadSoftware || ''} onValueChange={handleCADSoftwareChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select CAD software" />
                 </SelectTrigger>
@@ -394,7 +466,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
 
             <div className="space-y-2">
               <Label>Slicer Software</Label>
-              <Select value={data.slicerSoftware} onValueChange={(value) => updateData('slicerSoftware', value)}>
+              <Select value={currentPart?.slicer || ''} onValueChange={handleSlicerChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select slicer" />
                 </SelectTrigger>
@@ -408,12 +480,12 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Color and Machine Type Row with Preset Management - with automatic selection */}
+        {/* Color and Machine Type Row - using part-specific values */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Color</Label>
             <div className="flex gap-2">
-              <Select value={data.partColor} onValueChange={(value) => updateData('partColor', value)}>
+              <Select value={currentPart?.color || ''} onValueChange={handleColorChange}>
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Select color" />
                 </SelectTrigger>
@@ -522,7 +594,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           <div className="space-y-2">
             <Label>Machine Type</Label>
             <div className="flex gap-2">
-              <Select value={data.machineType} onValueChange={(value) => updateData('machineType', value)}>
+              <Select value={currentPart?.machine || ''} onValueChange={handleMachineChange}>
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Select machine" />
                 </SelectTrigger>
@@ -756,7 +828,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Nozzle Diameter and Filament Type Row */}
+        {/* Nozzle Diameter and Filament Type Row - using part-specific values */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nozzle Diameter (mm)</Label>
@@ -766,15 +838,15 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               min="0.1"
               max="2.0"
               placeholder="0.4"
-              value={data.nozzleDiameter}
-              onChange={(e) => updateData('nozzleDiameter', e.target.value)}
+              value={currentPart?.nozzleDiameter || ''}
+              onChange={(e) => handleNozzleChange(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
             <Label>Filament Type</Label>
             <div className="flex gap-2">
-              <Select value={data.filamentType} onValueChange={(value) => updateData('filamentType', value)}>
+              <Select value={currentPart?.filamentType || ''} onValueChange={handleFilamentChange}>
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Select filament" />
                 </SelectTrigger>

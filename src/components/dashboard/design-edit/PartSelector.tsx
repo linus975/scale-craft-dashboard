@@ -1,128 +1,40 @@
 
-import React, { useState } from 'react';
-import PartTypeSelector from './PartTypeSelector';
-import PartNameEditor from './PartNameEditor';
-import PartControls from './PartControls';
-import SoftwareSelectors from './SoftwareSelectors';
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface DesignPart {
   id: string;
   name: string;
-  files: any[];
-  partType?: 'static' | 'personalized';
-  parameters?: {
-    sketchName?: string;
-    replacementValue?: string;
-  };
-  cadSoftware?: string;
-  slicer?: string;
+  partType?: 'static' | 'customisable';
 }
 
 interface PartSelectorProps {
   designParts: DesignPart[];
-  activePart: string;
+  selectedPart: string;
   onPartChange: (partId: string) => void;
-  onAddPart: (name: string) => void;
-  onRemovePart: (partId: string) => void;
-  onRenamePart: (partId: string, newName: string) => void;
-  onPartTypeChange: (partId: string, partType: 'static' | 'personalized') => void;
-  onPartSoftwareChange: (partId: string, field: 'cadSoftware' | 'slicer', value: string) => void;
-  validatePartFiles: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };
 }
 
 const PartSelector: React.FC<PartSelectorProps> = ({
   designParts,
-  activePart,
-  onPartChange,
-  onAddPart,
-  onRemovePart,
-  onRenamePart,
-  onPartTypeChange,
-  onPartSoftwareChange,
-  validatePartFiles
+  selectedPart,
+  onPartChange
 }) => {
-  const [editingPartId, setEditingPartId] = useState<string | null>(null);
-  const [editPartName, setEditPartName] = useState('');
-
-  const startEditingPart = (partId: string, currentName: string) => {
-    setEditingPartId(partId);
-    setEditPartName(currentName);
-  };
-
-  const savePartName = () => {
-    if (editingPartId && editPartName.trim()) {
-      onRenamePart(editingPartId, editPartName.trim());
-    }
-    setEditingPartId(null);
-    setEditPartName('');
-  };
-
-  const handleAddPart = (name: string) => {
-    onAddPart(name);
-  };
-
-  const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
-  const isEditing = editingPartId === activePart;
-
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-12 gap-4 items-end">
-        {/* Select Part moved to the left */}
-        <PartNameEditor
-          designParts={designParts}
-          activePart={activePart}
-          isEditing={isEditing}
-          editPartName={editPartName}
-          onPartChange={onPartChange}
-          onEditPartNameChange={setEditPartName}
-          onSavePartName={savePartName}
-          validatePartFiles={validatePartFiles}
-        />
-
-        {/* Part Type */}
-        <PartTypeSelector
-          partType={currentPart?.partType || 'static'}
-          onPartTypeChange={(partType) => onPartTypeChange(activePart, partType)}
-          disabled={isEditing}
-        />
-
-        {/* Controls moved to the right */}
-        <PartControls
-          designParts={designParts}
-          activePart={activePart}
-          currentPartName={currentPart?.name || ''}
-          isEditing={isEditing}
-          onStartEditing={() => startEditingPart(activePart, currentPart?.name || '')}
-          onSavePartName={savePartName}
-          onAddPart={handleAddPart}
-          onRemovePart={onRemovePart}
-        />
-      </div>
-
-      {/* Software Selection nur für personalized parts */}
-      {currentPart?.partType === 'personalized' && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <SoftwareSelectors
-              cadSoftware={currentPart?.cadSoftware}
-              slicer={currentPart?.slicer}
-              onSoftwareChange={(field, value) => onPartSoftwareChange(activePart, field, value)}
-              disabled={isEditing}
-              showOnlyCAD={true}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <SoftwareSelectors
-              cadSoftware={currentPart?.cadSoftware}
-              slicer={currentPart?.slicer}
-              onSoftwareChange={(field, value) => onPartSoftwareChange(activePart, field, value)}
-              disabled={isEditing}
-              showOnlySlicer={true}
-            />
-          </div>
-        </div>
-      )}
+    <div className="space-y-2">
+      <Label>Select Part</Label>
+      <Select value={selectedPart} onValueChange={onPartChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select part" />
+        </SelectTrigger>
+        <SelectContent>
+          {designParts.map((part) => (
+            <SelectItem key={part.id} value={part.id}>
+              {part.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 };

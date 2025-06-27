@@ -86,7 +86,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         hasINI={validation.hasINI}
       />
 
-      {/* Part-spezifische Felder: Farbe, Maschine */}
+      {/* Part-spezifische Felder: Farbe, Maschine, Düsendurchmesser, Filament */}
       <ColorMachineFields
         partId={currentPart.id}
         designParts={designParts}
