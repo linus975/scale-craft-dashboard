@@ -1,39 +1,10 @@
-
 import React from 'react';
 import PartManagementHeader from './PartManagementHeader';
 import FileManagerContent from './FileManagerContent';
 import { useMultiPartManager } from '@/hooks/useMultiPartManager';
 import { organizeFilesByParts, validatePartFiles } from '@/utils/fileOrganization';
-
-interface UploadedFile {
-  id: string;
-  name: string;
-  type: string;
-  size: string;
-  uploadDate: string;
-  path: string;
-  originalName?: string;
-  partId?: string;
-  designType?: 'static' | 'personalizable';
-}
-
-interface DesignPart {
-  id: string;
-  name: string;
-  files: UploadedFile[];
-  partType?: 'static' | 'personalizable';
-  parameters?: {
-    sketchName?: string;
-    replacementValue?: string;
-    replacementType?: 'text' | 'dimension';
-  };
-  cadSoftware?: string;
-  slicer?: string;
-  nozzleDiameter?: string;
-  filamentType?: string;
-  color?: string;
-  machine?: string;
-}
+import type { UploadedFile } from '@/types/fileUpload';
+import type { DesignPart } from '@/types/designPart';
 
 interface MultiPartFileManagerProps {
   uploadedFiles: UploadedFile[];

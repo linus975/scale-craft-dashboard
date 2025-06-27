@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -10,6 +9,7 @@ import PartManagementControls from './PartManagementControls';
 import PresetManagementControls from './PresetManagementControls';
 import FileUploadArea from './FileUploadArea';
 import PersonalizationFields from './PersonalizationFields';
+import type { DesignPart } from '@/types/designPart';
 
 interface FileManagementData {
   selectedPart: string;
@@ -22,23 +22,6 @@ interface FileManagementData {
   replacementType: 'text' | 'dimension';
   nozzleDiameter: string;
   filamentType: string;
-}
-
-interface DesignPart {
-  id: string;
-  name: string;
-  partType?: 'static' | 'personalizable';
-  cadSoftware?: string;
-  slicer?: string;
-  nozzleDiameter?: string;
-  filamentType?: string;
-  color?: string;
-  machine?: string;
-  parameters?: {
-    sketchName?: string;
-    replacementValue?: string;
-    replacementType?: 'text' | 'dimension';
-  };
 }
 
 interface FileManagementSectionProps {
