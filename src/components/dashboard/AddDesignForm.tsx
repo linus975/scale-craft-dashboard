@@ -28,11 +28,6 @@ interface FormData {
   description: string;
   category: string;
   color: string;
-  machine: string;
-  cadSoftware: string;
-  slicer: string;
-  nozzleDiameter: string;
-  material: string;
 }
 
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
@@ -51,12 +46,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       eanNumber: '',
       description: '',
       category: '',
-      color: '',
-      machine: '',
-      cadSoftware: '',
-      slicer: '',
-      nozzleDiameter: '',
-      material: ''
+      color: ''
     }
   });
 
