@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useFileUpload } from '@/hooks/useFileUpload';
@@ -261,28 +262,35 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
     console.log('  - Files to upload:', files.length);
     console.log('  - Target part name:', partName);
 
-    // Ensure the temp-parts folder structure exists
-    const folderCreated = await ensureTempPartsFolder(partName);
-    if (!folderCreated) {
-      toast({
-        title: "Fehler beim Erstellen des Ordners",
-        description: "Der Ordner für das Part konnte nicht erstellt werden.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       for (const file of Array.from(files)) {
         console.log(`📤 [useDesignFiles] Uploading file: ${file.name} to part: ${partName}`);
         
-        // Upload files to part-specific folder structure: temp-parts/{partName}/
-        const filePath = await uploadFile(
-          file, 
-          `temp-parts/${partName}`
-        );
+        // FIXED: Create the proper folder structure and upload directly
+        const fileName = `${Date.now()}-${file.name}`;
+        const fullPath = `${user.id}/temp-parts/${partName}/${fileName}`;
         
-        console.log(`✅ [useDesignFiles] File uploaded to path: ${filePath}`);
+        console.log('📁 [useDesignFiles] Full upload path:', fullPath);
+        
+        // Upload the file directly to the correct path
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('design-files')
+          .upload(fullPath, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error(`❌ [useDesignFiles] Upload error for ${file.name}:`, uploadError);
+          throw uploadError;
+        }
+        
+        console.log(`✅ [useDesignFiles] File uploaded successfully:`, uploadData);
         
         const newFile: UploadedFile = {
           id: `${partName}-${Date.now()}-${Math.random()}`,
@@ -290,7 +298,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           type: getFileType(file.name),
           size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
           uploadDate: new Date().toISOString().split('T')[0],
-          path: filePath,
+          path: uploadData.path,
           originalName: file.name,
           partId: partName // FIXED: Store the correct part name
         };

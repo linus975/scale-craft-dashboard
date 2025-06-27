@@ -59,6 +59,7 @@ export const useStorageFolderManager = () => {
       if (tempPartsError) {
         console.error('❌ [StorageFolderManager] Error checking temp-parts folder:', tempPartsError);
         console.log('🔧 [StorageFolderManager] temp-parts folder might not exist yet, will be created on first upload');
+        setFolders([]);
       } else {
         console.log('📂 [StorageFolderManager] temp-parts folder contents:', tempPartsFiles?.map(f => f.name) || []);
         setFolders(tempPartsFiles?.map(f => f.name) || []);
@@ -85,28 +86,24 @@ export const useStorageFolderManager = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const folderPath = `${user.id}/temp-parts/${partName}`;
-      
       console.log(`🔧 [StorageFolderManager] Ensuring temp-parts folder exists for part: ${partName}`);
-      console.log(`📂 [StorageFolderManager] Folder path: ${folderPath}`);
       
-      // Try to create a placeholder file to ensure folder exists
-      const placeholderContent = new Blob(['# Placeholder file to create folder structure'], { type: 'text/plain' });
+      // FIXED: Create the correct folder path without placeholder file
+      // The folder will be created automatically when we upload the first file
+      const folderPath = `${user.id}/temp-parts/${partName}`;
+      console.log(`📂 [StorageFolderManager] Target folder path: ${folderPath}`);
       
+      // Test if we can access the folder by trying to list it
       const { data, error } = await supabase.storage
         .from('design-files')
-        .upload(`${folderPath}/.keep`, placeholderContent, {
-          cacheControl: '3600',
-          upsert: true
-        });
+        .list(folderPath, { limit: 1 });
 
-      if (error && !error.message.includes('already exists')) {
-        console.error('❌ [StorageFolderManager] Error creating temp-parts folder:', error);
+      if (error && !error.message.includes('The resource was not found')) {
+        console.error('❌ [StorageFolderManager] Error checking temp-parts folder:', error);
         return false;
       }
 
-      console.log(`✅ [StorageFolderManager] Ensured temp-parts folder exists for part: ${partName}`);
-      console.log('📁 [StorageFolderManager] Upload result:', data);
+      console.log(`✅ [StorageFolderManager] Temp-parts folder path ready for part: ${partName}`);
       return true;
     } catch (error) {
       console.error('❌ [StorageFolderManager] Error ensuring temp-parts folder:', error);
@@ -153,8 +150,15 @@ export const useStorageFolderManager = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.error('❌ [StorageFolderManager] User not authenticated for test');
+        toast({
+          title: "Authentifizierung erforderlich",
+          description: "Bitte melden Sie sich an, um auf den Storage zuzugreifen.",
+          variant: "destructive",
+        });
         return false;
       }
+
+      console.log('🧪 [StorageFolderManager] Testing storage access for user:', user.id);
 
       // Test if we can list the root of design-files bucket
       const { data, error } = await supabase.storage
@@ -172,9 +176,43 @@ export const useStorageFolderManager = () => {
       }
 
       console.log('✅ [StorageFolderManager] Storage access test successful');
+      
+      // Test upload to user's temp area
+      const testContent = new Blob(['test'], { type: 'text/plain' });
+      const testPath = `${user.id}/test-upload-${Date.now()}.txt`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('design-files')
+        .upload(testPath, testContent);
+
+      if (uploadError) {
+        console.error('❌ [StorageFolderManager] Test upload failed:', uploadError);
+        toast({
+          title: "Upload-Test fehlgeschlagen",
+          description: `Kann keine Dateien hochladen: ${uploadError.message}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Clean up test file
+      await supabase.storage
+        .from('design-files')
+        .remove([testPath]);
+
+      console.log('✅ [StorageFolderManager] Upload test successful');
+      toast({
+        title: "Storage-Test erfolgreich",
+        description: "Zugriff und Upload-Funktionalität sind verfügbar.",
+      });
       return true;
     } catch (error) {
       console.error('❌ [StorageFolderManager] Storage test error:', error);
+      toast({
+        title: "Storage-Test fehlgeschlagen",
+        description: "Unerwarteter Fehler beim Testen des Storage-Zugriffs.",
+        variant: "destructive",
+      });
       return false;
     }
   };
