@@ -105,13 +105,23 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     onPartSelect
   });
 
+  // WICHTIG: Verwende immer die activePart ID für File-Uploads
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
+    console.log(`🎯 Uploading file for ACTIVE part: ${activePart}`);
     onFileUpload(event, activePart);
   };
 
   const organizedParts = organizeFilesByParts(designParts, uploadedFiles);
   const currentPart = organizedParts.find(part => part.id === activePart) || organizedParts[0];
+  
+  if (!currentPart) {
+    console.log('❌ No current part found');
+    return <div>No part selected</div>;
+  }
+
+  console.log(`📁 Current part: ${currentPart.name} (${currentPart.id})`);
+  console.log(`📂 Files for current part:`, currentPart.files);
   
   const validation = currentPart ? 
     (externalValidatePartFiles ? externalValidatePartFiles(currentPart) : validatePartFiles(currentPart)) : 
@@ -125,7 +135,10 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       <PartManagementHeader
         designParts={designParts}
         activePart={activePart}
-        onPartChange={(value) => handlePartChange(value, externalOnPartChange)}
+        onPartChange={(value) => {
+          console.log(`🔄 Switching to part: ${value}`);
+          handlePartChange(value, externalOnPartChange);
+        }}
         onAddPart={(name) => addNewPart(name, externalOnAddPart)}
         onRemovePart={(partId) => removePart(partId, externalOnRemovePart)}
         onRenamePart={(partId, newName) => renamePart(partId, newName, externalOnRenamePart)}
@@ -133,28 +146,26 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         validatePartFiles={externalValidatePartFiles || validatePartFiles}
       />
 
-      {currentPart && (
-        <FileManagerContent
-          currentPart={currentPart}
-          validation={validation}
-          uploadedFiles={uploadedFiles}
-          loadingFiles={loadingFiles}
-          uploading={uploading}
-          onFileUpload={handleFileUpload}
-          onFileRemove={onFileRemove}
-          onFileDownload={onFileDownload}
-          onPartParametersChange={(partId, field, value) => 
-            handlePartParametersChange(partId, field, value, onPartParametersChange)
-          }
-          onPartSpecificationChange={onPartSpecificationChange}
-          gcodeFile={currentPartGcodeFile}
-          onGcodeFileChange={onGcodeFileChange ? (event) => onGcodeFileChange(event, activePart) : undefined}
-          onRemoveGcodeFile={onRemoveGcodeFile ? () => onRemoveGcodeFile(activePart) : undefined}
-          machines={machines}
-          designParts={designParts}
-          activePart={activePart}
-        />
-      )}
+      <FileManagerContent
+        currentPart={currentPart}
+        validation={validation}
+        uploadedFiles={uploadedFiles}
+        loadingFiles={loadingFiles}
+        uploading={uploading}
+        onFileUpload={handleFileUpload}
+        onFileRemove={onFileRemove}
+        onFileDownload={onFileDownload}
+        onPartParametersChange={(partId, field, value) => 
+          handlePartParametersChange(partId, field, value, onPartParametersChange)
+        }
+        onPartSpecificationChange={onPartSpecificationChange}
+        gcodeFile={currentPartGcodeFile}
+        onGcodeFileChange={onGcodeFileChange ? (event) => onGcodeFileChange(event, activePart) : undefined}
+        onRemoveGcodeFile={onRemoveGcodeFile ? () => onRemoveGcodeFile(activePart) : undefined}
+        machines={machines}
+        designParts={designParts}
+        activePart={activePart}
+      />
     </div>
   );
 };

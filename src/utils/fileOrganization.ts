@@ -32,7 +32,7 @@ interface DesignPart {
 export const organizeFilesByParts = (designParts: DesignPart[], uploadedFiles: UploadedFile[]) => {
   return designParts.map(part => ({
     ...part,
-    files: uploadedFiles.filter(file => file.partId === part.id || (!file.partId && part.id === 'part1'))
+    files: uploadedFiles.filter(file => file.partId === part.id)
   }));
 };
 
