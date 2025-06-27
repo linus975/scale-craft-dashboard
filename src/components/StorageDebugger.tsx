@@ -2,14 +2,12 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSimpleFileUpload } from '@/hooks/useSimpleFileUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const StorageDebugger: React.FC = () => {
   const [isDebugging, setIsDebugging] = useState(false);
   const [debugResults, setDebugResults] = useState<string[]>([]);
-  const { testStorageAccess } = useSimpleFileUpload();
   const { toast } = useToast();
 
   const addDebugMessage = (message: string) => {
