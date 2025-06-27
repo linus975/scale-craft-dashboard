@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useStorageManager } from '@/hooks/useStorageManager';
 
 const StorageDebugger: React.FC = () => {
   const [isDebugging, setIsDebugging] = useState(false);
   const [debugResults, setDebugResults] = useState<string[]>([]);
   const { toast } = useToast();
+  const { ensureUserFolders, listUserFiles } = useStorageManager();
 
   const addDebugMessage = (message: string) => {
     setDebugResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
@@ -21,14 +23,7 @@ const StorageDebugger: React.FC = () => {
     try {
       addDebugMessage('🔍 Starting Enhanced Storage Diagnostic...');
       
-      // Test 1: Check Supabase Client Configuration
-      addDebugMessage('🔧 Checking Supabase client configuration...');
-      const expectedUrl = 'https://xuxgxkemywnyranlhsjh.supabase.co';
-      const expectedKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1eGd4a2VteXdueXJhbmxoc2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMzQyMTUsImV4cCI6MjA2MzkxMDIxNX0.ilp_enK4vvX2Vy8EpogSh9XGQN-GaMI0Yb8YyVPtIqc';
-      
-      addDebugMessage('✅ Using expected Supabase URL and key');
-
-      // Test 2: Authentication
+      // Test 1: Check Authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError) {
         addDebugMessage(`❌ Auth Error: ${authError.message}`);
@@ -39,83 +34,50 @@ const StorageDebugger: React.FC = () => {
         return;
       }
       addDebugMessage(`✅ User authenticated: ${user.id}`);
-      addDebugMessage(`📧 User email: ${user.email}`);
 
-      // Test 3: Direct API call to check buckets
-      addDebugMessage('🌐 Testing direct API call to Supabase...');
-      try {
-        const response = await fetch(`${expectedUrl}/storage/v1/bucket`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${expectedKey}`,
-            'apikey': expectedKey,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          const buckets = await response.json();
-          addDebugMessage(`✅ Direct API call successful, found ${buckets.length} buckets`);
-          buckets.forEach((bucket: any) => {
-            addDebugMessage(`  - ${bucket.id} (${bucket.public ? 'public' : 'private'})`);
-          });
-        } else {
-          addDebugMessage(`❌ Direct API call failed: ${response.status} ${response.statusText}`);
-          const errorText = await response.text();
-          addDebugMessage(`❌ Error details: ${errorText}`);
-        }
-      } catch (fetchError) {
-        addDebugMessage(`❌ Direct API call exception: ${fetchError}`);
-      }
-
-      // Test 4: List buckets using Supabase client
-      addDebugMessage('📂 Testing Supabase client listBuckets...');
+      // Test 2: Check design-files bucket
       const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
       if (bucketError) {
         addDebugMessage(`❌ Bucket error: ${bucketError.message}`);
-        addDebugMessage(`❌ Full bucket error: ${JSON.stringify(bucketError)}`);
       } else {
-        addDebugMessage(`✅ Supabase client found ${buckets?.length || 0} buckets`);
-        buckets?.forEach(bucket => {
-          addDebugMessage(`  - ${bucket.id} (${bucket.public ? 'public' : 'private'})`);
-        });
-      }
-
-      // Test 5: Check specific design-files bucket
-      if (buckets && buckets.length > 0) {
-        const designBucket = buckets.find(b => b.id === 'design-files');
+        const designBucket = buckets?.find(b => b.id === 'design-files');
         if (designBucket) {
-          addDebugMessage('✅ design-files bucket found via client');
-          addDebugMessage(`  - Public: ${designBucket.public}`);
-          addDebugMessage(`  - Created: ${designBucket.created_at}`);
-          addDebugMessage(`  - Updated: ${designBucket.updated_at}`);
+          addDebugMessage('✅ design-files bucket found');
         } else {
-          addDebugMessage('❌ design-files bucket not found in client results');
+          addDebugMessage('❌ design-files bucket not found');
         }
       }
 
-      // Test 6: Test direct access to design-files
-      addDebugMessage('🧪 Testing direct access to design-files bucket...');
-      const { data: designFiles, error: designError } = await supabase.storage
-        .from('design-files')
-        .list('', { limit: 1 });
-      
-      if (designError) {
-        addDebugMessage(`❌ design-files access error: ${designError.message}`);
-        addDebugMessage(`❌ Full error: ${JSON.stringify(designError)}`);
+      // Test 3: Ensure folder structure
+      addDebugMessage('🔧 Ensuring folder structure...');
+      const folderResult = await ensureUserFolders();
+      if (folderResult) {
+        addDebugMessage('✅ Folder structure created/verified');
       } else {
-        addDebugMessage(`✅ design-files bucket accessible, contains ${designFiles?.length || 0} root items`);
+        addDebugMessage('❌ Error creating folder structure');
       }
 
-      // Test 7: Test user folder access
-      const { data: userFolder, error: userError } = await supabase.storage
-        .from('design-files')
-        .list(user.id, { limit: 1 });
+      // Test 4: List user files
+      addDebugMessage('📂 Listing user files...');
+      const userFiles = await listUserFiles();
+      addDebugMessage(`📋 Found ${userFiles.length} files/folders in user directory`);
       
-      if (userError) {
-        addDebugMessage(`⚠️ User folder error: ${userError.message} (might be normal if empty)`);
-      } else {
-        addDebugMessage(`✅ User folder accessible, contains ${userFolder?.length || 0} items`);
+      userFiles.forEach(file => {
+        addDebugMessage(`  - ${file.name} (${file.metadata?.size || 'unknown size'})`);
+      });
+
+      // Test 5: Check specific temp folders
+      const tempFolders = ['temp/CAD', 'temp/INI', 'temp/GCODE'];
+      for (const folder of tempFolders) {
+        const { data: folderFiles, error: folderError } = await supabase.storage
+          .from('design-files')
+          .list(`${user.id}/${folder}`, { limit: 10 });
+        
+        if (folderError) {
+          addDebugMessage(`⚠️ ${folder}: ${folderError.message}`);
+        } else {
+          addDebugMessage(`✅ ${folder}: ${folderFiles?.length || 0} files`);
+        }
       }
 
       addDebugMessage('✅ Enhanced diagnostic complete');
@@ -126,6 +88,24 @@ const StorageDebugger: React.FC = () => {
     } finally {
       setIsDebugging(false);
     }
+  };
+
+  const createFolders = async () => {
+    setIsDebugging(true);
+    addDebugMessage('🔧 Creating folder structure...');
+    
+    const result = await ensureUserFolders();
+    if (result) {
+      addDebugMessage('✅ Folder structure created successfully');
+      toast({
+        title: "Ordner erstellt",
+        description: "Die temp-Ordner wurden erfolgreich erstellt.",
+      });
+    } else {
+      addDebugMessage('❌ Failed to create folder structure');
+    }
+    
+    setIsDebugging(false);
   };
 
   const clearResults = () => {
@@ -144,6 +124,13 @@ const StorageDebugger: React.FC = () => {
             disabled={isDebugging}
           >
             {isDebugging ? 'Running Enhanced Diagnostic...' : 'Run Enhanced Diagnostic'}
+          </Button>
+          <Button 
+            onClick={createFolders}
+            disabled={isDebugging}
+            variant="outline"
+          >
+            {isDebugging ? 'Creating Folders...' : 'Create Temp Folders'}
           </Button>
           <Button 
             variant="outline" 

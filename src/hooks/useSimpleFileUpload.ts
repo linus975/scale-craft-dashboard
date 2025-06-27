@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useStorageManager } from './useStorageManager';
 
 interface UploadedFile {
   id: string;
@@ -20,6 +21,7 @@ export const useSimpleFileUpload = () => {
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const { toast } = useToast();
+  const { ensureUserFolders } = useStorageManager();
 
   const getFileCategory = (fileName: string): 'CAD' | 'INI' | 'GCODE' => {
     const extension = fileName.split('.').pop()?.toLowerCase();
@@ -40,7 +42,7 @@ export const useSimpleFileUpload = () => {
       case 'g':
         return 'GCODE';
       default:
-        return 'CAD'; // Default fallback
+        return 'CAD';
     }
   };
 
@@ -68,7 +70,7 @@ export const useSimpleFileUpload = () => {
     }
   };
 
-  const uploadFile = async (file: File): Promise<void> => {
+  const uploadFile = async (file: File): Promise<UploadedFile> => {
     setUploading(true);
     
     try {
@@ -84,6 +86,9 @@ export const useSimpleFileUpload = () => {
         throw new Error('Benutzer nicht angemeldet');  
       }
 
+      // Ensure folder structure exists
+      await ensureUserFolders();
+
       const fileCategory = getFileCategory(file.name);
       const fileName = `${Date.now()}-${file.name}`;
       const fullPath = `${user.id}/temp/${fileCategory}/${fileName}`;
@@ -93,7 +98,6 @@ export const useSimpleFileUpload = () => {
       console.log('  - Category:', fileCategory);
       console.log('  - Full path:', fullPath);
       console.log('  - File size:', file.size, 'bytes');
-      console.log('  - File type:', file.type);
 
       const { data, error } = await supabase.storage
         .from('design-files')
@@ -126,6 +130,8 @@ export const useSimpleFileUpload = () => {
         title: "Datei hochgeladen",
         description: `${file.name} wurde erfolgreich im ${fileCategory} Ordner gespeichert.`,
       });
+
+      return newFile;
 
     } catch (error: any) {
       console.error('❌ [SimpleUpload] Upload failed:', error);
@@ -160,12 +166,53 @@ export const useSimpleFileUpload = () => {
     setUploadedFiles([]);
   };
 
+  // Neue Funktion: Dateien in Design speichern
+  const saveFilesToDesign = async (designId: string) => {
+    try {
+      console.log('💾 [SimpleUpload] Saving files to design:', designId);
+      
+      for (const file of uploadedFiles) {
+        // Hier könntest du die Dateipfade in der designs Tabelle speichern
+        // Je nach Dateityp in die entsprechende Spalte
+        const updateData: any = {};
+        
+        if (file.fileCategory === 'CAD') {
+          updateData.cad_file_path = file.path;
+        } else if (file.fileCategory === 'INI') {
+          updateData.ini_file_path = file.path;
+        } else if (file.fileCategory === 'GCODE') {
+          updateData.gcode_file_path = file.path;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          const { error } = await supabase
+            .from('designs')
+            .update(updateData)
+            .eq('id', designId);
+
+          if (error) {
+            console.error('❌ [SimpleUpload] Error updating design:', error);
+          } else {
+            console.log('✅ [SimpleUpload] Updated design with file path:', updateData);
+          }
+        }
+      }
+
+      console.log('✅ [SimpleUpload] All files saved to design');
+      return true;
+    } catch (error) {
+      console.error('❌ [SimpleUpload] Error saving files to design:', error);
+      return false;
+    }
+  };
+
   return {
     uploadedFiles,
     uploading,
     uploadFile,
     removeFile,
     clearAllFiles,
+    saveFilesToDesign,
     previewImage
   };
 };
