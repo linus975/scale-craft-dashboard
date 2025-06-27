@@ -1,13 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { File, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import DesignInformationSection from './design-edit/DesignInformationSection';
-import UploadProgressDisplay from './design-edit/UploadProgressDisplay';
 import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
 import { useCategoryManager } from '@/hooks/useCategoryManager';
@@ -76,12 +75,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       multiImageUpload.cleanupPreviews();
     };
   }, []);
-
-  // Remove parts from uploaded files when removing a part
-  const handleRemovePart = (partId: string) => {
-    designParts.handleRemovePart(partId);
-    fileUpload.setUploadedFiles(prev => prev.filter(file => file.partId !== partId));
-  };
 
   const onSubmit = async (data: FormData) => {
     if (saving) return;
@@ -188,50 +181,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             getValues={form.getValues}
           />
 
-          {/* File Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <File className="h-5 w-5" />
-                File Management (optional)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <MultiPartFileManager
-                uploadedFiles={fileUpload.uploadedFiles}
-                loadingFiles={false}
-                uploading={fileUpload.uploading}
-                onFileUpload={fileUpload.handleFileUpload}
-                onFileRemove={fileUpload.handleFileRemove}
-                onFileDownload={fileUpload.handleFileDownload}
-                onPartParametersChange={designParts.handlePartParametersChange}
-                selectedPartId={designParts.selectedPartId}
-                onPartSelect={designParts.handlePartSelect}
-                designParts={designParts.designParts}
-                activePart={designParts.activePart}
-                onPartChange={designParts.setActivePart}
-                onAddPart={designParts.handleAddPart}
-                onRemovePart={handleRemovePart}
-                onRenamePart={designParts.handleRenamePart}
-                onPartTypeChange={designParts.handlePartTypeChange}
-                onPartSoftwareChange={designParts.handlePartSoftwareChange}
-                onPartSpecificationChange={designParts.handlePartSpecificationChange}
-                validatePartFiles={(part) => designParts.validatePartFiles(part, fileUpload.uploadedFiles)}
-                machines={machines}
-                gcodeFiles={fileUpload.gcodeFiles}
-                onGcodeFileChange={fileUpload.handleGcodeFileChange}
-                onRemoveGcodeFile={fileUpload.removeGcodeFile}
-                getGcodeFileForPart={fileUpload.getGcodeFileForPart}
-              />
-              
-              {/* Upload Progress Display */}
-              <UploadProgressDisplay 
-                uploadProgress={fileUpload.uploadProgress}
-                uploading={fileUpload.uploading}
-              />
-            </CardContent>
-          </Card>
-
           {/* Progress Indicator when saving */}
           {saving && (
             <Card>
@@ -255,7 +204,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
               Abbrechen
             </Button>
-            <Button type="submit" disabled={saving || fileUpload.uploading}>
+            <Button type="submit" disabled={saving}>
               {saving ? 'Wird gespeichert...' : 'Produkt speichern'}
             </Button>
           </div>
