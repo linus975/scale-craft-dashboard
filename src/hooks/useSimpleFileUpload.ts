@@ -12,6 +12,7 @@ interface UploadedFile {
   path: string;
   originalName: string;
   fileCategory: 'CAD' | 'INI' | 'GCODE';
+  partId?: string;
 }
 
 export const useSimpleFileUpload = () => {
@@ -67,10 +68,76 @@ export const useSimpleFileUpload = () => {
     }
   };
 
+  const testStorageAccess = async (): Promise<boolean> => {
+    try {
+      console.log('🧪 [SimpleUpload] Testing storage access...');
+      
+      // Test 1: Check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('❌ [SimpleUpload] Auth error:', authError);
+        return false;
+      }
+      if (!user) {
+        console.error('❌ [SimpleUpload] User not authenticated');
+        toast({
+          title: "Authentifizierung erforderlich",
+          description: "Bitte melden Sie sich an, um Dateien hochzuladen.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      console.log('✅ [SimpleUpload] User authenticated:', user.id);
+
+      // Test 2: Check bucket access
+      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+      if (bucketError) {
+        console.error('❌ [SimpleUpload] Bucket list error:', bucketError);
+        return false;
+      }
+      
+      const designFilesBucket = buckets?.find(bucket => bucket.id === 'design-files');
+      if (!designFilesBucket) {
+        console.error('❌ [SimpleUpload] design-files bucket not found');
+        toast({
+          title: "Storage-Fehler",
+          description: "Der design-files Bucket wurde nicht gefunden.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      console.log('✅ [SimpleUpload] design-files bucket found');
+
+      // Test 3: Try to list user's folder
+      const { data: userFiles, error: listError } = await supabase.storage
+        .from('design-files')
+        .list(user.id, { limit: 1 });
+
+      if (listError) {
+        console.log('⚠️ [SimpleUpload] User folder list error (might be empty):', listError);
+      } else {
+        console.log('✅ [SimpleUpload] User folder accessible, files:', userFiles?.length || 0);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('❌ [SimpleUpload] Storage access test failed:', error);
+      return false;
+    }
+  };
+
   const uploadFile = async (file: File): Promise<void> => {
     setUploading(true);
     
     try {
+      console.log('🚀 [SimpleUpload] Starting upload process for:', file.name);
+      
+      // Test storage access first
+      const hasAccess = await testStorageAccess();
+      if (!hasAccess) {
+        throw new Error('Storage access test failed');
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
@@ -80,10 +147,12 @@ export const useSimpleFileUpload = () => {
       const fileName = `${Date.now()}-${file.name}`;
       const fullPath = `${user.id}/temp/${fileCategory}/${fileName}`;
       
-      console.log('📤 [SimpleUpload] Uploading file:');
+      console.log('📤 [SimpleUpload] Upload details:');
       console.log('  - Original name:', file.name);
       console.log('  - Category:', fileCategory);
       console.log('  - Full path:', fullPath);
+      console.log('  - File size:', file.size, 'bytes');
+      console.log('  - File type:', file.type);
 
       const { data, error } = await supabase.storage
         .from('design-files')
@@ -94,6 +163,11 @@ export const useSimpleFileUpload = () => {
 
       if (error) {
         console.error('❌ [SimpleUpload] Upload error:', error);
+        console.error('❌ [SimpleUpload] Error details:', {
+          message: error.message,
+          statusCode: error.statusCode,
+          error: error.error
+        });
         throw error;
       }
 
@@ -120,9 +194,14 @@ export const useSimpleFileUpload = () => {
     } catch (error: any) {
       console.error('❌ [SimpleUpload] Upload failed:', error);
       
+      let errorMessage = "Unbekannter Fehler beim Upload";
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Upload fehlgeschlagen",
-        description: error.message || "Unbekannter Fehler beim Upload",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -131,6 +210,7 @@ export const useSimpleFileUpload = () => {
   };
 
   const removeFile = (fileId: string) => {
+    console.log('🗑️ [SimpleUpload] Removing file with ID:', fileId);
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
     toast({
       title: "Datei entfernt",
@@ -139,6 +219,7 @@ export const useSimpleFileUpload = () => {
   };
 
   const clearAllFiles = () => {
+    console.log('🧹 [SimpleUpload] Clearing all files');
     setUploadedFiles([]);
   };
 
@@ -148,6 +229,7 @@ export const useSimpleFileUpload = () => {
     uploadFile,
     removeFile,
     clearAllFiles,
-    previewImage
+    previewImage,
+    testStorageAccess
   };
 };

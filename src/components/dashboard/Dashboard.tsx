@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,6 +30,7 @@ import SystemLogPage from './SystemLogPage';
 import WhitelabelCatalogPage from './WhitelabelCatalogPage';
 import RecentOrdersPage from './RecentOrdersPage';
 import AllOrdersPage from './AllOrdersPage';
+import StorageDebugger from '@/components/StorageDebugger';
 
 interface DashboardProps {
   user: { email: string };
@@ -99,129 +99,141 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const currentTabItem = tabItems.find(item => item.value === activeTab);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
-                <Cpu className="h-5 w-5 text-white" />
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <p className="text-gray-600">Verwalten Sie Ihre Designs, Aufträge und Maschinen</p>
+        </div>
+
+        {/* Temporary Storage Debugger - remove this after fixing the issue */}
+        <div className="mb-8">
+          <StorageDebugger />
+        </div>
+
+        {/* Header */}
+        <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
+                  <Cpu className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    ScaleCraft
+                  </h1>
+                  <p className="text-xs text-slate-500">Production Dashboard</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  ScaleCraft
-                </h1>
-                <p className="text-xs text-slate-500">Production Dashboard</p>
+              
+              <div className="flex items-center gap-4">
+                <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600">
+                  <User className="h-4 w-4" />
+                  <span>{user.email}</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={onLogout}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </Button>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600">
-                <User className="h-4 w-4" />
-                <span>{user.email}</span>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={onLogout}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </Button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {showBusinessMetrics ? (
-          <BusinessMetricsPage onBack={handleBackToOverview} />
-        ) : showSystemLog ? (
-          <SystemLogPage onBack={handleBackToOverview} />
-        ) : showWhitelabelCatalog ? (
-          <WhitelabelCatalogPage onBack={handleBackToOverview} />
-        ) : showRecentOrders ? (
-          <RecentOrdersPage onBack={handleBackToOverview} />
-        ) : showAllOrders ? (
-          <AllOrdersPage onBack={handleBackToOverview} />
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            {/* Desktop Navigation */}
-            <TabsList className="hidden lg:grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 mb-8">
-              {tabItems.map((item) => (
-                <TabsTrigger key={item.value} value={item.value} className="flex items-center gap-2">
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {showBusinessMetrics ? (
+            <BusinessMetricsPage onBack={handleBackToOverview} />
+          ) : showSystemLog ? (
+            <SystemLogPage onBack={handleBackToOverview} />
+          ) : showWhitelabelCatalog ? (
+            <WhitelabelCatalogPage onBack={handleBackToOverview} />
+          ) : showRecentOrders ? (
+            <RecentOrdersPage onBack={handleBackToOverview} />
+          ) : showAllOrders ? (
+            <AllOrdersPage onBack={handleBackToOverview} />
+          ) : (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              {/* Desktop Navigation */}
+              <TabsList className="hidden lg:grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 mb-8">
+                {tabItems.map((item) => (
+                  <TabsTrigger key={item.value} value={item.value} className="flex items-center gap-2">
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-            {/* Mobile Navigation Dropdown */}
-            <div className="lg:hidden mb-8">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    <div className="flex items-center gap-2">
-                      {currentTabItem && (
-                        <currentTabItem.icon className="h-4 w-4" />
-                      )}
-                      {currentTabItem?.label}
-                    </div>
-                    <Menu className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full bg-white border border-slate-200 shadow-md">
-                  {tabItems.map((item) => (
-                    <DropdownMenuItem 
-                      key={item.value} 
-                      onClick={() => setActiveTab(item.value)}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+              {/* Mobile Navigation Dropdown */}
+              <div className="lg:hidden mb-8">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <div className="flex items-center gap-2">
+                        {currentTabItem && (
+                          <currentTabItem.icon className="h-4 w-4" />
+                        )}
+                        {currentTabItem?.label}
+                      </div>
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-full bg-white border border-slate-200 shadow-md">
+                    {tabItems.map((item) => (
+                      <DropdownMenuItem 
+                        key={item.value} 
+                        onClick={() => setActiveTab(item.value)}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-            <TabsContent value="overview">
-              <OverviewTab 
-                onNavigateToBusinessMetrics={handleBusinessMetricsNavigation}
-                onNavigateToSystemLog={handleSystemLogNavigation}
-                onNavigateToMachines={handleMachinesNavigation}
-                onNavigateToCompletedJobs={handleCompletedJobsNavigation}
-                onNavigateToActiveJobs={handleActiveJobsNavigation}
-                onNavigateToRecentOrders={handleRecentOrdersNavigation}
-                onNavigateToAllOrders={handleAllOrdersNavigation}
-              />
-            </TabsContent>
+              <TabsContent value="overview">
+                <OverviewTab 
+                  onNavigateToBusinessMetrics={handleBusinessMetricsNavigation}
+                  onNavigateToSystemLog={handleSystemLogNavigation}
+                  onNavigateToMachines={handleMachinesNavigation}
+                  onNavigateToCompletedJobs={handleCompletedJobsNavigation}
+                  onNavigateToActiveJobs={handleActiveJobsNavigation}
+                  onNavigateToRecentOrders={handleRecentOrdersNavigation}
+                  onNavigateToAllOrders={handleAllOrdersNavigation}
+                />
+              </TabsContent>
 
-            <TabsContent value="marketplace">
-              <MarketplaceTab onNavigateToAllOrders={handleAllOrdersNavigation} />
-            </TabsContent>
+              <TabsContent value="marketplace">
+                <MarketplaceTab onNavigateToAllOrders={handleAllOrdersNavigation} />
+              </TabsContent>
 
-            <TabsContent value="designs">
-              <DesignsTab />
-            </TabsContent>
+              <TabsContent value="designs">
+                <DesignsTab />
+              </TabsContent>
 
-            <TabsContent value="jobs">
-              <JobsTab />
-            </TabsContent>
+              <TabsContent value="jobs">
+                <JobsTab />
+              </TabsContent>
 
-            <TabsContent value="machines">
-              <MachinesTab />
-            </TabsContent>
+              <TabsContent value="machines">
+                <MachinesTab />
+              </TabsContent>
 
-            <TabsContent value="knowledge">
-              <KnowledgeBaseTab />
-            </TabsContent>
-          </Tabs>
-        )}
-      </main>
+              <TabsContent value="knowledge">
+                <KnowledgeBaseTab />
+              </TabsContent>
+            </Tabs>
+          )}
+        </main>
+      </div>
     </div>
   );
 };
