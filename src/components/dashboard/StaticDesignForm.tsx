@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,22 +14,11 @@ import { useUserStorageUpload } from '@/hooks/useUserStorageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import StorageDebugMonitor from '../StorageDebugMonitor';
+import { UploadedFile } from '@/types/fileUpload';
 
 interface StaticDesignFormProps {
   onCancel: () => void;
   onSave: (designData: any) => void;
-}
-
-interface UploadedFile {
-  id: string;
-  name: string;
-  type: string;
-  size: string;
-  uploadDate: string;
-  path: string;
-  originalName: string;
-  fileCategory: 'CAD' | 'INI' | 'GCODE';
-  partId?: string;
 }
 
 const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave }) => {
