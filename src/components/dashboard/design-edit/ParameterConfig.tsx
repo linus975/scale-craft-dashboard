@@ -8,7 +8,7 @@ interface DesignPart {
   id: string;
   name: string;
   files: any[];
-  partType?: 'static' | 'personalized';
+  partType?: 'static' | 'customisable';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -27,7 +27,7 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
   hasPersonalizedFiles,
   onPartParametersChange
 }) => {
-  if (!hasPersonalizedFiles || currentPart?.partType !== 'personalized') {
+  if (!hasPersonalizedFiles || currentPart?.partType !== 'customisable') {
     return null;
   }
 

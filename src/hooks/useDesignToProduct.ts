@@ -93,7 +93,7 @@ export const useDesignToProduct = () => {
         }
       }
 
-      // 4. Create parts for each design part with part-specific settings
+      // 4. Create parts for each design part with part-specific settings and parameters
       for (const designPart of designParts) {
         try {
           // Get files for this part
@@ -119,12 +119,16 @@ export const useDesignToProduct = () => {
             f3d_file_path: f3dFile?.path || null,
             ini_file_path: iniFile?.path || null,
             gcode_path: gcodeFile?.path || null,
-            sketch_name: formData.sketchName || null,
-            replacement_type: formData.replacementValue || null
+            // Use part-specific parameters if available
+            sketch_name: (designPart as any).parameters?.sketchName || formData.sketchName || null,
+            replacement_type: (designPart as any).parameters?.replacementValue || formData.replacementValue || null
           };
 
           await createPart(partData);
-          console.log(`✅ Part created: ${designPart.name}`);
+          console.log(`✅ Part created: ${designPart.name} with parameters:`, {
+            sketch_name: partData.sketch_name,
+            replacement_type: partData.replacement_type
+          });
         } catch (error) {
           console.error(`❌ Error creating part ${designPart.name}:`, error);
         }

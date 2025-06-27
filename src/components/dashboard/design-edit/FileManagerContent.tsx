@@ -86,7 +86,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         hasINI={validation.hasINI}
       />
 
-      {/* Part-spezifische Felder: Farbe, Maschine, Düsendurchmesser, Filament */}
+      {/* Part-specific fields: Color, Machine, Nozzle Diameter, Filament */}
       <ColorMachineFields
         partId={currentPart.id}
         designParts={designParts}
@@ -108,7 +108,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         currentPart={currentPart}
       />
 
-      {/* Parameter Config nur für customisable parts */}
+      {/* Parameter Config for customisable parts with part-specific values */}
       {currentPart.partType === 'customisable' && (
         <ParameterConfig
           currentPart={currentPart}

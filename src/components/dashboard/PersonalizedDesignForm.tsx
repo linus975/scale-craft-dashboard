@@ -1,428 +1,232 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Form } from '@/components/ui/form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Save, Loader2, Image } from 'lucide-react';
-import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
+import { Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { useDesignToProduct } from '@/hooks/useDesignToProduct';
-import MultiPartFileManager from './design-edit/MultiPartFileManager';
+import { useProducts } from '@/hooks/useProducts';
+import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
 
-interface PersonalizedDesignFormProps {
-  onCancel: () => void;
-  onSave: (designData: any) => void;
-}
-
-interface UploadedFile {
-  id: string;
+interface FormData {
   name: string;
-  type: string;
-  size: string;
-  uploadDate: string;
-  path: string;
-  originalName?: string;
-  partId?: string;
+  cadSoftware: string;
+  slicer: string;
+  sketchName: string;
+  replacementValue: string;
+  version: string;
 }
 
-const PersonalizedDesignForm: React.FC<PersonalizedDesignFormProps> = ({ onCancel, onSave }) => {
-  const { uploadFile, uploading } = useHighPerformanceUpload();
-  const { saveDesignAsProduct } = useDesignToProduct();
+const PersonalizedDesignForm: React.FC = () => {
+  const { handleSubmit, register, watch, formState: { errors } } = useForm<FormData>();
+  const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [previewImage, setPreviewImage] = useState<File | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [selectedPartId, setSelectedPartId] = useState('main');
-  const [partParameters, setPartParameters] = useState<Record<string, { sketchName: string; replacementValue: string }>>({
-    main: { sketchName: '', replacementValue: '' }
-  });
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    trackingType: 'ean' as 'ean' | 'sku',
-    trackingNumber: '',
-    description: '',
-    category: '',
-    cadSoftware: '',
-    slicerSoftware: '',
-    color: '',
-    machine: '',
-    material: '',
-    nozzleDiameter: ''
-  });
+  const { createProduct, createPart } = useProducts();
+  const { uploadFile } = useHighPerformanceUpload();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.trackingNumber || !formData.category) {
-      toast({
-        title: "Fehlende Angaben",
-        description: "Bitte füllen Sie alle Pflichtfelder aus (Name, Tracking-Nummer und Kategorie).",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
+  const onSubmit = async (data: FormData) => {
     try {
-      const mainPartParams = partParameters.main || { sketchName: '', replacementValue: '' };
-
-      const designFormData = {
-        name: formData.name,
-        description: formData.description,
-        category: formData.category,
-        trackingType: formData.trackingType,
-        eanNumber: formData.trackingNumber,
-        color: formData.color,
-        machine: formData.machine,
-        material: formData.material,
-        nozzleDiameter: formData.nozzleDiameter,
-        cadSoftware: formData.cadSoftware,
-        slicer: formData.slicerSoftware,
-        sketchName: mainPartParams.sketchName,
-        replacementValue: mainPartParams.replacementValue
-      };
-
-      // Create a personalized part structure
+      console.log('Saving personalized design:', data);
+      
+      // Create design parts with corrected type
       const designParts = [{
         id: 'main',
-        name: 'Main',
-        type: 'personalized' as const,
-        software: formData.cadSoftware,
+        name: 'Main Part',
+        type: 'customisable' as 'static' | 'customisable', // Fix type here
+        software: data.cadSoftware,
         specifications: ''
       }];
 
-      await saveDesignAsProduct(
-        designFormData,
-        designParts,
-        uploadedFiles,
-        previewImage || undefined,
-        []
-      );
+      setSaving(true);
+      setProgress(0);
+      setCurrentStep('Validating...');
 
-      onSave(formData);
-    } catch (error) {
-      console.error('Error saving design:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partId: string = 'main') => {
-    const files = event.target.files;
-    if (!files) return;
-
-    try {
-      for (const file of Array.from(files)) {
-        const fileName = partId === 'main' ? file.name : `part-${partId}_${file.name}`;
-        
-        const filePath = await uploadFile(
-          new File([file], fileName, { type: file.type }), 
-          `temp-designs`
-        );
-        
-        const newFile: UploadedFile = {
-          id: Date.now() + Math.random() + '',
-          name: file.name,
-          type: getFileType(file.name),
-          size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-          uploadDate: new Date().toISOString().split('T')[0],
-          path: filePath,
-          originalName: file.name,
-          partId: partId
-        };
-        
-        setUploadedFiles(prev => [...prev, newFile]);
-        
+      // Step 1: Basic validation - only name is required
+      if (!data.name.trim()) {
         toast({
-          title: "Datei hochgeladen",
-          description: `${file.name} wurde erfolgreich hochgeladen.`,
+          title: "Validation Error",
+          description: "Design name is required",
+          variant: "destructive",
         });
+        setSaving(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error uploading files:', error);
+
+      setProgress(20);
+      setCurrentStep('Saving product...');
+
+      // Step 2: Save as product with new structure - map design parts to the correct interface
+      const product = await createProduct({
+        name: data.name,
+        description: 'Personalized Design',
+        category: 'Personalized',
+        identifier_type: 'personalized',
+        identifier_value: 'personalized'
+      });
+
+      console.log('✅ Product created:', product.product_id);
+
+      // Step 3: Create parts for each design part with part-specific settings
+      for (const designPart of designParts) {
+        try {
+          const partData = {
+            product_id: product.product_id,
+            part_name: designPart.name,
+            is_customizable: designPart.type === 'customisable',
+            cad_software: data.cadSoftware || null,
+            slicer_software: data.slicer || null,
+            color: null,
+            printer_model: null,
+            nozzle_diameter: null,
+            filament_type: null,
+            f3d_file_path: null,
+            ini_file_path: null,
+            gcode_path: null,
+            sketch_name: data.sketchName || null,
+            replacement_type: data.replacementValue || null
+          };
+
+          await createPart(partData);
+          console.log(`✅ Part created: ${designPart.name}`);
+        } catch (error) {
+          console.error(`❌ Error creating part ${designPart.name}:`, error);
+        }
+      }
+
+      setProgress(100);
+      setCurrentStep('Complete!');
+
       toast({
-        title: "Fehler beim Hochladen",
-        description: "Die Datei konnte nicht hochgeladen werden.",
+        title: "Design erfolgreich gespeichert",
+        description: `Das personalisierte Design "${data.name}" wurde als Produkt gespeichert.`,
+      });
+      
+    } catch (error) {
+      console.error('❌ Error saving design as product:', error);
+      toast({
+        title: "Fehler beim Speichern",
+        description: "Das Design konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
+      setProgress(0);
+      setCurrentStep('');
     }
-    
-    event.target.value = '';
-  };
-
-  const getFileType = (fileName: string): string => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    
-    switch (extension) {
-      case 'f3d':
-        return 'Fusion 360 File';
-      case 'ini':
-        return 'Settings File';
-      case 'step':
-      case 'stp':
-        return 'STEP File';
-      case 'stl':
-        return 'STL File';
-      case 'gcode':
-        return 'G-Code File';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const handleFileRemove = (file: UploadedFile) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
-    toast({
-      title: "Datei entfernt",
-      description: `${file.name} wurde entfernt.`,
-    });
-  };
-
-  const handleFileDownload = (file: UploadedFile) => {
-    toast({
-      title: "Download",
-      description: `Download für ${file.name} wird vorbereitet.`,
-    });
-  };
-
-  const handlePartParametersChange = (partId: string, parameters: { sketchName: string; replacementValue: string }) => {
-    setPartParameters(prev => ({
-      ...prev,
-      [partId]: parameters
-    }));
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleImageChange = (file: File | null) => {
-    setPreviewImage(file);
   };
 
   return (
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Personalisierbares Produkt hinzufügen</CardTitle>
-        <CardDescription>
-          Erstellen Sie ein neues personalisierbares Produkt. Dateien sind optional und können später hinzugefügt werden.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Product Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Produkt-Name *</Label>
-            <Input
-              id="name"
-              placeholder="Geben Sie einen Namen für Ihr Produkt ein"
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              required
-            />
-          </div>
+    <div className="container mx-auto p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Personalized Design Form</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form onSubmit={handleSubmit(onSubmit)}>
+            <div className="grid gap-4">
+              <div>
+                <Label htmlFor="name">Design Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Enter design name"
+                  {...register("name", { required: 'Design name is required' })}
+                />
+                {errors.name && <p className="text-red-500">{errors.name.message}</p>}
+              </div>
 
-          {/* Tracking Type and Number */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="trackingType">Tracking-Typ *</Label>
-              <Select onValueChange={(value) => handleSelectChange('trackingType', value)} value={formData.trackingType} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Wählen Sie den Tracking-Typ" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ean">EAN-Nummer</SelectItem>
-                  <SelectItem value="sku">SKU</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="cadSoftware">CAD Software</Label>
+                  <Input
+                    id="cadSoftware"
+                    type="text"
+                    placeholder="Enter CAD software"
+                    {...register("cadSoftware")}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="trackingNumber">
-                {formData.trackingType === 'ean' ? 'EAN-Nummer *' : 'SKU *'}
-              </Label>
-              <Input
-                id="trackingNumber"
-                placeholder={formData.trackingType === 'ean' ? '13-stellige EAN-Nummer eingeben' : 'SKU eingeben'}
-                value={formData.trackingNumber}
-                onChange={(e) => handleInputChange('trackingNumber', e.target.value)}
-                maxLength={formData.trackingType === 'ean' ? 13 : undefined}
-                required
-              />
-            </div>
-          </div>
+                <div>
+                  <Label htmlFor="slicer">Slicer</Label>
+                  <Input
+                    id="slicer"
+                    type="text"
+                    placeholder="Enter slicer"
+                    {...register("slicer")}
+                  />
+                </div>
+              </div>
 
-          {/* Preview Image Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="previewImage">Vorschaubild (optional)</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-              <Image className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 mb-2">
-                {previewImage ? previewImage.name : 'Klicken Sie hier oder ziehen Sie ein Bild hinein'}
-              </p>
-              <Input
-                id="previewImage"
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageChange(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById('previewImage')?.click()}
-              >
-                Bild auswählen
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="sketchName">Sketch Name</Label>
+                  <Input
+                    id="sketchName"
+                    type="text"
+                    placeholder="Enter sketch name"
+                    {...register("sketchName")}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="replacementValue">Replacement Value</Label>
+                  <Input
+                    id="replacementValue"
+                    type="text"
+                    placeholder="Enter replacement value"
+                    {...register("replacementValue")}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="version">Version</Label>
+                <Input
+                  id="version"
+                  type="text"
+                  placeholder="Enter version"
+                  {...register("version")}
+                />
+              </div>
+
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Design"
+                )}
               </Button>
             </div>
-          </div>
+          </Form>
 
-          {/* Description and Category */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="description">Beschreibung (optional)</Label>
-              <Textarea
-                id="description"
-                placeholder="Beschreiben Sie Ihr Produkt..."
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className="min-h-20"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">Kategorie *</Label>
-              <Input
-                id="category"
-                placeholder="Kategorie eingeben oder auswählen"
-                value={formData.category}
-                onChange={(e) => handleInputChange('category', e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          {/* CAD and Slicer Software */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cadSoftware">CAD-Software (optional)</Label>
-              <Select onValueChange={(value) => handleSelectChange('cadSoftware', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="CAD-Software auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fusion360">Fusion 360</SelectItem>
-                  <SelectItem value="solidworks">SolidWorks</SelectItem>
-                  <SelectItem value="blender">Blender</SelectItem>
-                  <SelectItem value="freecad">FreeCAD</SelectItem>
-                  <SelectItem value="onshape">Onshape</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="slicerSoftware">Slicer-Software (optional)</Label>
-              <Select onValueChange={(value) => handleSelectChange('slicerSoftware', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Slicer-Software auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cura">Ultimaker Cura</SelectItem>
-                  <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
-                  <SelectItem value="superslicer">SuperSlicer</SelectItem>
-                  <SelectItem value="bambu">Bambu Studio</SelectItem>
-                  <SelectItem value="simplify3d">Simplify3D</SelectItem>
-                  <SelectItem value="ideamaker">IdeaMaker</SelectItem>
-                  <SelectItem value="slic3r">Slic3r</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Personalization Parameters */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sketchName">Sketch-Name (optional)</Label>
-              <Input
-                id="sketchName"
-                placeholder="Name des zu ändernden Sketches"
-                value={partParameters.main?.sketchName || ''}
-                onChange={(e) => handlePartParametersChange('main', {
-                  ...partParameters.main,
-                  sketchName: e.target.value
-                })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="replacementValue">Ersetzungswert (optional)</Label>
-              <Input
-                id="replacementValue"
-                placeholder="Wert der ersetzt werden soll"
-                value={partParameters.main?.replacementValue || ''}
-                onChange={(e) => handlePartParametersChange('main', {
-                  ...partParameters.main,
-                  replacementValue: e.target.value
-                })}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Multi-Part File Management */}
-          <div className="space-y-2">
-            <Label>Dateien (optional)</Label>
-            <p className="text-sm text-gray-600">Sie können Dateien jetzt oder später hinzufügen</p>
-            <MultiPartFileManager
-              uploadedFiles={uploadedFiles}
-              loadingFiles={false}
-              uploading={uploading}
-              onFileUpload={handleFileUpload}
-              onFileRemove={handleFileRemove}
-              onFileDownload={handleFileDownload}
-              onPartParametersChange={handlePartParametersChange}
-              selectedPartId={selectedPartId}
-              onPartSelect={setSelectedPartId}
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-              Abbrechen
-            </Button>
-            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || uploading}>
-              {loading || uploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {uploading ? 'Dateien hochladen...' : 'Speichern...'}
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Produkt erstellen
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          {saving && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm font-medium">{currentStep}</span>
+                  </div>
+                  <Progress value={progress} className="w-full" />
+                  <p className="text-xs text-muted-foreground">
+                    Produkt wird gespeichert... Bitte warten Sie.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -27,6 +27,11 @@ export const useDesignParts = () => {
       name: 'Main Part', 
       files: [], 
       partType: 'static',
+      parameters: {
+        sketchName: '',
+        replacementValue: '',
+        replacementType: 'text'
+      },
       cadSoftware: '',
       slicer: '',
       nozzleDiameter: '',
@@ -37,15 +42,15 @@ export const useDesignParts = () => {
   ]);
   const [activePart, setActivePart] = useState<string>('main');
 
-  const handlePartParametersChange = (partId: string, parameters: { sketchName: string; replacementValue: string }) => {
+  const handlePartParametersChange = (partId: string, field: string, value: string) => {
+    console.log(`Updating part ${partId} parameter ${field} to: ${value}`);
     setDesignParts(prev => prev.map(part => 
       part.id === partId 
         ? { 
             ...part, 
             parameters: { 
               ...part.parameters, 
-              sketchName: parameters.sketchName,
-              replacementValue: parameters.replacementValue
+              [field]: value
             } 
           }
         : part
@@ -63,6 +68,11 @@ export const useDesignParts = () => {
       name,
       files: [],
       partType: 'static',
+      parameters: {
+        sketchName: '',
+        replacementValue: '',
+        replacementType: 'text'
+      },
       cadSoftware: '',
       slicer: '',
       nozzleDiameter: '',
