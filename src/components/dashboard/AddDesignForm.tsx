@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import DesignInformationSection from './design-edit/DesignInformationSection';
+import FileManagementSection from './design-edit/FileManagementSection';
 import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
 import { useCategoryManager } from '@/hooks/useCategoryManager';
@@ -30,6 +31,19 @@ interface FormData {
   color: string;
 }
 
+interface FileManagementData {
+  selectedPart: string;
+  partType: 'static' | 'customisable';
+  cadSoftware: string;
+  slicerSoftware: string;
+  partColor: string;
+  machineType: string;
+  sketchName: string;
+  replacementType: 'text' | 'dimension';
+  nozzleDiameter: string;
+  filamentType: string;
+}
+
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { machines } = useMachines();
   const { toast } = useToast();
@@ -38,6 +52,18 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
+  const [fileManagementData, setFileManagementData] = useState<FileManagementData>({
+    selectedPart: 'main',
+    partType: 'static',
+    cadSoftware: '',
+    slicerSoftware: '',
+    partColor: '',
+    machineType: '',
+    sketchName: '',
+    replacementType: 'text',
+    nozzleDiameter: '',
+    filamentType: ''
+  });
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -169,6 +195,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             setNewCategoryName={categoryManager.setNewCategoryName}
             setShowAddCategoryDialog={categoryManager.setShowAddCategoryDialog}
             getValues={form.getValues}
+          />
+
+          {/* File Management Section */}
+          <FileManagementSection
+            data={fileManagementData}
+            onChange={setFileManagementData}
           />
 
           {/* Progress Indicator when saving */}
