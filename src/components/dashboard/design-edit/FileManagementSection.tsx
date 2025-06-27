@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -7,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Upload, FileText, Settings2, Plus, Edit, Trash } from 'lucide-react';
+import { usePresetManager } from '@/hooks/usePresetManager';
+import PresetSelector from './PresetSelector';
 
 interface FileManagementData {
   selectedPart: string;
@@ -39,18 +40,6 @@ interface FileManagementSectionProps {
   onPartTypeChange: (partId: string, partType: 'static' | 'personalized') => void;
 }
 
-const colorPresets = [
-  'Black', 'White', 'Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple', 'Gray', 'Pink'
-];
-
-const machinePresets = [
-  'Prusa i3 MK3S+', 'Ender 3', 'Bambu Lab X1 Carbon', 'Ultimaker S3', 'Formlabs Form 3', 'Creality CR-10'
-];
-
-const filamentPresets = [
-  'PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'HIPS', 'PC', 'Nylon', 'Wood Fill', 'Carbon Fiber'
-];
-
 const FileManagementSection: React.FC<FileManagementSectionProps> = ({ 
   data, 
   onChange, 
@@ -69,6 +58,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const [newPartName, setNewPartName] = useState('');
   const [editingPart, setEditingPart] = useState<string | null>(null);
   const [editPartName, setEditPartName] = useState('');
+
+  const presetManager = usePresetManager();
 
   const updateData = (field: keyof FileManagementData, value: string) => {
     onChange({ ...data, [field]: value });
@@ -278,51 +269,67 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Color and Machine Type Row (always visible) */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <Select value={data.partColor} onValueChange={(value) => updateData('partColor', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select or enter color" />
-              </SelectTrigger>
-              <SelectContent>
-                {colorPresets.map((color) => (
-                  <SelectItem key={color} value={color.toLowerCase()}>{color}</SelectItem>
-                ))}
-                <SelectItem value="__custom__">
-                  <Input
-                    placeholder="Enter custom color"
-                    value={data.partColor}
-                    onChange={(e) => updateData('partColor', e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Color, Machine Type, and Filament Type with Preset Management */}
+        <div className="grid grid-cols-3 gap-4">
+          <PresetSelector
+            label="Color"
+            value={data.partColor}
+            onChange={(value) => updateData('partColor', value)}
+            presets={presetManager.presets.colors}
+            onAddPreset={() => presetManager.openAddDialog('colors')}
+            onEditPreset={(index, currentValue) => presetManager.startEditing('colors', index, currentValue)}
+            onRemovePreset={(index) => presetManager.removePreset('colors', index)}
+            showAddDialog={presetManager.showAddDialog.isOpen && presetManager.showAddDialog.type === 'colors'}
+            onCloseAddDialog={presetManager.closeAddDialog}
+            newPresetValue={presetManager.newPresetValue}
+            onNewPresetValueChange={presetManager.setNewPresetValue}
+            onSaveNewPreset={presetManager.handleAddPreset}
+            editingPreset={presetManager.editingPreset?.type === 'colors' ? { index: presetManager.editingPreset.index, value: presetManager.editingPreset.value } : null}
+            onEditValueChange={(value) => presetManager.setEditingPreset(prev => prev ? { ...prev, value } : null)}
+            onSaveEdit={presetManager.saveEdit}
+            onCancelEdit={presetManager.cancelEdit}
+            placeholder="Select color"
+          />
 
-          <div className="space-y-2">
-            <Label>Machine Type</Label>
-            <Select value={data.machineType} onValueChange={(value) => updateData('machineType', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select or enter machine" />
-              </SelectTrigger>
-              <SelectContent>
-                {machinePresets.map((machine) => (
-                  <SelectItem key={machine} value={machine}>{machine}</SelectItem>
-                ))}
-                <SelectItem value="__custom__">
-                  <Input
-                    placeholder="Enter custom machine"
-                    value={data.machineType}
-                    onChange={(e) => updateData('machineType', e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <PresetSelector
+            label="Machine Type"
+            value={data.machineType}
+            onChange={(value) => updateData('machineType', value)}
+            presets={presetManager.presets.machineTypes}
+            onAddPreset={() => presetManager.openAddDialog('machineTypes')}
+            onEditPreset={(index, currentValue) => presetManager.startEditing('machineTypes', index, currentValue)}
+            onRemovePreset={(index) => presetManager.removePreset('machineTypes', index)}
+            showAddDialog={presetManager.showAddDialog.isOpen && presetManager.showAddDialog.type === 'machineTypes'}
+            onCloseAddDialog={presetManager.closeAddDialog}
+            newPresetValue={presetManager.newPresetValue}
+            onNewPresetValueChange={presetManager.setNewPresetValue}
+            onSaveNewPreset={presetManager.handleAddPreset}
+            editingPreset={presetManager.editingPreset?.type === 'machineTypes' ? { index: presetManager.editingPreset.index, value: presetManager.editingPreset.value } : null}
+            onEditValueChange={(value) => presetManager.setEditingPreset(prev => prev ? { ...prev, value } : null)}
+            onSaveEdit={presetManager.saveEdit}
+            onCancelEdit={presetManager.cancelEdit}
+            placeholder="Select machine"
+          />
+
+          <PresetSelector
+            label="Filament Type"
+            value={data.filamentType}
+            onChange={(value) => updateData('filamentType', value)}
+            presets={presetManager.presets.filamentTypes}
+            onAddPreset={() => presetManager.openAddDialog('filamentTypes')}
+            onEditPreset={(index, currentValue) => presetManager.startEditing('filamentTypes', index, currentValue)}
+            onRemovePreset={(index) => presetManager.removePreset('filamentTypes', index)}
+            showAddDialog={presetManager.showAddDialog.isOpen && presetManager.showAddDialog.type === 'filamentTypes'}
+            onCloseAddDialog={presetManager.closeAddDialog}
+            newPresetValue={presetManager.newPresetValue}
+            onNewPresetValueChange={presetManager.setNewPresetValue}
+            onSaveNewPreset={presetManager.handleAddPreset}
+            editingPreset={presetManager.editingPreset?.type === 'filamentTypes' ? { index: presetManager.editingPreset.index, value: presetManager.editingPreset.value } : null}
+            onEditValueChange={(value) => presetManager.setEditingPreset(prev => prev ? { ...prev, value } : null)}
+            onSaveEdit={presetManager.saveEdit}
+            onCancelEdit={presetManager.cancelEdit}
+            placeholder="Select filament"
+          />
         </div>
 
         {/* File Upload Row */}
@@ -452,8 +459,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Nozzle Diameter and Filament Type (always visible) */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Nozzle Diameter (always visible) */}
+        <div className="grid grid-cols-1 gap-4">
           <div className="space-y-2">
             <Label>Nozzle Diameter (mm)</Label>
             <Input
@@ -465,28 +472,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               value={data.nozzleDiameter}
               onChange={(e) => updateData('nozzleDiameter', e.target.value)}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Filament Type</Label>
-            <Select value={data.filamentType} onValueChange={(value) => updateData('filamentType', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select or enter filament" />
-              </SelectTrigger>
-              <SelectContent>
-                {filamentPresets.map((filament) => (
-                  <SelectItem key={filament} value={filament}>{filament}</SelectItem>
-                ))}
-                <SelectItem value="__custom__">
-                  <Input
-                    placeholder="Enter custom filament"
-                    value={data.filamentType}
-                    onChange={(e) => updateData('filamentType', e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
       </CardContent>
