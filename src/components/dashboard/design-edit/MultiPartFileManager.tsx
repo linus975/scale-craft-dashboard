@@ -11,7 +11,7 @@ interface MultiPartFileManagerProps {
   uploadedFiles: UploadedFile[];
   loadingFiles: boolean;
   uploading: boolean;
-  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, partId?: string) => void;
+  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, partName?: string) => void;
   onFileRemove: (file: UploadedFile) => void;
   onFileDownload: (file: UploadedFile) => void;
   onPartParametersChange?: (partId: string, parameters: { sketchName: string; replacementValue: string }) => void;
@@ -86,41 +86,42 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     return acc;
   }, {} as Record<string, number>));
 
-  // CRITICAL: Ensure file upload is always targeted to the ACTIVE LOCAL part
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    event.stopPropagation();
-    console.log('🎯 [MultiPartFileManager] UPLOAD TRIGGERED:');
-    console.log('  - Target part ID:', activePart);
-    console.log('  - Files to upload:', event.target.files?.length || 0);
-    console.log('  - Event target value:', event.target.value);
-    
-    if (!activePart) {
-      console.error('❌ [MultiPartFileManager] No active part - cannot upload!');
-      return;
-    }
-    
-    // Always pass the current active LOCAL part to ensure proper file assignment
-    console.log('✅ [MultiPartFileManager] Calling onFileUpload with partId:', activePart);
-    onFileUpload(event, activePart);
-  };
-
-  const organizedParts = organizeFilesByParts(designParts, uploadedFiles);
-  const currentPart = organizedParts.find(part => part.id === activePart) || organizedParts[0];
+  // CHANGED: Find current part and use part name for file operations
+  const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
   
   if (!currentPart) {
     console.error('❌ [MultiPartFileManager] No current part found');
     return <div>No part selected</div>;
   }
 
+  const currentPartName = currentPart.name;
   console.log('📋 [MultiPartFileManager] Current part details:');
   console.log('  - ID:', currentPart.id);
-  console.log('  - Name:', currentPart.name);
+  console.log('  - NAME:', currentPartName);
   console.log('  - Type:', currentPart.partType);
-  
-  // CRITICAL: Filter files to show ONLY files for the current active LOCAL part
+
+  // CHANGED: Use part name for file filtering
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    console.log('🎯 [MultiPartFileManager] UPLOAD TRIGGERED:');
+    console.log('  - Target part NAME:', currentPartName);
+    console.log('  - Files to upload:', event.target.files?.length || 0);
+    console.log('  - Event target value:', event.target.value);
+    
+    if (!currentPartName) {
+      console.error('❌ [MultiPartFileManager] No current part name - cannot upload!');
+      return;
+    }
+    
+    // CHANGED: Pass the current part NAME to ensure proper file assignment
+    console.log('✅ [MultiPartFileManager] Calling onFileUpload with partName:', currentPartName);
+    onFileUpload(event, currentPartName);
+  };
+
+  // CHANGED: Filter files by part name instead of part ID
   const currentPartFiles = uploadedFiles.filter(file => {
-    const belongsToCurrentPart = file.partId === currentPart.id;
-    console.log(`📁 [MultiPartFileManager] File "${file.name}": partId=${file.partId}, currentPartId=${currentPart.id}, belongs=${belongsToCurrentPart}`);
+    const belongsToCurrentPart = file.partId === currentPartName;
+    console.log(`📁 [MultiPartFileManager] File "${file.name}": partId=${file.partId}, currentPartName=${currentPartName}, belongs=${belongsToCurrentPart}`);
     return belongsToCurrentPart;
   });
   
@@ -166,7 +167,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       <FileManagerContent
         currentPart={currentPart}
         validation={validation}
-        uploadedFiles={currentPartFiles} // CRITICAL: Pass only files for current LOCAL part
+        uploadedFiles={currentPartFiles} // CHANGED: Pass only files for current PART NAME
         loadingFiles={loadingFiles}
         uploading={uploading}
         onFileUpload={handleFileUpload}

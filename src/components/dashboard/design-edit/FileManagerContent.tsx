@@ -46,26 +46,27 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   activePart
 }) => {
   console.log('📂 [FileManagerContent] DEBUGGING - Component state:');
-  console.log('  - Current LOCAL part:', currentPart.id, '(', currentPart.name, ')');
+  console.log('  - Current part ID:', currentPart.id);
+  console.log('  - Current part NAME:', currentPart.name);
   console.log('  - Upload files received:', uploadedFiles.length);
   console.log('  - Files details:', uploadedFiles.map(f => ({ name: f.name, partId: f.partId, extension: f.fileExtension })));
   
-  // CRITICAL: Double-check filtering - files should ONLY belong to current LOCAL part
+  // CHANGED: Filter by part name instead of part ID
   const currentPartFiles = uploadedFiles.filter(file => {
-    const matches = file.partId === currentPart.id;
-    console.log(`📁 [FileManagerContent] File "${file.name}": partId=${file.partId}, currentPartId=${currentPart.id}, matches=${matches}`);
+    const matches = file.partId === currentPart.name;
+    console.log(`📁 [FileManagerContent] File "${file.name}": partId=${file.partId}, currentPartName=${currentPart.name}, matches=${matches}`);
     return matches;
   });
   
   console.log('🎯 [FileManagerContent] Final filtered files for current part:', currentPartFiles.map(f => f.name));
 
   const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalizable') => {
-    console.log(`🔄 [FileManagerContent] Changing file ${fileId} to ${designType} for LOCAL part ${currentPart.id}`);
+    console.log(`🔄 [FileManagerContent] Changing file ${fileId} to ${designType} for PART "${currentPart.name}"`);
   };
 
-  // Create a wrapper for file upload that ensures proper LOCAL part assignment
+  // CHANGED: Create a wrapper for file upload that ensures proper PART NAME assignment
   const handlePartSpecificFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(`🎯 [FileManagerContent] Upload wrapper called for LOCAL part: ${currentPart.id}`);
+    console.log(`🎯 [FileManagerContent] Upload wrapper called for PART NAME: ${currentPart.name}`);
     console.log('  - Files to upload:', event.target.files?.length || 0);
     onFileUpload(event);
   };
@@ -88,11 +89,11 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
 
       <FileUpload
         partName={currentPart.name}
-        partId={currentPart.id}
+        partId={currentPart.name} // CHANGED: Pass part name as partId
         partType={currentPart.partType === 'personalizable' ? 'personalized' : 'static'}
         uploading={uploading}
         onFileUpload={handlePartSpecificFileUpload}
-        uploadedFiles={currentPartFiles} // CRITICAL: Pass only current LOCAL part files
+        uploadedFiles={currentPartFiles} // CHANGED: Pass only current PART NAME files
         onPartSpecificationChange={onPartSpecificationChange}
         gcodeFile={gcodeFile}
         onGcodeFileChange={onGcodeFileChange}
@@ -110,7 +111,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
 
       {(loadingFiles || currentPartFiles.length > 0) && (
         <FileList
-          files={currentPartFiles} // CRITICAL: Show only current LOCAL part files
+          files={currentPartFiles} // CHANGED: Show only current PART NAME files
           partName={currentPart.name}
           loadingFiles={loadingFiles}
           onFileRemove={onFileRemove}

@@ -32,12 +32,12 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 }) => {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
-    console.log(`🎯 FileUploadSection - Upload triggered for part: ${partId}`);
+    console.log(`🎯 FileUploadSection - Upload triggered for PART NAME: ${partId}`);
     onFileUpload(event);
   };
 
   const getFilesByTypeAndContext = () => {
-    console.log(`🔍 FileUploadSection - Filtering files for LOCAL part: ${partId}`);
+    console.log(`🔍 FileUploadSection - Filtering files for PART NAME: ${partId}`);
     console.log(`🔍 All uploaded files:`, uploadedFiles.map(f => ({ 
       name: f.name, 
       partId: f.partId, 
@@ -46,9 +46,9 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
     })));
     
     return uploadedFiles.filter(file => {
-      // CRITICAL: Must match EXACT local partId (not database ID)
+      // CHANGED: Must match EXACT part name (not database ID)
       const hasCorrectPartId = file.partId === partId;
-      console.log(`📁 File ${file.name}: localPartId=${file.partId}, expectedLocalPartId=${partId}, matches=${hasCorrectPartId}`);
+      console.log(`📁 File ${file.name}: partName=${file.partId}, expectedPartName=${partId}, matches=${hasCorrectPartId}`);
       
       const hasCorrectExtension = extensions.split(',').some(ext => 
         file.name.toLowerCase().endsWith(ext.trim())
@@ -59,7 +59,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         file.uploadContext === expectedFileType || file.fileExtension === expectedFileType : true;
       
       const matchesAll = hasCorrectPartId && hasCorrectExtension && hasCorrectContext;
-      console.log(`✅ File ${file.name} matches all criteria for part ${partId}: ${matchesAll}`);
+      console.log(`✅ File ${file.name} matches all criteria for PART NAME ${partId}: ${matchesAll}`);
       
       return matchesAll;
     });
@@ -70,7 +70,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   const hasExactlyOne = relevantFiles.length === 1;
   const tooManyFiles = relevantFiles.length > 1;
 
-  console.log(`📋 FileUploadSection for LOCAL part ${partId} (${expectedFileType}): Found ${relevantFiles.length} relevant files`);
+  console.log(`📋 FileUploadSection for PART NAME ${partId} (${expectedFileType}): Found ${relevantFiles.length} relevant files`);
 
   return (
     <div className="space-y-2">
