@@ -7,44 +7,50 @@ export const useFileUpload = () => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
-  const uploadFile = async (file: File, folder: string = '', onProgress?: (progress: number) => void) => {
+  const uploadFile = async (file: File, folderPath: string = ''): Promise<string> => {
     setUploading(true);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Benutzer nicht angemeldet');
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
-      // Always add timestamp to filename to avoid conflicts - no existence checks needed
+      // Create unique filename to avoid conflicts
       const fileExt = file.name.split('.').pop();
-      const fileNameWithoutExt = file.name.replace(`.${fileExt}`, '');
-      const timestamp = Date.now();
-      const fileName = `${fileNameWithoutExt}_${timestamp}.${fileExt}`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      const fullPath = folderPath ? `${user.id}/${folderPath}/${fileName}` : `${user.id}/${fileName}`;
+      
+      console.log('📤 [useFileUpload] Uploading file:');
+      console.log('  - Original name:', file.name);
+      console.log('  - Generated name:', fileName);
+      console.log('  - Full path:', fullPath);
+      console.log('  - File size:', file.size, 'bytes');
 
-      // Simplified path structure
-      const filePath = folder ? `${user.id}/${folder}/${fileName}` : `${user.id}/${fileName}`;
-
-      // Upload with progress tracking
       const { data, error } = await supabase.storage
         .from('design-files')
-        .upload(filePath, file, {
+        .upload(fullPath, file, {
           cacheControl: '3600',
-          upsert: false // Since we use timestamps, we never need to overwrite
+          upsert: true
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [useFileUpload] Upload error:', error);
+        throw error;
+      }
 
-      toast({
-        title: "Datei hochgeladen",
-        description: `Die Datei "${fileName}" wurde erfolgreich hochgeladen.`,
-      });
-
+      console.log('✅ [useFileUpload] Upload successful:', data.path);
       return data.path;
+
     } catch (error: any) {
-      console.error('Error uploading file:', error);
+      console.error('❌ [useFileUpload] Upload failed:', error);
+      
       toast({
-        title: "Fehler beim Hochladen",
-        description: error.message,
+        title: "Upload fehlgeschlagen",
+        description: error.message || "Unbekannter Fehler beim Upload",
         variant: "destructive",
       });
+      
       throw error;
     } finally {
       setUploading(false);
