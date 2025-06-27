@@ -58,21 +58,25 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const [editingPart, setEditingPart] = useState<string | null>(null);
   const [editPartName, setEditPartName] = useState('');
 
-  // Preset management states
+  // Color preset states
   const [showAddColorDialog, setShowAddColorDialog] = useState(false);
-  const [showAddMachineDialog, setShowAddMachineDialog] = useState(false);
-  const [showAddFilamentDialog, setShowAddFilamentDialog] = useState(false);
   const [showEditColorDialog, setShowEditColorDialog] = useState(false);
-  const [showEditMachineDialog, setShowEditMachineDialog] = useState(false);
-  const [showEditFilamentDialog, setShowEditFilamentDialog] = useState(false);
   const [newColorName, setNewColorName] = useState('');
-  const [newMachineName, setNewMachineName] = useState('');
-  const [newFilamentName, setNewFilamentName] = useState('');
   const [editColorName, setEditColorName] = useState('');
-  const [editMachineName, setEditMachineName] = useState('');
-  const [editFilamentName, setEditFilamentName] = useState('');
   const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
+
+  // Machine preset states
+  const [showAddMachineDialog, setShowAddMachineDialog] = useState(false);
+  const [showEditMachineDialog, setShowEditMachineDialog] = useState(false);
+  const [newMachineName, setNewMachineName] = useState('');
+  const [editMachineName, setEditMachineName] = useState('');
   const [editingMachineIndex, setEditingMachineIndex] = useState<number | null>(null);
+
+  // Filament preset states
+  const [showAddFilamentDialog, setShowAddFilamentDialog] = useState(false);
+  const [showEditFilamentDialog, setShowEditFilamentDialog] = useState(false);
+  const [newFilamentName, setNewFilamentName] = useState('');
+  const [editFilamentName, setEditFilamentName] = useState('');
   const [editingFilamentIndex, setEditingFilamentIndex] = useState<number | null>(null);
 
   const presetManager = usePresetManager();
@@ -369,8 +373,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Color, Machine Type, and Filament Type with Preset Management */}
-        <div className="grid grid-cols-3 gap-4">
+        {/* Color and Machine Type Row with Preset Management */}
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Color</Label>
             <div className="flex gap-2">
@@ -590,116 +594,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               </div>
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label>Filament Type</Label>
-            <div className="flex gap-2">
-              <Select value={data.filamentType} onValueChange={(value) => updateData('filamentType', value)}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select filament" />
-                </SelectTrigger>
-                <SelectContent>
-                  {presetManager.presets.filamentTypes.map((filament, index) => (
-                    <SelectItem key={index} value={filament}>
-                      {filament}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              {/* Filament Management Controls */}
-              <div className="flex gap-1">
-                <Dialog open={showAddFilamentDialog} onOpenChange={setShowAddFilamentDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-10 w-10 p-0">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Filament</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Filament Name</Label>
-                        <Input
-                          placeholder="Enter filament name"
-                          value={newFilamentName}
-                          onChange={(e) => setNewFilamentName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddFilamentDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleAddFilament} disabled={!newFilamentName.trim()}>
-                          Add
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Dialog open={showEditFilamentDialog} onOpenChange={setShowEditFilamentDialog}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-10 w-10 p-0"
-                      onClick={() => {
-                        const selectedIndex = presetManager.presets.filamentTypes.findIndex(filament => filament === data.filamentType);
-                        if (selectedIndex !== -1) {
-                          handleEditFilament(selectedIndex, data.filamentType);
-                        }
-                      }}
-                      disabled={!data.filamentType}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit Filament</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Filament Name</Label>
-                        <Input
-                          placeholder="Enter filament name"
-                          value={editFilamentName}
-                          onChange={(e) => setEditFilamentName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowEditFilamentDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleSaveFilamentEdit} disabled={!editFilamentName.trim()}>
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-10 w-10 p-0"
-                  onClick={() => {
-                    const selectedIndex = presetManager.presets.filamentTypes.findIndex(filament => filament === data.filamentType);
-                    if (selectedIndex !== -1) {
-                      handleDeleteFilament(selectedIndex);
-                      updateData('filamentType', '');
-                    }
-                  }}
-                  disabled={!data.filamentType || presetManager.presets.filamentTypes.length <= 1}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* File Upload Row */}
@@ -829,8 +723,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Nozzle Diameter */}
-        <div className="grid grid-cols-1 gap-4">
+        {/* Nozzle Diameter and Filament Type Row */}
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nozzle Diameter (mm)</Label>
             <Input
@@ -842,6 +736,116 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               value={data.nozzleDiameter}
               onChange={(e) => updateData('nozzleDiameter', e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Filament Type</Label>
+            <div className="flex gap-2">
+              <Select value={data.filamentType} onValueChange={(value) => updateData('filamentType', value)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select filament" />
+                </SelectTrigger>
+                <SelectContent>
+                  {presetManager.presets.filamentTypes.map((filament, index) => (
+                    <SelectItem key={index} value={filament}>
+                      {filament}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {/* Filament Management Controls */}
+              <div className="flex gap-1">
+                <Dialog open={showAddFilamentDialog} onOpenChange={setShowAddFilamentDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-10 w-10 p-0">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Filament</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Filament Name</Label>
+                        <Input
+                          placeholder="Enter filament name"
+                          value={newFilamentName}
+                          onChange={(e) => setNewFilamentName(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddFilamentDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddFilament} disabled={!newFilamentName.trim()}>
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={showEditFilamentDialog} onOpenChange={setShowEditFilamentDialog}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-10 w-10 p-0"
+                      onClick={() => {
+                        const selectedIndex = presetManager.presets.filamentTypes.findIndex(filament => filament === data.filamentType);
+                        if (selectedIndex !== -1) {
+                          handleEditFilament(selectedIndex, data.filamentType);
+                        }
+                      }}
+                      disabled={!data.filamentType}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Filament</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Filament Name</Label>
+                        <Input
+                          placeholder="Enter filament name"
+                          value={editFilamentName}
+                          onChange={(e) => setEditFilamentName(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowEditFilamentDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveFilamentEdit} disabled={!editFilamentName.trim()}>
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-10 w-10 p-0"
+                  onClick={() => {
+                    const selectedIndex = presetManager.presets.filamentTypes.findIndex(filament => filament === data.filamentType);
+                    if (selectedIndex !== -1) {
+                      handleDeleteFilament(selectedIndex);
+                      updateData('filamentType', '');
+                    }
+                  }}
+                  disabled={!data.filamentType || presetManager.presets.filamentTypes.length <= 1}
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>
