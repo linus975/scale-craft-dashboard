@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useToast } from '@/hooks/use-toast';
+import { useStorageFolderManager } from '@/hooks/useStorageFolderManager';
 
 interface UploadedFile {
   id: string;
@@ -19,11 +19,14 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const { uploadFile, getFileUrl, deleteFile, uploading } = useFileUpload();
+  const { ensureTempPartsFolder, checkStorageStructure } = useStorageFolderManager();
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen && design?.id) {
       loadDesignFiles();
+      // Check storage structure when dialog opens
+      checkStorageStructure();
     }
   }, [isOpen, design?.id]);
 
@@ -91,6 +94,8 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
     if (!design?.id) return;
     
     setLoadingFiles(true);
+    console.log('🔄 [useDesignFiles] Loading files for design:', design.id);
+    
     try {
       const files: UploadedFile[] = [];
       
@@ -172,30 +177,51 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          console.log('👤 [useDesignFiles] Loading files for user:', user.id);
+          
           // Look for files in the new temp-parts structure
           const tempPartsPath = `${user.id}/temp-parts/`;
+          console.log('📂 [useDesignFiles] Checking temp-parts path:', tempPartsPath);
+          
           const { data: storageFiles, error } = await supabase.storage
             .from('design-files')
             .list(tempPartsPath, {
               limit: 100
             });
 
+          if (error) {
+            console.error('❌ [useDesignFiles] Error listing temp-parts:', error);
+          } else {
+            console.log('📁 [useDesignFiles] Found part folders:', storageFiles?.map(f => f.name) || []);
+          }
+
           if (storageFiles && !error) {
             // Process each part folder
             for (const partFolder of storageFiles) {
-              if (partFolder.name) {
+              if (partFolder.name && partFolder.name !== '.keep') {
                 const partPath = `${tempPartsPath}${partFolder.name}/`;
+                console.log('🔍 [useDesignFiles] Checking part folder:', partPath);
+                
                 const { data: partFiles, error: partError } = await supabase.storage
                   .from('design-files')
                   .list(partPath, {
                     limit: 100
                   });
 
+                if (partError) {
+                  console.error(`❌ [useDesignFiles] Error listing files in ${partFolder.name}:`, partError);
+                } else {
+                  console.log(`📄 [useDesignFiles] Files in ${partFolder.name}:`, partFiles?.map(f => f.name) || []);
+                }
+
                 if (partFiles && !partError) {
                   for (const file of partFiles) {
+                    // Skip .keep files
+                    if (file.name === '.keep') continue;
+                    
                     const fullPath = `${partPath}${file.name}`;
                     
-                    files.push({
+                    const newFile: UploadedFile = {
                       id: file.id || `${partFolder.name}-${file.name}`,
                       name: file.name,
                       type: getFileType(file.name),
@@ -203,8 +229,11 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
                       uploadDate: new Date(file.created_at || design.created_at).toISOString().split('T')[0],
                       path: fullPath,
                       originalName: file.name,
-                      partId: partFolder.name // Use the part folder name as partId
-                    });
+                      partId: partFolder.name // FIXED: Use the part folder name as partId
+                    };
+                    
+                    files.push(newFile);
+                    console.log(`✅ [useDesignFiles] Added file: ${file.name} to part: ${partFolder.name}`);
                   }
                 }
               }
@@ -212,13 +241,13 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           }
         }
       } catch (storageError) {
-        console.error('Error loading storage files:', storageError);
+        console.error('❌ [useDesignFiles] Error loading storage files:', storageError);
       }
 
-      console.log('🔄 [useDesignFiles] Loaded files:', files.map(f => ({ name: f.name, partId: f.partId })));
+      console.log('📋 [useDesignFiles] Final loaded files:', files.map(f => ({ name: f.name, partId: f.partId })));
       setUploadedFiles(files);
     } catch (error) {
-      console.error('Error loading design files:', error);
+      console.error('❌ [useDesignFiles] Error loading design files:', error);
     } finally {
       setLoadingFiles(false);
     }
@@ -230,14 +259,30 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
 
     console.log('🎯 [useDesignFiles] UPLOAD START for part:', partName);
     console.log('  - Files to upload:', files.length);
+    console.log('  - Target part name:', partName);
+
+    // Ensure the temp-parts folder structure exists
+    const folderCreated = await ensureTempPartsFolder(partName);
+    if (!folderCreated) {
+      toast({
+        title: "Fehler beim Erstellen des Ordners",
+        description: "Der Ordner für das Part konnte nicht erstellt werden.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       for (const file of Array.from(files)) {
+        console.log(`📤 [useDesignFiles] Uploading file: ${file.name} to part: ${partName}`);
+        
         // Upload files to part-specific folder structure: temp-parts/{partName}/
         const filePath = await uploadFile(
           file, 
           `temp-parts/${partName}`
         );
+        
+        console.log(`✅ [useDesignFiles] File uploaded to path: ${filePath}`);
         
         const newFile: UploadedFile = {
           id: `${partName}-${Date.now()}-${Math.random()}`,
@@ -247,12 +292,16 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           uploadDate: new Date().toISOString().split('T')[0],
           path: filePath,
           originalName: file.name,
-          partId: partName // FIXED: Use the correct part name
+          partId: partName // FIXED: Store the correct part name
         };
         
-        console.log('✅ [useDesignFiles] File uploaded:', { name: file.name, partId: partName });
+        console.log('✅ [useDesignFiles] File uploaded and assigned to part:', { name: file.name, partId: partName });
         
-        setUploadedFiles(prev => [...prev, newFile]);
+        setUploadedFiles(prev => {
+          const updated = [...prev, newFile];
+          console.log('📊 [useDesignFiles] Updated file list:', updated.map(f => ({ name: f.name, partId: f.partId })));
+          return updated;
+        });
         
         toast({
           title: "Datei hochgeladen",
@@ -263,7 +312,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
       // Reload all files to ensure consistency
       await loadDesignFiles();
     } catch (error) {
-      console.error('Error uploading files:', error);
+      console.error('❌ [useDesignFiles] Error uploading files:', error);
       toast({
         title: "Fehler beim Hochladen",
         description: "Die Datei konnte nicht hochgeladen werden.",

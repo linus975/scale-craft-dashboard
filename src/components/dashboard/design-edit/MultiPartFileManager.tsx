@@ -2,6 +2,7 @@
 import React from 'react';
 import PartManagementHeader from './PartManagementHeader';
 import FileManagerContent from './FileManagerContent';
+import StorageDebugPanel from './StorageDebugPanel';
 import { useMultiPartManager } from '@/hooks/useMultiPartManager';
 import { organizeFilesByParts, validatePartFiles } from '@/utils/fileOrganization';
 import type { UploadedFile } from '@/types/fileUpload';
@@ -132,6 +133,9 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
 
   return (
     <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+      {/* Debug Panel - can be removed in production */}
+      <StorageDebugPanel isOpen={process.env.NODE_ENV === 'development'} />
+      
       <PartManagementHeader
         designParts={designParts}
         activePart={activePart}
