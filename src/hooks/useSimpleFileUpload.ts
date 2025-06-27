@@ -164,9 +164,7 @@ export const useSimpleFileUpload = () => {
       if (error) {
         console.error('❌ [SimpleUpload] Upload error:', error);
         console.error('❌ [SimpleUpload] Error details:', {
-          message: error.message,
-          statusCode: error.statusCode,
-          error: error.error
+          message: error.message
         });
         throw error;
       }

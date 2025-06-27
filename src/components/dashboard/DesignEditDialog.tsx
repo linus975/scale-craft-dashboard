@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSimpleFileUpload } from '@/hooks/useSimpleFileUpload';
+import { useDesignFiles } from '@/hooks/useDesignFiles';
 import DesignForm from './design-edit/DesignForm';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import ActionsPanel from './design-edit/ActionsPanel';
@@ -43,8 +44,8 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
     handleFileUpload,
     handleFileRemove,
     handleFileDownload,
-    getFilesForPart // NEW: Function to get files for specific part
-  } = useSimpleFileUpload(design, isOpen);
+    getFilesForPart
+  } = useDesignFiles(design, isOpen);
 
   const idleMachines = machines.filter(machine => machine.status === 'idle');
 
@@ -111,7 +112,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                   onFileUpload={handleFileUpload}
                   onFileRemove={handleFileRemove}
                   onFileDownload={handleFileDownload}
-                  getFilesForPart={getFilesForPart} // NEW: Pass function to get files for specific part
+                  getFilesForPart={getFilesForPart}
                 />
               </CardContent>
             </Card>
