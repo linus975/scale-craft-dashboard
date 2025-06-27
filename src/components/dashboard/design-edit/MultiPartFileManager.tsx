@@ -33,6 +33,7 @@ interface MultiPartFileManagerProps {
   onGcodeFileChange?: (event: React.ChangeEvent<HTMLInputElement>, partId: string) => void;
   onRemoveGcodeFile?: (partId: string) => void;
   getGcodeFileForPart?: (partId: string) => File | null;
+  getFilesForPart?: (partName: string) => UploadedFile[]; // NEW: Function to get files for specific part
 }
 
 const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
@@ -59,7 +60,8 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   gcodeFiles,
   onGcodeFileChange,
   onRemoveGcodeFile,
-  getGcodeFileForPart
+  getGcodeFileForPart,
+  getFilesForPart // NEW: Function to get files for specific part
 }) => {
   const {
     designParts,
@@ -83,7 +85,6 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   console.log('🎯 Active part ID:', activePart);
   console.log('📁 Total uploaded files:', uploadedFiles.length);
   
-  // Find current part and get its name for file operations
   const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
   
   if (!currentPart) {
@@ -97,7 +98,6 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   console.log('  - NAME:', currentPartName);
   console.log('  - Type:', currentPart.partType);
 
-  // FIXED: Use part name for file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
     console.log('🎯 [MultiPartFileManager] UPLOAD TRIGGERED for part NAME:', currentPartName);
@@ -108,17 +108,18 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       return;
     }
     
-    // FIXED: Pass the current part NAME to ensure proper file assignment
     console.log('✅ [MultiPartFileManager] Calling onFileUpload with partName:', currentPartName);
     onFileUpload(event, currentPartName);
   };
 
-  // STRICT: Filter files by exact part name match
-  const currentPartFiles = uploadedFiles.filter(file => {
-    const belongsToCurrentPart = file.partId === currentPartName;
-    console.log(`📁 [MultiPartFileManager] File "${file.name}": partId=${file.partId}, currentPartName=${currentPartName}, belongs=${belongsToCurrentPart}`);
-    return belongsToCurrentPart;
-  });
+  // IMPROVED: Use getFilesForPart function if available for better accuracy
+  const currentPartFiles = getFilesForPart 
+    ? getFilesForPart(currentPartName)
+    : uploadedFiles.filter(file => {
+        const belongsToCurrentPart = file.partId === currentPartName;
+        console.log(`📁 [MultiPartFileManager] File "${file.name}": partId=${file.partId}, currentPartName=${currentPartName}, belongs=${belongsToCurrentPart}`);
+        return belongsToCurrentPart;
+      });
   
   console.log('🎯 [MultiPartFileManager] Filtered files for current part:', currentPartFiles.map(f => f.name));
   
@@ -128,12 +129,10 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
 
   console.log('✅ [MultiPartFileManager] Validation result:', validation);
 
-  // Get G-code file for current part
   const currentPartGcodeFile = getGcodeFileForPart ? getGcodeFileForPart(activePart) : null;
 
   return (
     <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-      {/* Debug Panel - can be removed in production */}
       <StorageDebugPanel isOpen={process.env.NODE_ENV === 'development'} />
       
       <PartManagementHeader
@@ -165,7 +164,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       <FileManagerContent
         currentPart={currentPart}
         validation={validation}
-        uploadedFiles={currentPartFiles} // FIXED: Pass only files for current PART NAME
+        uploadedFiles={currentPartFiles} // IMPROVED: Show only files for current part
         loadingFiles={loadingFiles}
         uploading={uploading}
         onFileUpload={handleFileUpload}

@@ -43,10 +43,10 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
     uploading,
     handleFileUpload,
     handleFileRemove,
-    handleFileDownload
+    handleFileDownload,
+    getFilesForPart // NEW: Function to get files for specific part
   } = useDesignFiles(design, isOpen);
 
-  // Filter machines to only show idle ones
   const idleMachines = machines.filter(machine => machine.status === 'idle');
 
   const handleDesignChange = (field: string, value: string) => {
@@ -87,7 +87,6 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Design Information */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
@@ -113,12 +112,12 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                   onFileUpload={handleFileUpload}
                   onFileRemove={handleFileRemove}
                   onFileDownload={handleFileDownload}
+                  getFilesForPart={getFilesForPart} // NEW: Pass function to get files for specific part
                 />
               </CardContent>
             </Card>
           </div>
 
-          {/* Actions Panel */}
           <ActionsPanel
             design={design}
             formData={formData}
