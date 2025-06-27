@@ -14,16 +14,16 @@ export const useFileUploadManagerWithDatabase = () => {
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>, 
-    partId: string, // CRITICAL: This must be the real database part_id UUID
+    localPartId: string, // CRITICAL: This is the local frontend part ID, not database ID
     expectedFileType?: ExpectedFileType
   ) => {
     const files = event.target.files;
-    if (!files || !partId) {
-      console.log('❌ No files or partId provided');
+    if (!files || !localPartId) {
+      console.log('❌ No files or localPartId provided');
       return;
     }
 
-    console.log(`🎯 UPLOAD TARGET: Database part ID: ${partId}`);
+    console.log(`🎯 UPLOAD TARGET: LOCAL part ID: ${localPartId}`);
     console.log(`📁 Files to upload: ${files.length}`);
     console.log(`🔍 Expected file type: ${expectedFileType || 'any'}`);
 
@@ -37,29 +37,29 @@ export const useFileUploadManagerWithDatabase = () => {
     }
 
     try {
-      console.log(`✅ Processing ${validFiles.length} valid files for part ${partId}`);
+      console.log(`✅ Processing ${validFiles.length} valid files for LOCAL part ${localPartId}`);
       
       const newFiles: UploadedFile[] = [];
       
       for (const file of validFiles) {
         const fileTypeFolder = getFileTypeFolder(file.name);
-        // CRITICAL: Use the real database part_id in the upload path
-        const folderPath = `parts/${partId}/${fileTypeFolder}`;
+        // CRITICAL: Use the local part ID in the upload path for organization
+        const folderPath = `temp-parts/${localPartId}/${fileTypeFolder}`;
         
         try {
-          console.log(`📤 Uploading ${file.name} to ${folderPath}`);
+          console.log(`📤 Uploading ${file.name} to ${folderPath} for LOCAL part ${localPartId}`);
           const uploadPath = await uploadFile(file, folderPath);
           const fileExtension = file.name.split('.').pop()?.toLowerCase();
           
           const newFile: UploadedFile = {
-            id: `${partId}-${Date.now()}-${Math.random()}`,
+            id: `${localPartId}-${Date.now()}-${Math.random()}`,
             name: file.name,
             type: getFileType(file.name),
             size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
             uploadDate: new Date().toISOString().split('T')[0],
             path: uploadPath,
             originalName: file.name,
-            partId: partId, // CRITICAL: Store the exact database part_id
+            partId: localPartId, // CRITICAL: Store the LOCAL part ID
             designType: 'static' as const,
             fileExtension: fileExtension,
             isF3DFile: fileExtension === 'f3d',
@@ -68,16 +68,16 @@ export const useFileUploadManagerWithDatabase = () => {
           };
 
           newFiles.push(newFile);
-          console.log(`✅ File uploaded successfully for part ${partId}: ${file.name}`);
+          console.log(`✅ File uploaded successfully for LOCAL part ${localPartId}: ${file.name}`);
         } catch (uploadError) {
           console.error(`❌ Error uploading ${file.name}:`, uploadError);
         }
       }
 
       if (newFiles.length > 0) {
-        // CRITICAL: Update files for this specific part only
+        // CRITICAL: Update files for this specific LOCAL part only
         setPartFiles(prev => {
-          const currentPartFiles = prev[partId] || [];
+          const currentPartFiles = prev[localPartId] || [];
           
           // Remove existing files of the same type and context to prevent duplicates
           const filteredFiles = currentPartFiles.filter(existingFile => {
@@ -93,11 +93,11 @@ export const useFileUploadManagerWithDatabase = () => {
           
           const updatedPartFiles = [...filteredFiles, ...newFiles];
           
-          console.log(`📂 Updated files for part ${partId}:`, updatedPartFiles.map(f => f.name));
+          console.log(`📂 Updated files for LOCAL part ${localPartId}:`, updatedPartFiles.map(f => f.name));
           
           return {
             ...prev,
-            [partId]: updatedPartFiles
+            [localPartId]: updatedPartFiles
           };
         });
 
@@ -126,7 +126,7 @@ export const useFileUploadManagerWithDatabase = () => {
       return;
     }
     
-    console.log(`🗑️ Removing file ${file.name} from part ${file.partId}`);
+    console.log(`🗑️ Removing file ${file.name} from LOCAL part ${file.partId}`);
     
     setPartFiles(prev => ({
       ...prev,
@@ -143,15 +143,15 @@ export const useFileUploadManagerWithDatabase = () => {
     console.log('📥 Downloading file:', file.name, 'from path:', file.path);
   };
 
-  const getFilesForPart = (partId: string): UploadedFile[] => {
-    const files = partFiles[partId] || [];
-    console.log(`📋 Getting files for part ${partId}:`, files.map(f => f.name));
+  const getFilesForPart = (localPartId: string): UploadedFile[] => {
+    const files = partFiles[localPartId] || [];
+    console.log(`📋 Getting files for LOCAL part ${localPartId}:`, files.map(f => f.name));
     return files;
   };
 
   const getAllFiles = (): UploadedFile[] => {
     const allFiles = Object.values(partFiles).flat();
-    console.log('📋 All files across all parts:', allFiles.map(f => ({ name: f.name, partId: f.partId })));
+    console.log('📋 All files across all LOCAL parts:', allFiles.map(f => ({ name: f.name, partId: f.partId })));
     return allFiles;
   };
 

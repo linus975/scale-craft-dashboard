@@ -45,20 +45,20 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   designParts = [],
   activePart
 }) => {
-  // CRITICAL: Filter files to show ONLY files that belong to the current part
+  // CRITICAL: Filter files to show ONLY files that belong to the current LOCAL part
   const currentPartFiles = uploadedFiles.filter(file => file.partId === currentPart.id);
   
-  console.log(`📂 FileManagerContent - Current part: ${currentPart.id} (${currentPart.name})`);
+  console.log(`📂 FileManagerContent - Current LOCAL part: ${currentPart.id} (${currentPart.name})`);
   console.log(`📁 All uploaded files:`, uploadedFiles.map(f => ({ name: f.name, partId: f.partId })));
-  console.log(`🎯 Files for current part ${currentPart.id}:`, currentPartFiles.map(f => f.name));
+  console.log(`🎯 Files for current LOCAL part ${currentPart.id}:`, currentPartFiles.map(f => f.name));
 
   const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalizable') => {
-    console.log(`🔄 Changing file ${fileId} to ${designType} for part ${currentPart.id}`);
+    console.log(`🔄 Changing file ${fileId} to ${designType} for LOCAL part ${currentPart.id}`);
   };
 
-  // Create a wrapper for file upload that ensures proper part assignment
+  // Create a wrapper for file upload that ensures proper LOCAL part assignment
   const handlePartSpecificFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(`🎯 UPLOAD: FileManagerContent uploading for part: ${currentPart.id}`);
+    console.log(`🎯 UPLOAD: FileManagerContent uploading for LOCAL part: ${currentPart.id}`);
     onFileUpload(event);
   };
 
@@ -84,7 +84,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         partType={currentPart.partType === 'personalizable' ? 'personalized' : 'static'}
         uploading={uploading}
         onFileUpload={handlePartSpecificFileUpload}
-        uploadedFiles={currentPartFiles} // CRITICAL: Pass only current part files
+        uploadedFiles={currentPartFiles} // CRITICAL: Pass only current LOCAL part files
         onPartSpecificationChange={onPartSpecificationChange}
         gcodeFile={gcodeFile}
         onGcodeFileChange={onGcodeFileChange}
@@ -102,7 +102,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
 
       {(loadingFiles || currentPartFiles.length > 0) && (
         <FileList
-          files={currentPartFiles} // CRITICAL: Show only current part files
+          files={currentPartFiles} // CRITICAL: Show only current LOCAL part files
           partName={currentPart.name}
           loadingFiles={loadingFiles}
           onFileRemove={onFileRemove}

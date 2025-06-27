@@ -1,3 +1,4 @@
+
 import React from 'react';
 import PartManagementHeader from './PartManagementHeader';
 import FileManagerContent from './FileManagerContent';
@@ -76,13 +77,13 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     onPartSelect
   });
 
-  // CRITICAL: Ensure file upload is always targeted to the active part
+  // CRITICAL: Ensure file upload is always targeted to the ACTIVE LOCAL part
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
-    console.log(`🎯 CRITICAL: MultiPartFileManager uploading to ACTIVE part: ${activePart}`);
+    console.log(`🎯 CRITICAL: MultiPartFileManager uploading to ACTIVE LOCAL part: ${activePart}`);
     console.log(`📝 Event target files:`, event.target.files?.length || 0);
     
-    // Always pass the current active part to ensure proper file assignment
+    // Always pass the current active LOCAL part to ensure proper file assignment
     onFileUpload(event, activePart);
   };
 
@@ -94,17 +95,17 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     return <div>No part selected</div>;
   }
 
-  console.log(`📋 MultiPartFileManager - Active part: ${activePart}`);
+  console.log(`📋 MultiPartFileManager - Active LOCAL part: ${activePart}`);
   console.log(`📂 Current part: ${currentPart.name} (${currentPart.id})`);
   
-  // CRITICAL: Filter files to show ONLY files for the current active part
+  // CRITICAL: Filter files to show ONLY files for the current active LOCAL part
   const currentPartFiles = uploadedFiles.filter(file => {
     const belongsToCurrentPart = file.partId === currentPart.id;
-    console.log(`📁 File ${file.name}: partId=${file.partId}, currentPartId=${currentPart.id}, belongs=${belongsToCurrentPart}`);
+    console.log(`📁 File ${file.name}: localPartId=${file.partId}, currentLocalPartId=${currentPart.id}, belongs=${belongsToCurrentPart}`);
     return belongsToCurrentPart;
   });
   
-  console.log(`🎯 Filtered files for part ${currentPart.id}:`, currentPartFiles.map(f => f.name));
+  console.log(`🎯 Filtered files for LOCAL part ${currentPart.id}:`, currentPartFiles.map(f => f.name));
   
   const validation = currentPart ? 
     (externalValidatePartFiles ? externalValidatePartFiles(currentPart) : validatePartFiles(currentPart)) : 
@@ -119,7 +120,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         designParts={designParts}
         activePart={activePart}
         onPartChange={(value) => {
-          console.log(`🔄 Switching from part ${activePart} to part: ${value}`);
+          console.log(`🔄 Switching from LOCAL part ${activePart} to LOCAL part: ${value}`);
           handlePartChange(value, externalOnPartChange);
         }}
         onAddPart={(name) => addNewPart(name, externalOnAddPart)}
@@ -132,7 +133,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       <FileManagerContent
         currentPart={currentPart}
         validation={validation}
-        uploadedFiles={currentPartFiles} // CRITICAL: Pass only files for current part
+        uploadedFiles={currentPartFiles} // CRITICAL: Pass only files for current LOCAL part
         loadingFiles={loadingFiles}
         uploading={uploading}
         onFileUpload={handleFileUpload}
