@@ -14,7 +14,7 @@ interface UploadedFile {
   path: string;
   originalName?: string;
   partId?: string;
-  designType?: 'static' | 'personalized';
+  designType?: 'static' | 'customisable';
 }
 
 interface FileListProps {
@@ -61,7 +61,7 @@ const FileList: React.FC<FileListProps> = ({
                   {/* Design Type Selection per file */}
                   <div className="mt-1">
                     <Select 
-                      value={file.designType || 'static'} 
+                      value={file.designType === 'customisable' ? 'personalized' : 'static'} 
                       onValueChange={(value) => onFileTypeChange(file.id, value as 'static' | 'personalized')}
                     >
                       <SelectTrigger className="h-6 text-xs w-32">

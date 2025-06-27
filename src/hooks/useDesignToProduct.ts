@@ -38,6 +38,9 @@ interface UploadedFile {
   name: string;
   path: string;
   partId?: string;
+  fileExtension?: string;
+  isF3DFile?: boolean;
+  isINIFile?: boolean;
 }
 
 export const useDesignToProduct = () => {
@@ -53,7 +56,9 @@ export const useDesignToProduct = () => {
     multiImages: Array<{ file: File }> = []
   ) => {
     try {
-      console.log('🔄 Converting design to product structure...');
+      console.log('🔄 Converting design to product with part-specific files...');
+      console.log('Design parts:', designParts);
+      console.log('Uploaded files:', uploadedFiles);
 
       // 1. Create main product
       const product = await createProduct({
@@ -93,13 +98,15 @@ export const useDesignToProduct = () => {
         }
       }
 
-      // 4. Create parts for each design part with part-specific settings and parameters
+      // 4. Create parts for each design part with part-specific files and settings
       for (const designPart of designParts) {
         try {
-          // Get files for this part
+          // Get files specifically for this part
           const partFiles = uploadedFiles.filter(f => f.partId === designPart.id);
-          const f3dFile = partFiles.find(f => f.name.toLowerCase().endsWith('.f3d'));
-          const iniFile = partFiles.find(f => f.name.toLowerCase().endsWith('.ini'));
+          console.log(`📁 Files for part ${designPart.name}:`, partFiles);
+          
+          const f3dFile = partFiles.find(f => f.isF3DFile || f.name.toLowerCase().endsWith('.f3d'));
+          const iniFile = partFiles.find(f => f.isINIFile || f.name.toLowerCase().endsWith('.ini'));
           const gcodeFile = partFiles.find(f => 
             f.name.toLowerCase().endsWith('.gcode') || f.name.toLowerCase().endsWith('.g')
           );
@@ -116,6 +123,7 @@ export const useDesignToProduct = () => {
             nozzle_diameter: designPart.nozzleDiameter ? parseFloat(designPart.nozzleDiameter) : 
                            (formData.nozzleDiameter ? parseFloat(formData.nozzleDiameter) : null),
             filament_type: designPart.filamentType || formData.material || null,
+            // Use part-specific file paths
             f3d_file_path: f3dFile?.path || null,
             ini_file_path: iniFile?.path || null,
             gcode_path: gcodeFile?.path || null,
@@ -124,11 +132,9 @@ export const useDesignToProduct = () => {
             replacement_type: (designPart as any).parameters?.replacementValue || formData.replacementValue || null
           };
 
+          console.log(`🔧 Creating part ${designPart.name} with data:`, partData);
           await createPart(partData);
-          console.log(`✅ Part created: ${designPart.name} with parameters:`, {
-            sketch_name: partData.sketch_name,
-            replacement_type: partData.replacement_type
-          });
+          console.log(`✅ Part created: ${designPart.name}`);
         } catch (error) {
           console.error(`❌ Error creating part ${designPart.name}:`, error);
         }
@@ -163,7 +169,7 @@ export const useDesignToProduct = () => {
 
       toast({
         title: "Design erfolgreich gespeichert",
-        description: `Das Design "${formData.name}" wurde als Produkt mit allen Teilen gespeichert.`,
+        description: `Das Design "${formData.name}" wurde als Produkt mit allen teil-spezifischen Dateien gespeichert.`,
       });
 
       return product;

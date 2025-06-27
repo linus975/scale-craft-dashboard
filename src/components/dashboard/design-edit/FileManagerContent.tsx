@@ -100,7 +100,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         partType={currentPart.partType === 'customisable' ? 'personalized' : 'static'}
         uploading={uploading}
         onFileUpload={onFileUpload}
-        uploadedFiles={uploadedFiles}
+        uploadedFiles={uploadedFiles.filter(file => file.partId === currentPart.id)}
         onPartSpecificationChange={onPartSpecificationChange}
         gcodeFile={gcodeFile}
         onGcodeFileChange={onGcodeFileChange}
@@ -124,7 +124,11 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
           loadingFiles={loadingFiles}
           onFileRemove={onFileRemove}
           onFileDownload={onFileDownload}
-          onFileTypeChange={handleFileTypeChange}
+          onFileTypeChange={(fileId: string, designType: 'static' | 'personalized') => {
+            // Map 'personalized' to 'customisable' for consistency
+            const mappedType = designType === 'personalized' ? 'customisable' : 'static';
+            handleFileTypeChange(fileId, mappedType);
+          }}
         />
       )}
     </>
