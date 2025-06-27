@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
@@ -44,7 +45,7 @@ export const usePartSpecificFileUpload = () => {
     }
   };
 
-  // FIXED: Verwende IMMER die übergebene partId und logge alle Aktionen
+  // CRITICAL FIX: Ensure files are ALWAYS uploaded to the EXACT partId provided
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>, 
     partId: string,
@@ -56,7 +57,7 @@ export const usePartSpecificFileUpload = () => {
       return;
     }
 
-    console.log(`🚀 Starting upload for part: ${partId}`);
+    console.log(`🎯 CRITICAL: Upload ONLY to part: ${partId}`);
     console.log(`📁 Files to upload: ${files.length}`);
 
     const filesToUpload = Array.from(files);
@@ -103,9 +104,9 @@ export const usePartSpecificFileUpload = () => {
     }
 
     try {
-      console.log(`✅ Valid files for part ${partId}: ${validFiles.length}`);
+      console.log(`✅ Valid files for EXACT part ${partId}: ${validFiles.length}`);
       
-      // Process each file individually with proper folder structure
+      // Process each file individually with strict part association
       const newFiles: UploadedFile[] = [];
       
       for (const file of validFiles) {
@@ -117,14 +118,14 @@ export const usePartSpecificFileUpload = () => {
           const fileExtension = file.name.split('.').pop()?.toLowerCase();
           
           const newFile: UploadedFile = {
-            id: Date.now() + Math.random() + '',
+            id: `${partId}-${Date.now()}-${Math.random()}`,
             name: file.name,
             type: getFileType(file.name),
             size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
             uploadDate: new Date().toISOString().split('T')[0],
             path: uploadPath,
             originalName: file.name,
-            partId: partId, // WICHTIG: Verwende IMMER die übergebene partId
+            partId: partId, // STRICT: Always use the exact partId provided
             designType: 'static' as const,
             fileExtension: fileExtension,
             isF3DFile: fileExtension === 'f3d',
@@ -133,15 +134,17 @@ export const usePartSpecificFileUpload = () => {
           };
 
           newFiles.push(newFile);
-          console.log(`✅ File uploaded to part ${partId}: ${folderPath}/${file.name}`);
+          console.log(`✅ File uploaded to EXACT part ${partId}: ${folderPath}/${file.name}`);
         } catch (uploadError) {
           console.error(`❌ Error uploading ${file.name}:`, uploadError);
         }
       }
 
-      // Update part-specific files - NUR für die übergebene partId
+      // CRITICAL: Update ONLY the specific partId, never affect other parts
       setPartFiles(prev => {
         const currentPartFiles = prev[partId] || [];
+        
+        // Remove files with same type/context to avoid duplicates in THIS part only
         const filteredFiles = currentPartFiles.filter(existingFile => {
           const newFileTypes = newFiles.map(nf => ({ 
             extension: nf?.fileExtension, 
@@ -154,11 +157,11 @@ export const usePartSpecificFileUpload = () => {
         });
         
         const updatedFiles = {
-          ...prev,
-          [partId]: [...filteredFiles, ...newFiles]
+          ...prev, // Keep all other parts unchanged
+          [partId]: [...filteredFiles, ...newFiles] // Update ONLY this part
         };
 
-        console.log(`📂 Updated files for part ${partId}:`, updatedFiles[partId]);
+        console.log(`📂 Updated files for EXACT part ${partId}:`, updatedFiles[partId]);
         return updatedFiles;
       });
 
@@ -202,7 +205,7 @@ export const usePartSpecificFileUpload = () => {
   const handleFileRemove = (file: UploadedFile) => {
     if (!file.partId) return;
     
-    console.log(`🗑️ Removing file ${file.name} from part ${file.partId}`);
+    console.log(`🗑️ Removing file ${file.name} from EXACT part ${file.partId}`);
     
     setPartFiles(prev => ({
       ...prev,
@@ -219,9 +222,10 @@ export const usePartSpecificFileUpload = () => {
     console.log('Downloading file:', file.name, 'from path:', file.path);
   };
 
+  // CRITICAL: Return files ONLY for the requested partId
   const getFilesForPart = (partId: string): UploadedFile[] => {
     const files = partFiles[partId] || [];
-    console.log(`📋 Getting files for part ${partId}:`, files);
+    console.log(`📋 Getting files for EXACT part ${partId}:`, files);
     return files;
   };
 

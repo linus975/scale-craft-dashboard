@@ -105,10 +105,10 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     onPartSelect
   });
 
-  // WICHTIG: Verwende immer die activePart ID für File-Uploads
+  // CRITICAL FIX: Always use activePart for uploads and FILTER files by exact partId
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
-    console.log(`🎯 Uploading file for ACTIVE part: ${activePart}`);
+    console.log(`🎯 UPLOAD: Uploading file for ACTIVE part: ${activePart}`);
     onFileUpload(event, activePart);
   };
 
@@ -121,7 +121,10 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   }
 
   console.log(`📁 Current part: ${currentPart.name} (${currentPart.id})`);
-  console.log(`📂 Files for current part:`, currentPart.files);
+  
+  // CRITICAL: Only show files that belong EXACTLY to the current part
+  const currentPartFiles = uploadedFiles.filter(file => file.partId === currentPart.id);
+  console.log(`📂 Files for EXACT current part ${currentPart.id}:`, currentPartFiles);
   
   const validation = currentPart ? 
     (externalValidatePartFiles ? externalValidatePartFiles(currentPart) : validatePartFiles(currentPart)) : 
@@ -149,7 +152,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       <FileManagerContent
         currentPart={currentPart}
         validation={validation}
-        uploadedFiles={uploadedFiles}
+        uploadedFiles={currentPartFiles} // CRITICAL: Pass only files for current part
         loadingFiles={loadingFiles}
         uploading={uploading}
         onFileUpload={handleFileUpload}

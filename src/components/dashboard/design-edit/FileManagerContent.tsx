@@ -77,8 +77,9 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
     console.log(`Changing file ${fileId} to ${designType}`);
   };
 
-  // Filter files to only show files for the current part
-  const currentPartFiles = uploadedFiles.filter(file => file.partId === currentPart.id);
+  // CRITICAL: Files are already filtered by the parent component
+  // We receive ONLY files for the current part
+  console.log(`📂 FileManagerContent: Displaying ${uploadedFiles.length} files for part ${currentPart.id}`);
 
   return (
     <>
@@ -103,7 +104,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         partType={currentPart.partType === 'personalizable' ? 'personalized' : 'static'}
         uploading={uploading}
         onFileUpload={onFileUpload}
-        uploadedFiles={currentPartFiles}
+        uploadedFiles={uploadedFiles} // These are already filtered for current part
         onPartSpecificationChange={onPartSpecificationChange}
         gcodeFile={gcodeFile}
         onGcodeFileChange={onGcodeFileChange}
@@ -120,9 +121,9 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         />
       )}
 
-      {(loadingFiles || currentPartFiles.length > 0) && (
+      {(loadingFiles || uploadedFiles.length > 0) && (
         <FileList
-          files={currentPartFiles}
+          files={uploadedFiles} // These are already filtered for current part
           partName={currentPart.name}
           loadingFiles={loadingFiles}
           onFileRemove={onFileRemove}
