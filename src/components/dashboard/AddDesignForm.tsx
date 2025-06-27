@@ -65,11 +65,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     filamentType: ''
   });
 
-  // User-defined presets
-  const [colorPresets, setColorPresets] = useState<string[]>([]);
-  const [machinePresets, setMachinePresets] = useState<string[]>([]);
-  const [filamentPresets, setFilamentPresets] = useState<string[]>([]);
-
   const form = useForm<FormData>({
     defaultValues: {
       name: '',
@@ -213,18 +208,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             onRemovePart={designParts.handleRemovePart}
             onRenamePart={designParts.handleRenamePart}
             onPartTypeChange={designParts.handlePartTypeChange}
-            colorPresets={colorPresets}
-            machinePresets={machinePresets}
-            filamentPresets={filamentPresets}
-            onAddColorPreset={(color) => setColorPresets(prev => [...prev, color])}
-            onEditColorPreset={(oldColor, newColor) => setColorPresets(prev => prev.map(c => c === oldColor ? newColor : c))}
-            onDeleteColorPreset={(color) => setColorPresets(prev => prev.filter(c => c !== color))}
-            onAddMachinePreset={(machine) => setMachinePresets(prev => [...prev, machine])}
-            onEditMachinePreset={(oldMachine, newMachine) => setMachinePresets(prev => prev.map(m => m === oldMachine ? newMachine : m))}
-            onDeleteMachinePreset={(machine) => setMachinePresets(prev => prev.filter(m => m !== machine))}
-            onAddFilamentPreset={(filament) => setFilamentPresets(prev => [...prev, filament])}
-            onEditFilamentPreset={(oldFilament, newFilament) => setFilamentPresets(prev => prev.map(f => f === oldFilament ? newFilament : f))}
-            onDeleteFilamentPreset={(filament) => setFilamentPresets(prev => prev.filter(f => f !== filament))}
           />
 
           {/* Progress Indicator when saving */}
