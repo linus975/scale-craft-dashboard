@@ -1,7 +1,6 @@
 
 import React from 'react';
-import PersonalizedPartUpload from './PersonalizedPartUpload';
-import StaticPartUpload from './StaticPartUpload';
+import PartSpecificFileUpload from './PartSpecificFileUpload';
 
 interface FileUploadProps {
   partName: string;
@@ -27,38 +26,31 @@ const FileUpload: React.FC<FileUploadProps> = ({
   partType = 'static',
   onFileUpload,
   uploadedFiles = [],
-  onPartSpecificationChange,
   gcodeFile,
   onGcodeFileChange,
   onRemoveGcodeFile,
-  currentPart
 }) => {
-  if (partType === 'personalized') {
-    return (
-      <PersonalizedPartUpload
-        partName={partName}
-        partId={partId}
-        uploading={uploading}
-        onFileUpload={onFileUpload}
-        uploadedFiles={uploadedFiles}
-        currentPart={currentPart}
-        onPartSpecificationChange={onPartSpecificationChange}
-      />
-    );
-  }
+  console.log(`🔄 [FileUpload] Wrapper for PART: "${partName}" (Type: ${partType})`);
+
+  // Create a wrapper that ensures part-specific upload
+  const handlePartSpecificUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log(`🎯 [FileUpload] Part-specific upload wrapper for PART: "${partName}"`);
+    onFileUpload(event, partName);
+  };
+
+  const mappedPartType = partType === 'personalized' ? 'personalizable' : 'static';
 
   return (
-    <StaticPartUpload
+    <PartSpecificFileUpload
       partName={partName}
       partId={partId}
+      partType={mappedPartType}
       uploading={uploading}
-      onFileUpload={onFileUpload}
+      onFileUpload={handlePartSpecificUpload}
       uploadedFiles={uploadedFiles}
       gcodeFile={gcodeFile}
       onGcodeFileChange={onGcodeFileChange}
       onRemoveGcodeFile={onRemoveGcodeFile}
-      currentPart={currentPart}
-      onPartSpecificationChange={onPartSpecificationChange}
     />
   );
 };

@@ -45,34 +45,37 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   designParts = [],
   activePart
 }) => {
-  console.log('📂 [FileManagerContent] DEBUGGING - Component state:');
-  console.log('  - Current part ID:', currentPart.id);
-  console.log('  - Current part NAME:', currentPart.name);
-  console.log('  - Upload files received:', uploadedFiles.length);
-  console.log('  - Files details:', uploadedFiles.map(f => ({ name: f.name, partId: f.partId, extension: f.fileExtension })));
+  console.log('📂 [FileManagerContent] CURRENT PART FOCUS:');
+  console.log('  - Part ID:', currentPart.id);
+  console.log('  - Part NAME:', currentPart.name);
+  console.log('  - Part Type:', currentPart.partType);
+  console.log('  - All files count:', uploadedFiles.length);
   
-  // CHANGED: Filter by part name instead of part ID
+  // STRICT filtering: Only files that belong to this EXACT part name
   const currentPartFiles = uploadedFiles.filter(file => {
-    const matches = file.partId === currentPart.name;
-    console.log(`📁 [FileManagerContent] File "${file.name}": partId=${file.partId}, currentPartName=${currentPart.name}, matches=${matches}`);
-    return matches;
+    const isMatch = file.partId === currentPart.name;
+    if (!isMatch) {
+      console.log(`❌ [FileManagerContent] File "${file.name}" belongs to "${file.partId}", not "${currentPart.name}"`);
+    } else {
+      console.log(`✅ [FileManagerContent] File "${file.name}" belongs to current part "${currentPart.name}"`);
+    }
+    return isMatch;
   });
   
-  console.log('🎯 [FileManagerContent] Final filtered files for current part:', currentPartFiles.map(f => f.name));
+  console.log(`🎯 [FileManagerContent] Final files for part "${currentPart.name}":`, currentPartFiles.map(f => f.name));
 
   const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalizable') => {
-    console.log(`🔄 [FileManagerContent] Changing file ${fileId} to ${designType} for PART "${currentPart.name}"`);
+    console.log(`🔄 [FileManagerContent] File type change for "${fileId}" to "${designType}" in part "${currentPart.name}"`);
   };
 
-  // CHANGED: Create a wrapper for file upload that ensures proper PART NAME assignment
   const handlePartSpecificFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(`🎯 [FileManagerContent] Upload wrapper called for PART NAME: ${currentPart.name}`);
-    console.log('  - Files to upload:', event.target.files?.length || 0);
+    console.log(`🎯 [FileManagerContent] UPLOAD INITIATED for part "${currentPart.name}"`);
+    console.log('  - Files selected:', event.target.files?.length || 0);
     onFileUpload(event);
   };
 
   return (
-    <>
+    <div className="space-y-6">
       <ValidationInfo
         partName={currentPart.name}
         hasPersonalizedFiles={validation.hasPersonalizedFiles}
@@ -89,11 +92,11 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
 
       <FileUpload
         partName={currentPart.name}
-        partId={currentPart.name} // CHANGED: Pass part name as partId
+        partId={currentPart.id}
         partType={currentPart.partType === 'personalizable' ? 'personalized' : 'static'}
         uploading={uploading}
         onFileUpload={handlePartSpecificFileUpload}
-        uploadedFiles={currentPartFiles} // CHANGED: Pass only current PART NAME files
+        uploadedFiles={currentPartFiles}
         onPartSpecificationChange={onPartSpecificationChange}
         gcodeFile={gcodeFile}
         onGcodeFileChange={onGcodeFileChange}
@@ -111,7 +114,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
 
       {(loadingFiles || currentPartFiles.length > 0) && (
         <FileList
-          files={currentPartFiles} // CHANGED: Show only current PART NAME files
+          files={currentPartFiles}
           partName={currentPart.name}
           loadingFiles={loadingFiles}
           onFileRemove={onFileRemove}
@@ -122,7 +125,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
           }}
         />
       )}
-    </>
+    </div>
   );
 };
 
