@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Save, Loader2, Image } from 'lucide-react';
-import { useSimpleFileUpload } from '@/hooks/useSimpleFileUpload';
 import { useToast } from '@/hooks/use-toast';
 import { useDesignToProduct } from '@/hooks/useDesignToProduct';
+import { useUserStorageUpload } from '@/hooks/useUserStorageUpload';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 
 interface StaticDesignFormProps {
@@ -17,7 +18,6 @@ interface StaticDesignFormProps {
   onSave: (designData: any) => void;
 }
 
-// Use the UploadedFile type from useSimpleFileUpload to match the expected interface
 interface UploadedFile {
   id: string;
   name: string;
@@ -31,15 +31,14 @@ interface UploadedFile {
 }
 
 const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave }) => {
-  const { uploadFile, uploading } = useSimpleFileUpload();
   const { saveDesignAsProduct } = useDesignToProduct();
+  const { uploading, uploadToTemporary, moveToFinalLocation } = useUserStorageUpload();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedPartId, setSelectedPartId] = useState('main');
   
-  // ... keep existing code (formData state)
   const [formData, setFormData] = useState({
     name: '',
     trackingType: 'ean' as 'ean' | 'sku',
@@ -54,7 +53,6 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     slicer: ''
   });
 
-  // ... keep existing code (handleSubmit function)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -83,7 +81,6 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         slicer: formData.slicer
       };
 
-      // Create a simple static part structure
       const designParts = [{
         id: 'main',
         name: 'Main',
@@ -92,13 +89,18 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         specifications: ''
       }];
 
-      await saveDesignAsProduct(
+      const product = await saveDesignAsProduct(
         designFormData,
         designParts,
         uploadedFiles,
         previewImage || undefined,
         []
       );
+
+      // Move files from temp to final location
+      if (uploadedFiles.length > 0) {
+        await moveToFinalLocation(uploadedFiles, product.product_id);
+      }
 
       onSave(formData);
     } catch (error) {
@@ -108,88 +110,24 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     }
   };
 
-  const getFileCategory = (fileName: string): 'CAD' | 'INI' | 'GCODE' => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    
-    switch (extension) {
-      case 'f3d':
-      case 'step':
-      case 'stp':
-      case 'iges':
-      case 'igs':
-      case 'dwg':
-      case 'dxf':
-      case 'stl':
-        return 'CAD';
-      case 'ini':
-        return 'INI';
-      case 'gcode':
-      case 'g':
-        return 'GCODE';
-      default:
-        return 'CAD';
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partId: string = 'main') => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partName?: string) => {
     const files = event.target.files;
     if (!files) return;
 
+    const partId = partName || selectedPartId;
+
     try {
       for (const file of Array.from(files)) {
-        const fileName = partId === 'main' ? file.name : `part-${partId}_${file.name}`;
+        console.log('📤 Uploading file to temp:', file.name, 'for part:', partId);
         
-        await uploadFile(new File([file], fileName, { type: file.type }));
-        
-        const newFile: UploadedFile = {
-          id: Date.now() + Math.random() + '',
-          name: file.name,
-          type: getFileType(file.name),
-          size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-          uploadDate: new Date().toISOString().split('T')[0],
-          path: `temp/${fileName}`,
-          originalName: file.name,
-          fileCategory: getFileCategory(file.name), // Add the missing fileCategory property
-          partId: partId
-        };
-        
-        setUploadedFiles(prev => [...prev, newFile]);
-        
-        toast({
-          title: "Datei hochgeladen",
-          description: `${file.name} wurde erfolgreich hochgeladen.`,
-        });
+        const uploadedFile = await uploadToTemporary(file, partId);
+        setUploadedFiles(prev => [...prev, uploadedFile]);
       }
     } catch (error) {
-      console.error('Error uploading files:', error);
-      toast({
-        title: "Fehler beim Hochladen",
-        description: "Die Datei konnte nicht hochgeladen werden.",
-        variant: "destructive",
-      });
+      console.error('Upload error:', error);
     }
     
     event.target.value = '';
-  };
-
-  const getFileType = (fileName: string): string => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    
-    switch (extension) {
-      case 'gcode':
-      case 'g':
-        return 'G-Code File';
-      case 'stl':
-        return 'STL File';
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-      case 'webp':
-        return 'Image File';
-      default:
-        return 'Unknown';
-    }
   };
 
   const handleFileRemove = (file: UploadedFile) => {
@@ -223,7 +161,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
       <CardHeader>
         <CardTitle>Statisches Produkt hinzufügen</CardTitle>
         <CardDescription>
-          Erstellen Sie ein neues statisches Produkt. Dateien sind optional und können später hinzugefügt werden.
+          Erstellen Sie ein neues statisches Produkt. Dateien werden zunächst temporär gespeichert und beim Speichern final abgelegt.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -348,7 +286,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
           {/* Multi-Part File Management */}
           <div className="space-y-2">
             <Label>Dateien (optional)</Label>
-            <p className="text-sm text-gray-600">Sie können Dateien jetzt oder später hinzufügen</p>
+            <p className="text-sm text-gray-600">Dateien werden temporär gespeichert und beim Speichern final abgelegt</p>
             <MultiPartFileManager
               uploadedFiles={uploadedFiles}
               loadingFiles={false}
