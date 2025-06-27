@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDesignFiles } from '@/hooks/useDesignFiles';
 import DesignForm from './DesignForm';
-import MultiPartFileManager from './MultiPartFileManager';
+import SimpleFileUpload from '@/components/SimpleFileUpload';
 import ActionsPanel from './ActionsPanel';
 
 interface DesignEditDialogProps {
@@ -35,15 +35,6 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   });
 
   const [selectedMachine, setSelectedMachine] = useState('');
-
-  const {
-    uploadedFiles,
-    loadingFiles,
-    uploading,
-    handleFileUpload,
-    handleFileRemove,
-    handleFileDownload
-  } = useDesignFiles(design, isOpen);
 
   // Filter machines to only show idle ones
   const idleMachines = machines.filter(machine => machine.status === 'idle');
@@ -86,7 +77,6 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Design Information */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
@@ -105,23 +95,15 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
                 <CardTitle>File Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <MultiPartFileManager
-                  uploadedFiles={uploadedFiles}
-                  loadingFiles={loadingFiles}
-                  uploading={uploading}
-                  onFileUpload={handleFileUpload}
-                  onFileRemove={handleFileRemove}
-                  onFileDownload={handleFileDownload}
-                />
+                <SimpleFileUpload />
               </CardContent>
             </Card>
           </div>
 
-          {/* Actions Panel */}
           <ActionsPanel
             design={design}
             formData={formData}
-            uploadedFiles={uploadedFiles}
+            uploadedFiles={[]}
             selectedMachine={selectedMachine}
             setSelectedMachine={setSelectedMachine}
             idleMachines={idleMachines}
