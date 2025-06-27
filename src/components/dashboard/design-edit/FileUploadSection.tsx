@@ -36,17 +36,26 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   };
 
   const getFilesByTypeAndContext = () => {
+    console.log(`🔍 FileUploadSection - Filtering files for part: ${partId}`);
+    console.log(`🔍 All uploaded files:`, uploadedFiles.map(f => ({ name: f.name, partId: f.partId, extension: f.fileExtension })));
+    
     return uploadedFiles.filter(file => {
+      // CRITICAL: Must match EXACT partId
       const hasCorrectPartId = file.partId === partId;
+      console.log(`📁 File ${file.name}: partId=${file.partId}, expectedPartId=${partId}, matches=${hasCorrectPartId}`);
+      
       const hasCorrectExtension = extensions.split(',').some(ext => 
         file.name.toLowerCase().endsWith(ext.trim())
       );
       
       // Filter by upload context if expectedFileType is specified
       const hasCorrectContext = expectedFileType ? 
-        file.uploadContext === expectedFileType : true;
+        file.uploadContext === expectedFileType || file.fileExtension === expectedFileType : true;
       
-      return hasCorrectPartId && hasCorrectExtension && hasCorrectContext;
+      const matchesAll = hasCorrectPartId && hasCorrectExtension && hasCorrectContext;
+      console.log(`✅ File ${file.name} matches all criteria: ${matchesAll}`);
+      
+      return matchesAll;
     });
   };
 
@@ -54,6 +63,8 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   const hasFiles = relevantFiles.length > 0;
   const hasExactlyOne = relevantFiles.length === 1;
   const tooManyFiles = relevantFiles.length > 1;
+
+  console.log(`📋 FileUploadSection for part ${partId} (${expectedFileType}): Found ${relevantFiles.length} relevant files`);
 
   return (
     <div className="space-y-2">
@@ -86,7 +97,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           <div className="mb-2">
             <p className="text-sm text-green-600">
               {hasExactlyOne ? '✓ ' : ''}
-              {relevantFiles.length} file{relevantFiles.length > 1 ? 's' : ''} uploaded
+              {relevantFiles.length} file{relevantFiles.length > 1 ? 's' : ''} uploaded for this part
             </p>
             {relevantFiles.map(file => (
               <p key={file.id} className="text-xs text-gray-500">{file.name}</p>

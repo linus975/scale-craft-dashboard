@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, X, File } from 'lucide-react';
+import { Upload, X, FileCode } from 'lucide-react';
 
 interface GCodeFileUploadProps {
   title: string;
@@ -22,72 +22,76 @@ const GCodeFileUpload: React.FC<GCodeFileUploadProps> = ({
   onGcodeFileChange,
   onRemoveGcodeFile
 }) => {
-  const inputId = `gcodeUpload-${partId}`;
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (onGcodeFileChange) {
+      console.log(`📤 GCodeFileUpload - Uploading G-code for part: ${partId}`);
+      onGcodeFileChange(event);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    if (onRemoveGcodeFile) {
+      console.log(`🗑️ GCodeFileUpload - Removing G-code for part: ${partId}`);
+      onRemoveGcodeFile();
+    }
+  };
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={inputId} className="text-sm font-medium">
+      <Label htmlFor={`gcode-${partId}`}>
         {title}
       </Label>
       
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-        {gcodeFile ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <File className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium">{gcodeFile.name}</span>
-              <span className="text-xs text-gray-500">
-                ({(gcodeFile.size / 1024 / 1024).toFixed(2)} MB)
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
+      <div className={`border-2 border-dashed rounded-lg p-4 text-center ${
+        gcodeFile ? 'border-green-300 bg-green-50' : 'border-gray-300'
+      }`}>
+        <Upload className="h-6 w-6 mx-auto mb-2 text-gray-400" />
+        
+        <p className="text-sm text-gray-600 mb-2">
+          Upload G-code file (.gcode, .g) for this specific part
+        </p>
+        
+        {gcodeFile && (
+          <div className="mb-2 p-2 bg-white rounded border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileCode className="h-4 w-4 text-green-500" />
+                <span className="text-sm font-medium">{gcodeFile.name}</span>
+                <span className="text-xs text-gray-500">
+                  {(gcodeFile.size / 1024 / 1024).toFixed(1)} MB
+                </span>
+              </div>
               <Button
-                type="button"
-                variant="outline"
                 size="sm"
-                onClick={() => document.getElementById(inputId)?.click()}
-              >
-                Change file
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onRemoveGcodeFile}
+                variant="ghost"
+                onClick={handleRemoveFile}
+                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
               >
                 <X className="h-3 w-3" />
               </Button>
             </div>
           </div>
-        ) : (
-          <div className="text-center">
-            <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600 mb-2">
-              Drag and drop your G-code file here, or click to select
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => document.getElementById(inputId)?.click()}
-              disabled={uploading}
-            >
-              {uploading ? 'Uploading...' : 'Select G-code file'}
-            </Button>
-          </div>
         )}
         
         <Input
-          id={inputId}
+          id={`gcode-${partId}`}
           type="file"
           accept=".gcode,.g"
-          onChange={onGcodeFileChange}
+          onChange={handleFileChange}
           className="hidden"
+          disabled={uploading}
         />
+        
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => document.getElementById(`gcode-${partId}`)?.click()}
+          disabled={uploading}
+        >
+          {uploading ? 'Uploading...' : gcodeFile ? 'Replace G-code' : 'Select G-code'}
+        </Button>
       </div>
-      
-      <p className="text-xs text-gray-500">
-        Supported formats: .gcode, .g
-      </p>
     </div>
   );
 };
