@@ -83,6 +83,8 @@ export const useUserStorageUpload = () => {
 
       console.log('✅ [UserStorageUpload] user-storage bucket found:', userStorageBucket.name);
 
+      // Enhanced error handling for upload
+      console.log('🚀 [UserStorageUpload] Starting file upload to:', tempPath);
       const { data, error } = await supabase.storage
         .from('user-storage')
         .upload(tempPath, file, {
@@ -91,11 +93,44 @@ export const useUserStorageUpload = () => {
         });
 
       if (error) {
-        console.error('❌ [UserStorageUpload] Upload error:', error);
+        console.error('❌ [UserStorageUpload] Upload error details:', {
+          message: error.message,
+          statusCode: error.statusCode,
+          error: error.error,
+          cause: error.cause
+        });
+        
+        // Check if it's a policy error
+        if (error.message.includes('policy') || error.message.includes('RLS')) {
+          console.error('🔐 [UserStorageUpload] RLS Policy error detected');
+          
+          // Test if we can list the user's folder
+          const { data: testList, error: testError } = await supabase.storage
+            .from('user-storage')
+            .list(user.id, { limit: 1 });
+            
+          if (testError) {
+            console.error('❌ [UserStorageUpload] Cannot list user folder:', testError);
+          } else {
+            console.log('✅ [UserStorageUpload] User folder is listable:', testList);
+          }
+        }
+        
         throw new Error(`Upload-Fehler: ${error.message}`);
       }
 
       console.log('✅ [UserStorageUpload] File uploaded successfully:', data.path);
+
+      // Verify upload by trying to get the file info
+      const { data: fileInfo, error: infoError } = await supabase.storage
+        .from('user-storage')
+        .list(user.id + '/temp/' + partId + '/' + fileCategory);
+        
+      if (infoError) {
+        console.warn('⚠️ [UserStorageUpload] Could not verify upload:', infoError);
+      } else {
+        console.log('✅ [UserStorageUpload] Upload verified, files in folder:', fileInfo?.length);
+      }
 
       const uploadedFile: UploadedFile = {
         id: `${Date.now()}-${Math.random()}`,
@@ -120,11 +155,21 @@ export const useUserStorageUpload = () => {
 
     } catch (error: any) {
       console.error('❌ [UserStorageUpload] Complete upload error:', error);
-      toast({
-        title: "Upload fehlgeschlagen",
-        description: error.message,
-        variant: "destructive",
-      });
+      
+      // Enhanced error reporting
+      if (error.message.includes('policy') || error.message.includes('RLS')) {
+        toast({
+          title: "Berechtigung verweigert",
+          description: "Keine Berechtigung zum Hochladen von Dateien. Bitte wenden Sie sich an den Administrator.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Upload fehlgeschlagen",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
       throw error;
     } finally {
       setUploading(false);
@@ -135,6 +180,11 @@ export const useUserStorageUpload = () => {
     console.log('🚀 [UserStorageUpload] Starting moveToFinalLocation...');
     console.log('📁 [UserStorageUpload] Files to move:', tempFiles.length);
     console.log('🎯 [UserStorageUpload] Target design ID:', designId);
+    
+    if (!designId) {
+      console.error('❌ [UserStorageUpload] No design ID provided for moveToFinalLocation');
+      throw new Error('Design ID ist erforderlich zum Verschieben der Dateien');
+    }
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -155,6 +205,24 @@ export const useUserStorageUpload = () => {
           const finalPath = `${user.id}/designs/${designId}/parts/${file.partId}/${file.fileCategory}/${file.originalName}`;
           console.log('  📍 Source path:', file.path);
           console.log('  📍 Target path:', finalPath);
+          
+          // Check if source file exists
+          const { data: sourceList, error: sourceError } = await supabase.storage
+            .from('user-storage')
+            .list(file.path.substring(0, file.path.lastIndexOf('/')), { limit: 100 });
+            
+          if (sourceError) {
+            console.error('  ❌ Error checking source file:', sourceError);
+            throw new Error(`Source file check failed: ${sourceError.message}`);
+          }
+          
+          const sourceFile = sourceList?.find(f => file.path.endsWith(f.name));
+          if (!sourceFile) {
+            console.error('  ❌ Source file not found in listing');
+            throw new Error('Source file not found');
+          }
+          
+          console.log('  ✅ Source file confirmed exists');
           
           // Download from temp location
           console.log('  📥 Downloading from temp location...');

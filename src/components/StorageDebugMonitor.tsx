@@ -26,23 +26,36 @@ const StorageDebugMonitor: React.FC = () => {
         return;
       }
 
-      // Check buckets
+      // Check buckets with detailed logging
+      console.log('📋 [StorageDebug] Checking available buckets...');
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      console.log('📋 [StorageDebug] Available buckets:', buckets);
+      
+      if (bucketsError) {
+        console.error('❌ [StorageDebug] Error listing buckets:', bucketsError);
+      } else {
+        console.log('✅ [StorageDebug] Available buckets:', buckets?.map(b => ({ id: b.id, name: b.name, public: b.public })));
+      }
 
       // Check user files in user-storage bucket
       let userFiles = [];
       let tempFiles = [];
+      let storageErrors = [];
       
-      if (buckets?.find(b => b.id === 'user-storage')) {
+      const userStorageBucket = buckets?.find(b => b.id === 'user-storage');
+      if (userStorageBucket) {
+        console.log('📂 [StorageDebug] user-storage bucket found, checking user files...');
+        
         // List user's root folder
         const { data: rootFiles, error: rootError } = await supabase.storage
           .from('user-storage')
           .list(user.id, { limit: 100 });
 
-        if (!rootError && rootFiles) {
-          console.log('📁 [StorageDebug] User root files:', rootFiles);
-          userFiles = rootFiles;
+        if (rootError) {
+          console.error('❌ [StorageDebug] Error listing user root folder:', rootError);
+          storageErrors.push(`Root folder error: ${rootError.message}`);
+        } else {
+          console.log('📁 [StorageDebug] User root files:', rootFiles?.map(f => f.name));
+          userFiles = rootFiles || [];
         }
 
         // List user's temp folder specifically
@@ -50,10 +63,16 @@ const StorageDebugMonitor: React.FC = () => {
           .from('user-storage')
           .list(`${user.id}/temp`, { limit: 100 });
 
-        if (!tempError && tempFilesData) {
-          console.log('🗂️ [StorageDebug] User temp files:', tempFilesData);
-          tempFiles = tempFilesData;
+        if (tempError) {
+          console.error('❌ [StorageDebug] Error listing temp folder:', tempError);
+          storageErrors.push(`Temp folder error: ${tempError.message}`);
+        } else {
+          console.log('🗂️ [StorageDebug] User temp files:', tempFilesData?.map(f => f.name));
+          tempFiles = tempFilesData || [];
         }
+      } else {
+        console.error('❌ [StorageDebug] user-storage bucket not found!');
+        storageErrors.push('user-storage bucket not found');
       }
 
       setStorageInfo({
@@ -62,6 +81,7 @@ const StorageDebugMonitor: React.FC = () => {
         userFiles,
         tempFiles,
         bucketsError,
+        storageErrors,
         timestamp: new Date().toISOString()
       });
 
@@ -102,7 +122,7 @@ const StorageDebugMonitor: React.FC = () => {
         console.error('❌ [StorageDebug] Test upload failed:', error);
         toast({
           title: "Test-Upload fehlgeschlagen",
-          description: error.message,
+          description: `${error.message} (Status: ${error.statusCode})`,
           variant: "destructive",
         });
       } else {
@@ -123,6 +143,44 @@ const StorageDebugMonitor: React.FC = () => {
     }
   };
 
+  const checkPolicies = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Nicht angemeldet",
+          description: "Bitte melden Sie sich an.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('🔐 [StorageDebug] Testing storage policies...');
+      
+      // Test listing permission
+      const { data: listTest, error: listError } = await supabase.storage
+        .from('user-storage')
+        .list('', { limit: 1 });
+        
+      if (listError) {
+        console.error('❌ [StorageDebug] List permission test failed:', listError);
+        toast({
+          title: "Policy-Test: Listen fehlgeschlagen",
+          description: listError.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log('✅ [StorageDebug] List permission test passed');
+        toast({
+          title: "Policy-Test erfolgreich",
+          description: "Grundlegende Storage-Berechtigungen funktionieren.",
+        });
+      }
+    } catch (error) {
+      console.error('❌ [StorageDebug] Policy test error:', error);
+    }
+  };
+
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       checkStorageStatus();
@@ -139,7 +197,7 @@ const StorageDebugMonitor: React.FC = () => {
         <CardTitle className="text-sm text-yellow-800">Storage Debug Monitor</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             size="sm"
             variant="outline"
@@ -154,6 +212,13 @@ const StorageDebugMonitor: React.FC = () => {
             onClick={testUpload}
           >
             Test Upload
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={checkPolicies}
+          >
+            Test Policies
           </Button>
         </div>
 
@@ -179,6 +244,17 @@ const StorageDebugMonitor: React.FC = () => {
             <div>
               <strong>Temp Files:</strong> {storageInfo.tempFiles.length} items
             </div>
+
+            {storageInfo.storageErrors && storageInfo.storageErrors.length > 0 && (
+              <div className="text-red-600">
+                <strong>Errors:</strong>
+                <ul className="list-disc list-inside ml-2">
+                  {storageInfo.storageErrors.map((error: string, index: number) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="text-gray-500">
               Last checked: {new Date(storageInfo.timestamp).toLocaleTimeString()}
