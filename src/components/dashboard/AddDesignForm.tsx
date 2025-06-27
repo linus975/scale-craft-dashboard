@@ -22,7 +22,7 @@ interface AddDesignFormProps {
   onSave: () => void;
 }
 
-interface FormData {
+interface DesignFormData {
   name: string;
   trackingType: string;
   eanNumber: string;
@@ -77,7 +77,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const [machinePresets, setMachinePresets] = useState<string[]>([]);
   const [filamentPresets, setFilamentPresets] = useState<string[]>([]);
 
-  const form = useForm<FormData>({
+  const form = useForm<DesignFormData>({
     defaultValues: {
       name: '',
       trackingType: '',
@@ -111,7 +111,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     };
   }, []);
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
     
     console.log('🚀 Starting optimized product save process...', data);
