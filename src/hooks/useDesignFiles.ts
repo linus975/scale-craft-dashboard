@@ -258,7 +258,10 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partName: string) => {
     const files = event.target.files;
-    if (!files || !partName) return;
+    if (!files || !partName) {
+      console.error('❌ [useDesignFiles] No files or partName provided');
+      return;
+    }
 
     console.log('🎯 [useDesignFiles] UPLOAD START for part:', partName);
     console.log('  - Files to upload:', files.length);
@@ -274,21 +277,15 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
       for (const file of Array.from(files)) {
         console.log(`📤 [useDesignFiles] Uploading file: ${file.name} to part: ${partName}`);
         
-        // Create path structure based on whether this is a new design or existing one
-        let folderPath: string;
-        if (design?.id) {
-          // Existing design: use design-specific folder
-          folderPath = `designs/${design.id}/parts/${partName}`;
-        } else {
-          // New design: use temporary session folder
-          folderPath = `temp-session/${sessionId}/parts/${partName}`;
-        }
+        // FIXED: Create correct folder path for temp-parts
+        const folderPath = `temp-parts/${partName}`;
         
         console.log('📁 [useDesignFiles] Upload folder path:', folderPath);
+        console.log('🔍 [useDesignFiles] Expected storage path:', `${user.id}/${folderPath}/${file.name}`);
         
         const uploadPath = await uploadFile(file, folderPath);
         
-        console.log(`✅ [useDesignFiles] File uploaded successfully:`, uploadPath);
+        console.log(`✅ [useDesignFiles] File uploaded successfully to:`, uploadPath);
         
         const newFile: UploadedFile = {
           id: `${partName}-${Date.now()}-${Math.random()}`,
