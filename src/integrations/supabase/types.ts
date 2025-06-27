@@ -730,6 +730,7 @@ export type Database = {
           created_at: string | null
           image_id: number
           image_path: string
+          is_preview_image: boolean
           product_id: string | null
           user_id: string | null
         }
@@ -737,6 +738,7 @@ export type Database = {
           created_at?: string | null
           image_id?: number
           image_path: string
+          is_preview_image?: boolean
           product_id?: string | null
           user_id?: string | null
         }
@@ -744,6 +746,7 @@ export type Database = {
           created_at?: string | null
           image_id?: number
           image_path?: string
+          is_preview_image?: boolean
           product_id?: string | null
           user_id?: string | null
         }

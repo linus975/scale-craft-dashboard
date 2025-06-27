@@ -14,14 +14,14 @@ interface UploadedFile {
   path: string;
   originalName?: string;
   partId?: string;
-  designType?: 'static' | 'customisable';
+  designType?: 'static' | 'personalizable';
 }
 
 interface DesignPart {
   id: string;
   name: string;
   files: UploadedFile[];
-  partType?: 'static' | 'customisable';
+  partType?: 'static' | 'personalizable';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -51,7 +51,7 @@ interface MultiPartFileManagerProps {
   onAddPart?: (name: string) => void;
   onRemovePart?: (partId: string) => void;
   onRenamePart?: (partId: string, newName: string) => void;
-  onPartTypeChange?: (partId: string, partType: 'static' | 'customisable') => void;
+  onPartTypeChange?: (partId: string, partType: 'static' | 'personalizable') => void;
   onPartSoftwareChange?: (partId: string, field: 'cadSoftware' | 'slicer', value: string) => void;
   onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType' | 'color' | 'machine', value: string) => void;
   validatePartFiles?: (part: DesignPart) => { hasF3D: boolean; hasINI: boolean; hasPersonalizedFiles: boolean };

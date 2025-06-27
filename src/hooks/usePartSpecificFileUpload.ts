@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
@@ -25,6 +24,25 @@ export const usePartSpecificFileUpload = () => {
   
   const { toast } = useToast();
   const { uploadFile, uploadMultipleFiles, uploading, uploadProgress } = useHighPerformanceUpload();
+
+  const getFileTypeFolder = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    switch (extension) {
+      case 'f3d':
+      case 'step':
+      case 'stp':
+      case 'stl':
+        return 'cad-files';
+      case 'ini':
+        return 'ini-files';
+      case 'gcode':
+      case 'g':
+        return 'gcode-files';
+      default:
+        return 'other-files';
+    }
+  };
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>, 
@@ -80,24 +98,24 @@ export const usePartSpecificFileUpload = () => {
     try {
       console.log(`🚀 Part-specific upload for part ${partId}: ${validFiles.length} files`);
       
-      // Use part-specific folder path in storage
-      const folderPath = `parts/${partId}`;
-      const uploadResults = await uploadMultipleFiles(validFiles, folderPath);
-      
-      // Process successful uploads
+      // Process each file individually with proper folder structure
       const newFiles: UploadedFile[] = [];
-      uploadResults.forEach((result, index) => {
-        if (result.path) {
-          const file = result.file;
+      
+      for (const file of validFiles) {
+        const fileTypeFolder = getFileTypeFolder(file.name);
+        const folderPath = `parts/${partId}/${fileTypeFolder}`;
+        
+        try {
+          const uploadPath = await uploadFile(file, folderPath);
           const fileExtension = file.name.split('.').pop()?.toLowerCase();
           
           const newFile: UploadedFile = {
-            id: Date.now() + Math.random() + index + '',
+            id: Date.now() + Math.random() + '',
             name: file.name,
             type: getFileType(file.name),
             size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
             uploadDate: new Date().toISOString().split('T')[0],
-            path: result.path,
+            path: uploadPath,
             originalName: file.name,
             partId: partId,
             designType: 'static' as const,
@@ -108,8 +126,11 @@ export const usePartSpecificFileUpload = () => {
           };
 
           newFiles.push(newFile);
+          console.log(`✅ File uploaded to: ${folderPath}/${file.name}`);
+        } catch (uploadError) {
+          console.error(`❌ Error uploading ${file.name}:`, uploadError);
         }
-      });
+      }
 
       // Update part-specific files
       setPartFiles(prev => {
@@ -133,7 +154,7 @@ export const usePartSpecificFileUpload = () => {
 
       toast({
         title: "Dateien hochgeladen",
-        description: `${newFiles.length} Datei(en) für ${partId} erfolgreich hochgeladen.`,
+        description: `${newFiles.length} Datei(en) für ${partId} erfolgreich in organisierten Ordnern hochgeladen.`,
       });
 
     } catch (error) {
@@ -194,7 +215,7 @@ export const usePartSpecificFileUpload = () => {
     return Object.values(partFiles).flat();
   };
 
-  // G-code file handling per part
+  // G-code file handling per part with organized storage
   const handleGcodeFileChange = (event: React.ChangeEvent<HTMLInputElement>, partId: string) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -239,8 +260,8 @@ export const usePartSpecificFileUpload = () => {
 
     try {
       console.log(`⚙️ Uploading G-Code for part ${partId}:`, gcodeFile.name);
-      const path = await uploadFile(gcodeFile, `parts/${partId}/gcode`);
-      console.log('✅ G-Code uploaded:', path);
+      const path = await uploadFile(gcodeFile, `parts/${partId}/gcode-files`);
+      console.log('✅ G-Code uploaded to organized folder:', path);
       
       return { path, content: null };
     } catch (error) {

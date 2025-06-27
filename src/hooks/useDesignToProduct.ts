@@ -1,4 +1,3 @@
-
 import { useProducts } from './useProducts';
 import { useHighPerformanceUpload } from './useHighPerformanceUpload';
 import { useToast } from '@/hooks/use-toast';
@@ -71,36 +70,22 @@ export const useDesignToProduct = () => {
 
       console.log('✅ Product created:', product.product_id);
 
-      // 2. Upload and save preview image (mark as preview)
-      if (previewImage) {
-        try {
-          const previewPath = await uploadFile(previewImage, 'product-images');
-          await createProductImage({
-            product_id: product.product_id,
-            image_path: previewPath,
-            is_preview_image: true
-          });
-          console.log('✅ Preview image saved with preview flag');
-        } catch (error) {
-          console.error('❌ Error saving preview image:', error);
-        }
-      }
-
-      // 3. Upload and save multi-images (not preview images)
-      for (const imageItem of multiImages) {
+      // 2. Upload and save all images (no preview flag needed anymore)
+      for (let i = 0; i < multiImages.length; i++) {
+        const imageItem = multiImages[i];
         try {
           const imagePath = await uploadFile(imageItem.file, 'product-images');
           await createProductImage({
             product_id: product.product_id,
             image_path: imagePath,
-            is_preview_image: false
+            is_preview_image: i === 0 // First image is preview
           });
         } catch (error) {
-          console.error('❌ Error saving multi-image:', error);
+          console.error('❌ Error saving image:', error);
         }
       }
 
-      // 4. Create parts for each design part with part-specific files and settings
+      // 3. Create parts for each design part with part-specific files and settings
       for (const designPart of designParts) {
         try {
           // Get files specifically for this part

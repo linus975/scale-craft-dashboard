@@ -37,7 +37,6 @@ interface ImageFile {
 const PersonalizedDesignForm: React.FC = () => {
   const { toast } = useToast();
   const form = useForm<PersonalizedDesignFormData>();
-  const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [multiImages, setMultiImages] = useState<ImageFile[]>([]);
 
   const {
@@ -110,7 +109,7 @@ const PersonalizedDesignForm: React.FC = () => {
         data,
         convertedParts,
         allUploadedFiles,
-        previewImage || undefined,
+        undefined, // No separate preview image
         multiImages
       );
 
@@ -120,7 +119,6 @@ const PersonalizedDesignForm: React.FC = () => {
       });
 
       form.reset();
-      setPreviewImage(null);
       setMultiImages([]);
 
     } catch (error) {
@@ -208,7 +206,6 @@ const PersonalizedDesignForm: React.FC = () => {
             <FileManagementSection
               designParts={designParts}
               activePart={activePart}
-              uploadedFiles={getAllFiles()}
               loadingFiles={false}
               uploading={uploading}
               machines={machines}
