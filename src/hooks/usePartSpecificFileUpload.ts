@@ -12,7 +12,7 @@ interface UploadedFile {
   path: string;
   originalName?: string;
   partId?: string;
-  designType?: 'static' | 'customisable';
+  designType?: 'static' | 'personalizable';
   fileExtension?: string;
   isF3DFile?: boolean;
   isINIFile?: boolean;
@@ -80,7 +80,7 @@ export const usePartSpecificFileUpload = () => {
     try {
       console.log(`🚀 Part-specific upload for part ${partId}: ${validFiles.length} files`);
       
-      // Use part-specific folder path
+      // Use part-specific folder path in storage
       const folderPath = `parts/${partId}`;
       const uploadResults = await uploadMultipleFiles(validFiles, folderPath);
       

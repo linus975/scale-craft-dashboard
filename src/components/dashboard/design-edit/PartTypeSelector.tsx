@@ -4,8 +4,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PartTypeSelectorProps {
-  partType: 'static' | 'customisable';
-  onPartTypeChange: (partType: 'static' | 'customisable') => void;
+  partType: 'static' | 'personalizable';
+  onPartTypeChange: (partType: 'static' | 'personalizable') => void;
   disabled?: boolean;
 }
 
@@ -19,7 +19,7 @@ const PartTypeSelector: React.FC<PartTypeSelectorProps> = ({
       <Label>Part Type</Label>
       <Select 
         value={partType || 'static'} 
-        onValueChange={(value) => onPartTypeChange(value as 'static' | 'customisable')}
+        onValueChange={(value) => onPartTypeChange(value as 'static' | 'personalizable')}
         disabled={disabled}
       >
         <SelectTrigger className="h-10">
@@ -27,7 +27,7 @@ const PartTypeSelector: React.FC<PartTypeSelectorProps> = ({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="static">Static</SelectItem>
-          <SelectItem value="customisable">Customisable</SelectItem>
+          <SelectItem value="personalizable">Personalizable</SelectItem>
         </SelectContent>
       </Select>
     </div>

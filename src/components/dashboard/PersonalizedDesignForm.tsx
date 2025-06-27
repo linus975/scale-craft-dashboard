@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -62,7 +63,7 @@ const PersonalizedDesignForm: React.FC = () => {
   } = usePartSpecificFileUpload();
 
   const { saveDesignAsProduct } = useDesignToProduct();
-  const { data: machines = [] } = useMachines();
+  const { machines } = useMachines();
 
   const onSubmit = async (data: PersonalizedDesignFormData) => {
     try {
@@ -126,6 +127,36 @@ const PersonalizedDesignForm: React.FC = () => {
     }
   };
 
+  const handleImagesChange = (images: Array<{ file: File }>) => {
+    setMultiImages(images);
+  };
+
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    const newImages = imageFiles.map(file => ({
+      file,
+      id: Date.now() + Math.random() + ''
+    }));
+    
+    setMultiImages(prev => [...prev, ...newImages]);
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    
+    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+    const newImages = imageFiles.map(file => ({
+      file,
+      id: Date.now() + Math.random() + ''
+    }));
+    
+    setMultiImages(prev => [...prev, ...newImages]);
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -135,22 +166,42 @@ const PersonalizedDesignForm: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <DesignInformationSection 
-              form={form}
+              control={form.control}
               trackingType="personalized"
+              categories={[]}
+              editingCategory={null}
+              editingCategoryValue=""
+              showAddCategoryDialog={false}
+              newCategoryName=""
+              images={multiImages}
+              onStartEditCategory={() => {}}
+              onSaveEditCategory={() => {}}
+              onCancelEditCategory={() => {}}
+              onAddCategory={() => {}}
+              onSaveNewCategory={() => {}}
+              onCancelAddCategory={() => {}}
+              onDeleteCategory={() => {}}
+              onImageDrop={handleImageDrop}
+              onImageUpload={handleImageUpload}
+              onImagesChange={handleImagesChange}
+              setEditingCategoryValue={() => {}}
+              setNewCategoryName={() => {}}
+              setShowAddCategoryDialog={() => {}}
+              getValues={form.getValues}
             />
 
             <PreviewImageUpload
-              previewImage={previewImage}
-              setPreviewImage={setPreviewImage}
-              multiImages={multiImages}
-              setMultiImages={setMultiImages}
+              images={multiImages}
+              onImagesChange={handleImagesChange}
+              onImageDrop={handleImageDrop}
+              onImageUpload={handleImageUpload}
             />
 
             <FileManagementSection
               designParts={designParts}
               activePart={activePart}
-              partFiles={partFiles}
-              gcodeFiles={gcodeFiles}
+              uploadedFiles={getAllFiles()}
+              loadingFiles={false}
               uploading={uploading}
               machines={machines}
               onPartSelect={handlePartSelect}

@@ -22,7 +22,7 @@ interface DesignFormData {
 interface DesignPart {
   id: string;
   name: string;
-  type: 'static' | 'customisable';
+  type: 'static' | 'personalizable';
   software?: string;
   specifications?: string;
   cadSoftware?: string;
@@ -71,27 +71,29 @@ export const useDesignToProduct = () => {
 
       console.log('✅ Product created:', product.product_id);
 
-      // 2. Upload and save preview image
+      // 2. Upload and save preview image (mark as preview)
       if (previewImage) {
         try {
           const previewPath = await uploadFile(previewImage, 'product-previews');
           await createProductImage({
             product_id: product.product_id,
-            image_path: previewPath
+            image_path: previewPath,
+            is_preview_image: true
           });
-          console.log('✅ Preview image saved');
+          console.log('✅ Preview image saved with preview flag');
         } catch (error) {
           console.error('❌ Error saving preview image:', error);
         }
       }
 
-      // 3. Upload and save multi-images
+      // 3. Upload and save multi-images (not preview images)
       for (const imageItem of multiImages) {
         try {
           const imagePath = await uploadFile(imageItem.file, 'product-images');
           await createProductImage({
             product_id: product.product_id,
-            image_path: imagePath
+            image_path: imagePath,
+            is_preview_image: false
           });
         } catch (error) {
           console.error('❌ Error saving multi-image:', error);
@@ -114,7 +116,7 @@ export const useDesignToProduct = () => {
           const partData = {
             product_id: product.product_id,
             part_name: designPart.name,
-            is_customizable: designPart.type === 'customisable',
+            is_customizable: designPart.type === 'personalizable',
             // Use part-specific settings first, then fallback to global form data
             cad_software: designPart.cadSoftware || formData.cadSoftware || null,
             slicer_software: designPart.slicer || formData.slicer || null,
