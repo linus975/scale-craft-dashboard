@@ -3,7 +3,7 @@ export interface DesignPart {
   id: string;
   name: string;
   files: any[];
-  partType?: 'static' | 'customisable';
+  partType?: 'static' | 'personalizable';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
