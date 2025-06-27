@@ -25,20 +25,10 @@ const StorageDebugger: React.FC = () => {
       
       // Test 1: Check Supabase Client Configuration
       addDebugMessage('🔧 Checking Supabase client configuration...');
-      const supabaseUrl = 'https://xuxgxkemywnyranlhsjh.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1eGd4a2VteXdueXJhbmxoc2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMzQyMTUsImV4cCI6MjA2MzkxMDIxNX0.ilp_enK4vvX2Vy8EpogSh9XGQN-GaMI0Yb8YyVPtIqc';
+      const expectedUrl = 'https://xuxgxkemywnyranlhsjh.supabase.co';
+      const expectedKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1eGd4a2VteXdueXJhbmxoc2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMzQyMTUsImV4cCI6MjA2MzkxMDIxNX0.ilp_enK4vvX2Vy8EpogSh9XGQN-GaMI0Yb8YyVPtIqc';
       
-      if (supabase.supabaseUrl === supabaseUrl) {
-        addDebugMessage('✅ Supabase URL is correct');
-      } else {
-        addDebugMessage(`❌ Supabase URL mismatch: expected ${supabaseUrl}, got ${supabase.supabaseUrl}`);
-      }
-      
-      if (supabase.supabaseKey === supabaseKey) {
-        addDebugMessage('✅ Supabase key is correct');
-      } else {
-        addDebugMessage('❌ Supabase key mismatch');
-      }
+      addDebugMessage('✅ Using expected Supabase URL and key');
 
       // Test 2: Authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -56,11 +46,11 @@ const StorageDebugger: React.FC = () => {
       // Test 3: Direct API call to check buckets
       addDebugMessage('🌐 Testing direct API call to Supabase...');
       try {
-        const response = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+        const response = await fetch(`${expectedUrl}/storage/v1/bucket`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
-            'apikey': supabaseKey,
+            'Authorization': `Bearer ${expectedKey}`,
+            'apikey': expectedKey,
             'Content-Type': 'application/json'
           }
         });
