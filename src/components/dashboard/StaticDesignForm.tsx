@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +10,9 @@ import { Save, Loader2, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDesignToProduct } from '@/hooks/useDesignToProduct';
 import { useUserStorageUpload } from '@/hooks/useUserStorageUpload';
+import { supabase } from '@/integrations/supabase/client';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
+import StorageDebugMonitor from '../StorageDebugMonitor';
 
 interface StaticDesignFormProps {
   onCancel: () => void;
@@ -56,7 +57,16 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 [StaticDesignForm] Form submission started...');
+    
+    // Enhanced validation with logging
     if (!formData.name || !formData.trackingNumber || !formData.category) {
+      console.error('❌ [StaticDesignForm] Missing required fields:', {
+        name: !!formData.name,
+        trackingNumber: !!formData.trackingNumber,
+        category: !!formData.category
+      });
+      
       toast({
         title: "Fehlende Angaben",
         description: "Bitte füllen Sie alle Pflichtfelder aus (Name, Tracking-Nummer und Kategorie).",
@@ -64,6 +74,22 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
       });
       return;
     }
+
+    // Check user authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ [StaticDesignForm] User authentication failed:', userError);
+      toast({
+        title: "Authentifizierung fehlgeschlagen",
+        description: "Bitte melden Sie sich erneut an.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('👤 [StaticDesignForm] Authenticated user:', user.id);
+    console.log('📋 [StaticDesignForm] Form data:', formData);
+    console.log('📁 [StaticDesignForm] Uploaded files:', uploadedFiles.length);
 
     setLoading(true);
     try {
@@ -81,6 +107,8 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         slicer: formData.slicer
       };
 
+      console.log('📦 [StaticDesignForm] Design form data prepared:', designFormData);
+
       const designParts = [{
         id: 'main',
         name: 'Main',
@@ -89,6 +117,9 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         specifications: ''
       }];
 
+      console.log('🔧 [StaticDesignForm] Design parts prepared:', designParts);
+
+      console.log('💾 [StaticDesignForm] Calling saveDesignAsProduct...');
       const product = await saveDesignAsProduct(
         designFormData,
         designParts,
@@ -97,14 +128,39 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         []
       );
 
+      console.log('✅ [StaticDesignForm] Product created successfully:', product);
+
       // Move files from temp to final location
       if (uploadedFiles.length > 0) {
+        console.log('🔄 [StaticDesignForm] Moving files to final location...');
+        console.log('📁 [StaticDesignForm] Files to move:', uploadedFiles.map(f => ({ name: f.name, path: f.path, partId: f.partId })));
+        
         await moveToFinalLocation(uploadedFiles, product.product_id);
+        console.log('✅ [StaticDesignForm] Files moved successfully');
+      } else {
+        console.log('ℹ️ [StaticDesignForm] No files to move');
       }
 
+      console.log('🎉 [StaticDesignForm] All operations completed successfully');
       onSave(formData);
+      
     } catch (error) {
-      console.error('Error saving design:', error);
+      console.error('❌ [StaticDesignForm] Complete error:', error);
+      
+      // Enhanced error reporting
+      if (error instanceof Error) {
+        console.error('❌ [StaticDesignForm] Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
+      
+      toast({
+        title: "Speichern fehlgeschlagen",
+        description: `Fehler beim Speichern des Produkts: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -115,23 +171,41 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     if (!files) return;
 
     const partId = partName || selectedPartId;
+    
+    console.log('📤 [StaticDesignForm] File upload initiated:');
+    console.log('  - Files count:', files.length);
+    console.log('  - Part ID:', partId);
+    console.log('  - Part name:', partName);
 
     try {
       for (const file of Array.from(files)) {
-        console.log('📤 Uploading file to temp:', file.name, 'for part:', partId);
+        console.log('📤 [StaticDesignForm] Uploading file:', file.name, 'for part:', partId);
         
         const uploadedFile = await uploadToTemporary(file, partId);
-        setUploadedFiles(prev => [...prev, uploadedFile]);
+        console.log('✅ [StaticDesignForm] File uploaded:', uploadedFile);
+        
+        setUploadedFiles(prev => {
+          const updated = [...prev, uploadedFile];
+          console.log('📋 [StaticDesignForm] Updated files list:', updated.length, 'files');
+          return updated;
+        });
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('❌ [StaticDesignForm] Upload error:', error);
     }
     
     event.target.value = '';
   };
 
   const handleFileRemove = (file: UploadedFile) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
+    console.log('🗑️ [StaticDesignForm] Removing file:', file.name);
+    
+    setUploadedFiles(prev => {
+      const updated = prev.filter(f => f.id !== file.id);
+      console.log('📋 [StaticDesignForm] Files after removal:', updated.length);
+      return updated;
+    });
+    
     toast({
       title: "Datei entfernt",
       description: `${file.name} wurde entfernt.`,
@@ -139,6 +213,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   };
 
   const handleFileDownload = (file: UploadedFile) => {
+    console.log('📥 [StaticDesignForm] Download requested for:', file.name);
     toast({
       title: "Download",
       description: `Download für ${file.name} wird vorbereitet.`,
@@ -157,170 +232,174 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   };
 
   return (
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Statisches Produkt hinzufügen</CardTitle>
-        <CardDescription>
-          Erstellen Sie ein neues statisches Produkt. Dateien werden zunächst temporär gespeichert und beim Speichern final abgelegt.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Design Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Produkt-Name *</Label>
-            <Input
-              id="name"
-              placeholder="Geben Sie einen Namen für Ihr Produkt ein"
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Tracking Type and Number */}
-          <div className="grid grid-cols-2 gap-4">
+    <div className="max-w-4xl mx-auto space-y-4">
+      <StorageDebugMonitor />
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Statisches Produkt hinzufügen</CardTitle>
+          <CardDescription>
+            Erstellen Sie ein neues statisches Produkt. Dateien werden zunächst temporär gespeichert und beim Speichern final abgelegt.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Design Name */}
             <div className="space-y-2">
-              <Label htmlFor="trackingType">Tracking-Typ *</Label>
-              <Select onValueChange={(value) => handleInputChange('trackingType', value)} value={formData.trackingType} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Wählen Sie den Tracking-Typ" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ean">EAN-Nummer</SelectItem>
-                  <SelectItem value="sku">SKU</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="trackingNumber">
-                {formData.trackingType === 'ean' ? 'EAN-Nummer *' : 'SKU *'}
-              </Label>
+              <Label htmlFor="name">Produkt-Name *</Label>
               <Input
-                id="trackingNumber"
-                placeholder={formData.trackingType === 'ean' ? '13-stellige EAN-Nummer eingeben' : 'SKU eingeben'}
-                value={formData.trackingNumber}
-                onChange={(e) => handleInputChange('trackingNumber', e.target.value)}
-                maxLength={formData.trackingType === 'ean' ? 13 : undefined}
+                id="name"
+                placeholder="Geben Sie einen Namen für Ihr Produkt ein"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
                 required
               />
             </div>
-          </div>
 
-          {/* Preview Image Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="previewImage">Vorschaubild (optional)</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-              <Image className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 mb-2">
-                {previewImage ? previewImage.name : 'Klicken Sie hier oder ziehen Sie ein Bild hinein'}
-              </p>
-              <Input
-                id="previewImage"
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageChange(e.target.files?.[0] || null)}
-                className="hidden"
+            {/* Tracking Type and Number */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="trackingType">Tracking-Typ *</Label>
+                <Select onValueChange={(value) => handleInputChange('trackingType', value)} value={formData.trackingType} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wählen Sie den Tracking-Typ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ean">EAN-Nummer</SelectItem>
+                    <SelectItem value="sku">SKU</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="trackingNumber">
+                  {formData.trackingType === 'ean' ? 'EAN-Nummer *' : 'SKU *'}
+                </Label>
+                <Input
+                  id="trackingNumber"
+                  placeholder={formData.trackingType === 'ean' ? '13-stellige EAN-Nummer eingeben' : 'SKU eingeben'}
+                  value={formData.trackingNumber}
+                  onChange={(e) => handleInputChange('trackingNumber', e.target.value)}
+                  maxLength={formData.trackingType === 'ean' ? 13 : undefined}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Preview Image Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="previewImage">Vorschaubild (optional)</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                <Image className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-gray-600 mb-2">
+                  {previewImage ? previewImage.name : 'Klicken Sie hier oder ziehen Sie ein Bild hinein'}
+                </p>
+                <Input
+                  id="previewImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageChange(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('previewImage')?.click()}
+                >
+                  Bild auswählen
+                </Button>
+              </div>
+            </div>
+
+            {/* Description and Category */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="description">Beschreibung (optional)</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Beschreiben Sie Ihr Produkt..."
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  className="min-h-20"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Kategorie *</Label>
+                <Input
+                  id="category"
+                  placeholder="Kategorie eingeben oder auswählen"
+                  value={formData.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Additional Product Details */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="color">Farbe (optional)</Label>
+                <Input
+                  id="color"
+                  placeholder="z.B. Rot, Blau, Schwarz"
+                  value={formData.color}
+                  onChange={(e) => handleInputChange('color', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="material">Material (optional)</Label>
+                <Input
+                  id="material"
+                  placeholder="z.B. PLA, ABS, PETG"
+                  value={formData.material}
+                  onChange={(e) => handleInputChange('material', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Multi-Part File Management */}
+            <div className="space-y-2">
+              <Label>Dateien (optional)</Label>
+              <p className="text-sm text-gray-600">Dateien werden temporär gespeichert und beim Speichern final abgelegt</p>
+              <MultiPartFileManager
+                uploadedFiles={uploadedFiles}
+                loadingFiles={false}
+                uploading={uploading}
+                onFileUpload={handleFileUpload}
+                onFileRemove={handleFileRemove}
+                onFileDownload={handleFileDownload}
+                selectedPartId={selectedPartId}
+                onPartSelect={setSelectedPartId}
               />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById('previewImage')?.click()}
-              >
-                Bild auswählen
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+                Abbrechen
+              </Button>
+              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || uploading}>
+                {loading || uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {uploading ? 'Datei hochladen...' : 'Speichern...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Produkt speichern
+                  </>
+                )}
               </Button>
             </div>
-          </div>
-
-          {/* Description and Category */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="description">Beschreibung (optional)</Label>
-              <Textarea
-                id="description"
-                placeholder="Beschreiben Sie Ihr Produkt..."
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className="min-h-20"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">Kategorie *</Label>
-              <Input
-                id="category"
-                placeholder="Kategorie eingeben oder auswählen"
-                value={formData.category}
-                onChange={(e) => handleInputChange('category', e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Additional Product Details */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="color">Farbe (optional)</Label>
-              <Input
-                id="color"
-                placeholder="z.B. Rot, Blau, Schwarz"
-                value={formData.color}
-                onChange={(e) => handleInputChange('color', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="material">Material (optional)</Label>
-              <Input
-                id="material"
-                placeholder="z.B. PLA, ABS, PETG"
-                value={formData.material}
-                onChange={(e) => handleInputChange('material', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Multi-Part File Management */}
-          <div className="space-y-2">
-            <Label>Dateien (optional)</Label>
-            <p className="text-sm text-gray-600">Dateien werden temporär gespeichert und beim Speichern final abgelegt</p>
-            <MultiPartFileManager
-              uploadedFiles={uploadedFiles}
-              loadingFiles={false}
-              uploading={uploading}
-              onFileUpload={handleFileUpload}
-              onFileRemove={handleFileRemove}
-              onFileDownload={handleFileDownload}
-              selectedPartId={selectedPartId}
-              onPartSelect={setSelectedPartId}
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-              Abbrechen
-            </Button>
-            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || uploading}>
-              {loading || uploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {uploading ? 'Datei hochladen...' : 'Speichern...'}
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Produkt speichern
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
