@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Upload, FileText, Settings2, Plus, Edit, Trash } from 'lucide-react';
+import PresetManager from './PresetManager';
 
 interface FileManagementData {
   selectedPart: string;
@@ -37,19 +38,19 @@ interface FileManagementSectionProps {
   onRemovePart: (partId: string) => void;
   onRenamePart: (partId: string, newName: string) => void;
   onPartTypeChange: (partId: string, partType: 'static' | 'personalized') => void;
+  colorPresets: string[];
+  machinePresets: string[];
+  filamentPresets: string[];
+  onAddColorPreset: (color: string) => void;
+  onEditColorPreset: (oldColor: string, newColor: string) => void;
+  onDeleteColorPreset: (color: string) => void;
+  onAddMachinePreset: (machine: string) => void;
+  onEditMachinePreset: (oldMachine: string, newMachine: string) => void;
+  onDeleteMachinePreset: (machine: string) => void;
+  onAddFilamentPreset: (filament: string) => void;
+  onEditFilamentPreset: (oldFilament: string, newFilament: string) => void;
+  onDeleteFilamentPreset: (filament: string) => void;
 }
-
-const colorPresets = [
-  'Black', 'White', 'Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple', 'Gray', 'Pink'
-];
-
-const machinePresets = [
-  'Prusa i3 MK3S+', 'Ender 3', 'Bambu Lab X1 Carbon', 'Ultimaker S3', 'Formlabs Form 3', 'Creality CR-10'
-];
-
-const filamentPresets = [
-  'PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'HIPS', 'PC', 'Nylon', 'Wood Fill', 'Carbon Fiber'
-];
 
 const FileManagementSection: React.FC<FileManagementSectionProps> = ({ 
   data, 
@@ -60,7 +61,19 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   onAddPart,
   onRemovePart,
   onRenamePart,
-  onPartTypeChange
+  onPartTypeChange,
+  colorPresets,
+  machinePresets,
+  filamentPresets,
+  onAddColorPreset,
+  onEditColorPreset,
+  onDeleteColorPreset,
+  onAddMachinePreset,
+  onEditMachinePreset,
+  onDeleteMachinePreset,
+  onAddFilamentPreset,
+  onEditFilamentPreset,
+  onDeleteFilamentPreset
 }) => {
   const [gcodeFile, setGcodeFile] = useState<File | null>(null);
   const [cadFile, setCadFile] = useState<File | null>(null);
@@ -142,7 +155,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Select part" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {designParts.map((part) => (
                     <SelectItem key={part.id} value={part.id}>
                       {part.name}
@@ -239,7 +252,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               <SelectTrigger>
                 <SelectValue placeholder="Select part type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="static">Static</SelectItem>
                 <SelectItem value="customisable">Customisable</SelectItem>
               </SelectContent>
@@ -256,7 +269,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Select CAD software" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="fusion360">Fusion 360</SelectItem>
                 </SelectContent>
               </Select>
@@ -268,7 +281,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Select slicer" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="prusaslicer">PrusaSlicer</SelectItem>
                   <SelectItem value="orcaslicer">OrcaSlicer</SelectItem>
                   <SelectItem value="superslicer">SuperSlicer</SelectItem>
@@ -280,49 +293,27 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
 
         {/* Color and Machine Type Row (always visible) */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <Select value={data.partColor} onValueChange={(value) => updateData('partColor', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select or enter color" />
-              </SelectTrigger>
-              <SelectContent>
-                {colorPresets.map((color) => (
-                  <SelectItem key={color} value={color.toLowerCase()}>{color}</SelectItem>
-                ))}
-                <SelectItem value="__custom__">
-                  <Input
-                    placeholder="Enter custom color"
-                    value={data.partColor}
-                    onChange={(e) => updateData('partColor', e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <PresetManager
+            label="Color"
+            value={data.partColor}
+            onValueChange={(value) => updateData('partColor', value)}
+            presets={colorPresets}
+            onAddPreset={onAddColorPreset}
+            onEditPreset={onEditColorPreset}
+            onDeletePreset={onDeleteColorPreset}
+            placeholder="Select or add color"
+          />
 
-          <div className="space-y-2">
-            <Label>Machine Type</Label>
-            <Select value={data.machineType} onValueChange={(value) => updateData('machineType', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select or enter machine" />
-              </SelectTrigger>
-              <SelectContent>
-                {machinePresets.map((machine) => (
-                  <SelectItem key={machine} value={machine}>{machine}</SelectItem>
-                ))}
-                <SelectItem value="__custom__">
-                  <Input
-                    placeholder="Enter custom machine"
-                    value={data.machineType}
-                    onChange={(e) => updateData('machineType', e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <PresetManager
+            label="Machine Type"
+            value={data.machineType}
+            onValueChange={(value) => updateData('machineType', value)}
+            presets={machinePresets}
+            onAddPreset={onAddMachinePreset}
+            onEditPreset={onEditMachinePreset}
+            onDeletePreset={onDeleteMachinePreset}
+            placeholder="Select or add machine"
+          />
         </div>
 
         {/* File Upload Row */}
@@ -443,7 +434,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="text">Text</SelectItem>
                   <SelectItem value="dimension">Dimension</SelectItem>
                 </SelectContent>
@@ -467,27 +458,16 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Filament Type</Label>
-            <Select value={data.filamentType} onValueChange={(value) => updateData('filamentType', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select or enter filament" />
-              </SelectTrigger>
-              <SelectContent>
-                {filamentPresets.map((filament) => (
-                  <SelectItem key={filament} value={filament}>{filament}</SelectItem>
-                ))}
-                <SelectItem value="__custom__">
-                  <Input
-                    placeholder="Enter custom filament"
-                    value={data.filamentType}
-                    onChange={(e) => updateData('filamentType', e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <PresetManager
+            label="Filament Type"
+            value={data.filamentType}
+            onValueChange={(value) => updateData('filamentType', value)}
+            presets={filamentPresets}
+            onAddPreset={onAddFilamentPreset}
+            onEditPreset={onEditFilamentPreset}
+            onDeletePreset={onDeleteFilamentPreset}
+            placeholder="Select or add filament"
+          />
         </div>
       </CardContent>
     </Card>
