@@ -1,6 +1,8 @@
 
 import React from 'react';
 import FileUploadSection from './FileUploadSection';
+import NozzleDiameterInput from './NozzleDiameterInput';
+import FilamentSelector from './FilamentSelector';
 
 interface PersonalizedPartUploadProps {
   partName: string;
@@ -8,6 +10,11 @@ interface PersonalizedPartUploadProps {
   uploading: boolean;
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, partId?: string, expectedFileType?: 'f3d' | 'ini' | 'gcode') => void;
   uploadedFiles: any[];
+  currentPart?: {
+    nozzleDiameter?: string;
+    filamentType?: string;
+  };
+  onPartSpecificationChange?: (partId: string, field: 'nozzleDiameter' | 'filamentType', value: string) => void;
 }
 
 const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
@@ -15,7 +22,9 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
   partId,
   uploading,
   onFileUpload,
-  uploadedFiles
+  uploadedFiles,
+  currentPart,
+  onPartSpecificationChange
 }) => {
   // Separate upload handlers for CAD and INI files
   const handleCADFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,6 +33,14 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
 
   const handleINIFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFileUpload(event, partId, 'ini');
+  };
+
+  const handleNozzleChange = (value: string) => {
+    onPartSpecificationChange?.(partId, 'nozzleDiameter', value);
+  };
+
+  const handleFilamentChange = (value: string) => {
+    onPartSpecificationChange?.(partId, 'filamentType', value);
   };
 
   return (
@@ -56,6 +73,19 @@ const PersonalizedPartUpload: React.FC<PersonalizedPartUploadProps> = ({
           uploadedFiles={uploadedFiles}
           onFileUpload={handleINIFileUpload}
           expectedFileType="ini"
+        />
+      </div>
+
+      {/* Nozzle Diameter and Filament Type */}
+      <div className="grid grid-cols-2 gap-4">
+        <NozzleDiameterInput
+          id={`nozzle-${partId}`}
+          onChange={handleNozzleChange}
+        />
+        
+        <FilamentSelector
+          id={`filament-${partId}`}
+          onChange={handleFilamentChange}
         />
       </div>
     </div>

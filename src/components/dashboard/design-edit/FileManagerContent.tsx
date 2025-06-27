@@ -86,7 +86,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         hasINI={validation.hasINI}
       />
 
-      {/* Part-spezifische Felder: Farbe, Maschine, Nozzle Diameter, Filament Type */}
+      {/* Part-spezifische Felder: Farbe, Maschine */}
       <ColorMachineFields
         partId={currentPart.id}
         designParts={designParts}
@@ -105,6 +105,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         gcodeFile={gcodeFile}
         onGcodeFileChange={onGcodeFileChange}
         onRemoveGcodeFile={onRemoveGcodeFile}
+        currentPart={currentPart}
       />
 
       {/* Parameter Config nur für personalized parts */}

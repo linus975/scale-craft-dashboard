@@ -67,24 +67,7 @@ const PartSelector: React.FC<PartSelectorProps> = ({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-12 gap-4 items-end">
-        {/* Tausche Position: Zuerst Controls, dann Part Type und Select Part */}
-        <PartControls
-          designParts={designParts}
-          activePart={activePart}
-          currentPartName={currentPart?.name || ''}
-          isEditing={isEditing}
-          onStartEditing={() => startEditingPart(activePart, currentPart?.name || '')}
-          onSavePartName={savePartName}
-          onAddPart={handleAddPart}
-          onRemovePart={onRemovePart}
-        />
-
-        <PartTypeSelector
-          partType={currentPart?.partType || 'static'}
-          onPartTypeChange={(partType) => onPartTypeChange(activePart, partType)}
-          disabled={isEditing}
-        />
-
+        {/* Select Part moved to the left */}
         <PartNameEditor
           designParts={designParts}
           activePart={activePart}
@@ -94,6 +77,25 @@ const PartSelector: React.FC<PartSelectorProps> = ({
           onEditPartNameChange={setEditPartName}
           onSavePartName={savePartName}
           validatePartFiles={validatePartFiles}
+        />
+
+        {/* Part Type */}
+        <PartTypeSelector
+          partType={currentPart?.partType || 'static'}
+          onPartTypeChange={(partType) => onPartTypeChange(activePart, partType)}
+          disabled={isEditing}
+        />
+
+        {/* Controls moved to the right */}
+        <PartControls
+          designParts={designParts}
+          activePart={activePart}
+          currentPartName={currentPart?.name || ''}
+          isEditing={isEditing}
+          onStartEditing={() => startEditingPart(activePart, currentPart?.name || '')}
+          onSavePartName={savePartName}
+          onAddPart={handleAddPart}
+          onRemovePart={onRemovePart}
         />
       </div>
 

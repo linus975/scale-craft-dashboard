@@ -193,7 +193,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <File className="h-5 w-5" />
-                Dateien verwalten (optional)
+                File Management (optional)
               </CardTitle>
             </CardHeader>
             <CardContent>

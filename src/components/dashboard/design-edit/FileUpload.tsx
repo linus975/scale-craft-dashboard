@@ -14,6 +14,10 @@ interface FileUploadProps {
   gcodeFile?: File | null;
   onGcodeFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveGcodeFile?: () => void;
+  currentPart?: {
+    nozzleDiameter?: string;
+    filamentType?: string;
+  };
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -26,7 +30,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onPartSpecificationChange,
   gcodeFile,
   onGcodeFileChange,
-  onRemoveGcodeFile
+  onRemoveGcodeFile,
+  currentPart
 }) => {
   if (partType === 'personalized') {
     return (
@@ -36,6 +41,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
         uploading={uploading}
         onFileUpload={onFileUpload}
         uploadedFiles={uploadedFiles}
+        currentPart={currentPart}
+        onPartSpecificationChange={onPartSpecificationChange}
       />
     );
   }
@@ -50,6 +57,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
       gcodeFile={gcodeFile}
       onGcodeFileChange={onGcodeFileChange}
       onRemoveGcodeFile={onRemoveGcodeFile}
+      currentPart={currentPart}
+      onPartSpecificationChange={onPartSpecificationChange}
     />
   );
 };
