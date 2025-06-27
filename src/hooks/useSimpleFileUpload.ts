@@ -17,6 +17,7 @@ interface UploadedFile {
 export const useSimpleFileUpload = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<File | null>(null);
   const { toast } = useToast();
 
   const getFileCategory = (fileName: string): 'CAD' | 'INI' | 'GCODE' => {
@@ -146,6 +147,7 @@ export const useSimpleFileUpload = () => {
     uploading,
     uploadFile,
     removeFile,
-    clearAllFiles
+    clearAllFiles,
+    previewImage
   };
 };

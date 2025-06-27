@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +29,7 @@ interface UploadedFile {
 }
 
 const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave }) => {
-  const { uploadFile, uploading } = useHighPerformanceUpload();
+  const { uploadFile, uploading } = useSimpleFileUpload();
   const { saveDesignAsProduct } = useDesignToProduct();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -113,10 +112,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
       for (const file of Array.from(files)) {
         const fileName = partId === 'main' ? file.name : `part-${partId}_${file.name}`;
         
-        const filePath = await uploadFile(
-          new File([file], fileName, { type: file.type }), 
-          `temp-designs`
-        );
+        await uploadFile(new File([file], fileName, { type: file.type }));
         
         const newFile: UploadedFile = {
           id: Date.now() + Math.random() + '',
@@ -124,7 +120,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
           type: getFileType(file.name),
           size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
           uploadDate: new Date().toISOString().split('T')[0],
-          path: filePath,
+          path: `temp/${fileName}`,
           originalName: file.name,
           partId: partId
         };
