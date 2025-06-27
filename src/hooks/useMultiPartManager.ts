@@ -5,7 +5,7 @@ interface DesignPart {
   id: string;
   name: string;
   files: any[];
-  partType?: 'static' | 'personalized';
+  partType?: 'static' | 'customisable';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;
@@ -13,6 +13,10 @@ interface DesignPart {
   };
   cadSoftware?: string;
   slicer?: string;
+  nozzleDiameter?: string;
+  filamentType?: string;
+  color?: string;
+  machine?: string;
 }
 
 interface UseMultiPartManagerProps {
@@ -36,7 +40,11 @@ export const useMultiPartManager = ({
       partType: 'static', 
       parameters: { sketchName: '', replacementValue: '', replacementType: 'text' },
       cadSoftware: '',
-      slicer: ''
+      slicer: '',
+      nozzleDiameter: '',
+      filamentType: '',
+      color: '',
+      machine: ''
     }
   ]);
   const [internalActivePart, setInternalActivePart] = useState(selectedPartId || 'part1');
@@ -55,7 +63,11 @@ export const useMultiPartManager = ({
         partType: 'static',
         parameters: { sketchName: '', replacementValue: '', replacementType: 'text' },
         cadSoftware: '',
-        slicer: ''
+        slicer: '',
+        nozzleDiameter: '',
+        filamentType: '',
+        color: '',
+        machine: ''
       };
       setInternalDesignParts(prev => [...prev, newPart]);
       setInternalActivePart(newPart.id);
@@ -94,7 +106,7 @@ export const useMultiPartManager = ({
     }
   };
 
-  const handlePartTypeChange = (partId: string, partType: 'static' | 'personalized', externalOnPartTypeChange?: (partId: string, partType: 'static' | 'personalized') => void) => {
+  const handlePartTypeChange = (partId: string, partType: 'static' | 'customisable', externalOnPartTypeChange?: (partId: string, partType: 'static' | 'customisable') => void) => {
     if (externalOnPartTypeChange) {
       externalOnPartTypeChange(partId, partType);
     } else {

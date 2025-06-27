@@ -97,7 +97,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
       <FileUpload
         partName={currentPart.name}
         partId={currentPart.id}
-        partType={currentPart.partType}
+        partType={currentPart.partType === 'customisable' ? 'personalized' : 'static'}
         uploading={uploading}
         onFileUpload={onFileUpload}
         uploadedFiles={uploadedFiles}

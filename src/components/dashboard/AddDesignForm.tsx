@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -155,13 +156,15 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       const mappedDesignParts = designParts.designParts.map(part => ({
         id: part.id,
         name: part.name,
-        type: part.partType || 'static' as const,
+        type: part.partType || 'static' as 'static' | 'customisable',
         software: part.cadSoftware,
         specifications: '',
         cadSoftware: part.cadSoftware,
         slicer: part.slicer,
         nozzleDiameter: part.nozzleDiameter,
-        filamentType: part.filamentType
+        filamentType: part.filamentType,
+        color: part.color,
+        machine: part.machine
       }));
 
       await saveDesignAsProduct(

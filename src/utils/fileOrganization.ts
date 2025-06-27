@@ -23,6 +23,10 @@ interface DesignPart {
   };
   cadSoftware?: string;
   slicer?: string;
+  nozzleDiameter?: string;
+  filamentType?: string;
+  color?: string;
+  machine?: string;
 }
 
 export const organizeFilesByParts = (designParts: DesignPart[], uploadedFiles: UploadedFile[]) => {

@@ -22,13 +22,15 @@ interface DesignFormData {
 interface DesignPart {
   id: string;
   name: string;
-  type: 'static' | 'personalized';
+  type: 'static' | 'customisable';
   software?: string;
   specifications?: string;
   cadSoftware?: string;
   slicer?: string;
   nozzleDiameter?: string;
   filamentType?: string;
+  color?: string;
+  machine?: string;
 }
 
 interface UploadedFile {
@@ -105,12 +107,12 @@ export const useDesignToProduct = () => {
           const partData = {
             product_id: product.product_id,
             part_name: designPart.name,
-            is_customizable: designPart.type === 'personalized',
+            is_customizable: designPart.type === 'customisable',
             // Use part-specific settings first, then fallback to global form data
             cad_software: designPart.cadSoftware || formData.cadSoftware || null,
             slicer_software: designPart.slicer || formData.slicer || null,
-            color: formData.color || null, // This will be updated to be part-specific
-            printer_model: formData.machine || null, // This will be updated to be part-specific
+            color: designPart.color || formData.color || null,
+            printer_model: designPart.machine || formData.machine || null,
             nozzle_diameter: designPart.nozzleDiameter ? parseFloat(designPart.nozzleDiameter) : 
                            (formData.nozzleDiameter ? parseFloat(formData.nozzleDiameter) : null),
             filament_type: designPart.filamentType || formData.material || null,
