@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import type { DesignPart } from '@/types/designPart';
 
@@ -88,7 +89,7 @@ export const useMultiPartManager = ({
     }
   };
 
-  const handlePartTypeChange = (partId: string, partType: 'static' | 'personalizable', externalOnPartTypeChange?: (partId: string, partType: 'static' | 'personalizable') => void) => {
+  const handlePartTypeChange = (partId: string, partType: 'static' | 'customisable', externalOnPartTypeChange?: (partId: string, partType: 'static' | 'customisable') => void) => {
     if (externalOnPartTypeChange) {
       externalOnPartTypeChange(partId, partType);
     } else {

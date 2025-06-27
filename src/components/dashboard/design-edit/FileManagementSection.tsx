@@ -13,7 +13,7 @@ import type { DesignPart } from '@/types/designPart';
 
 interface FileManagementData {
   selectedPart: string;
-  partType: 'static' | 'personalizable';
+  partType: 'static' | 'customisable';
   cadSoftware: string;
   slicerSoftware: string;
   partColor: string;
@@ -33,7 +33,7 @@ interface FileManagementSectionProps {
   onAddPart: (name: string) => void;
   onRemovePart: (partId: string) => void;
   onRenamePart: (partId: string, newName: string) => void;
-  onPartTypeChange: (partId: string, partType: 'static' | 'personalizable') => void;
+  onPartTypeChange: (partId: string, partType: 'static' | 'customisable') => void;
 }
 
 const FileManagementSection: React.FC<FileManagementSectionProps> = ({ 
@@ -100,7 +100,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     }
   };
 
-  const handlePartTypeChange = (value: 'static' | 'personalizable') => {
+  const handlePartTypeChange = (value: 'static' | 'customisable') => {
     updateData('partType', value);
     onPartTypeChange(activePart, value);
   };
@@ -150,14 +150,14 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="static">Static</SelectItem>
-                <SelectItem value="personalizable">Personalizable</SelectItem>
+                <SelectItem value="customisable">Customisable</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Conditional Row: CAD and Slicer Software (only for personalizable) */}
-        {(currentPart?.partType === 'personalizable') && (
+        {/* Conditional Row: CAD and Slicer Software (only for customisable) */}
+        {(currentPart?.partType === 'customisable') && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>CAD Software</Label>
@@ -257,8 +257,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           iniFile={iniFile}
         />
 
-        {/* Sketch Name and Replacement Type (only for personalizable) */}
-        {data.partType === 'personalizable' && (
+        {/* Sketch Name and Replacement Type (only for customisable) */}
+        {data.partType === 'customisable' && (
           <PersonalizationFields
             sketchName={data.sketchName}
             replacementType={data.replacementType}

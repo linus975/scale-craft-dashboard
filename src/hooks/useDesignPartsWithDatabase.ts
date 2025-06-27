@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -70,7 +69,7 @@ export const useDesignPartsWithDatabase = (productId?: string) => {
         id: part.part_id, // Use the new part_id UUID
         name: part.part_name,
         files: [],
-        partType: part.is_customizable ? 'personalizable' : 'static',
+        partType: part.is_customizable ? 'customisable' : 'static',
         parameters: {
           sketchName: part.sketch_name || '',
           replacementValue: '',
@@ -307,13 +306,13 @@ export const useDesignPartsWithDatabase = (productId?: string) => {
     }
   };
 
-  const handlePartTypeChange = async (partId: string, partType: 'static' | 'personalizable') => {
+  const handlePartTypeChange = async (partId: string, partType: 'static' | 'customisable') => {
     try {
       console.log(`🔄 Changing part ${partId} type to: ${partType}`);
       
       const { error } = await supabase
         .from('parts')
-        .update({ is_customizable: partType === 'personalizable' })
+        .update({ is_customizable: partType === 'customisable' })
         .eq('part_id', partId);
 
       if (error) {
