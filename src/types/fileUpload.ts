@@ -13,6 +13,7 @@ export interface UploadedFile {
   isF3DFile?: boolean;
   isINIFile?: boolean;
   uploadContext?: string;
+  fileCategory?: 'CAD' | 'INI' | 'GCODE';
 }
 
 export type ExpectedFileType = 'f3d' | 'ini' | 'gcode';
