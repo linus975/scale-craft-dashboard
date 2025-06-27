@@ -77,8 +77,6 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
     console.log(`Changing file ${fileId} to ${designType}`);
   };
 
-  // CRITICAL: Files are already filtered by the parent component
-  // We receive ONLY files for the current part
   console.log(`📂 FileManagerContent: Displaying ${uploadedFiles.length} files for part ${currentPart.id}`);
 
   return (
@@ -90,7 +88,6 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         hasINI={validation.hasINI}
       />
 
-      {/* Part-specific fields: Color, Machine, Nozzle Diameter, Filament */}
       <ColorMachineFields
         partId={currentPart.id}
         designParts={designParts}
@@ -104,7 +101,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         partType={currentPart.partType === 'personalizable' ? 'personalized' : 'static'}
         uploading={uploading}
         onFileUpload={onFileUpload}
-        uploadedFiles={uploadedFiles} // These are already filtered for current part
+        uploadedFiles={uploadedFiles}
         onPartSpecificationChange={onPartSpecificationChange}
         gcodeFile={gcodeFile}
         onGcodeFileChange={onGcodeFileChange}
@@ -112,7 +109,6 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         currentPart={currentPart}
       />
 
-      {/* Parameter Config for personalizable parts with part-specific values */}
       {currentPart.partType === 'personalizable' && (
         <ParameterConfig
           currentPart={currentPart}
@@ -123,13 +119,12 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
 
       {(loadingFiles || uploadedFiles.length > 0) && (
         <FileList
-          files={uploadedFiles} // These are already filtered for current part
+          files={uploadedFiles}
           partName={currentPart.name}
           loadingFiles={loadingFiles}
           onFileRemove={onFileRemove}
           onFileDownload={onFileDownload}
           onFileTypeChange={(fileId: string, designType: 'static' | 'personalized') => {
-            // Map 'personalized' to 'personalizable' for consistency
             const mappedType = designType === 'personalized' ? 'personalizable' : 'static';
             handleFileTypeChange(fileId, mappedType);
           }}
