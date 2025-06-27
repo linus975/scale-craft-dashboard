@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDesignFiles } from '@/hooks/useDesignFiles';
-import DesignForm from './design-edit/DesignForm';
-import MultiPartFileManager from './design-edit/MultiPartFileManager';
-import ActionsPanel from './design-edit/ActionsPanel';
+import DesignForm from './DesignForm';
+import MultiPartFileManager from './MultiPartFileManager';
+import ActionsPanel from './ActionsPanel';
 
 interface DesignEditDialogProps {
   design: any;
