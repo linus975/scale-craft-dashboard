@@ -19,25 +19,29 @@ export const useFileUploadManagerWithDatabase = () => {
   ) => {
     const files = event.target.files;
     if (!files || !localPartId) {
-      console.log('❌ No files or localPartId provided');
+      console.error('❌ [useFileUploadManager] Missing files or localPartId');
+      console.log('  - Files:', files?.length || 0);
+      console.log('  - LocalPartId:', localPartId);
       return;
     }
 
-    console.log(`🎯 UPLOAD TARGET: LOCAL part ID: ${localPartId}`);
-    console.log(`📁 Files to upload: ${files.length}`);
-    console.log(`🔍 Expected file type: ${expectedFileType || 'any'}`);
+    console.log('🎯 [useFileUploadManager] UPLOAD START:');
+    console.log('  - Target LOCAL part ID:', localPartId);
+    console.log('  - Files to upload:', files.length);
+    console.log('  - Expected file type:', expectedFileType || 'any');
+    console.log('  - Current partFiles state:', Object.keys(partFiles).map(key => ({ partId: key, fileCount: partFiles[key].length })));
 
     const filesToUpload = Array.from(files);
     const validFiles = validateFiles(filesToUpload, expectedFileType);
 
     if (validFiles.length === 0) {
-      console.log('❌ No valid files found');
+      console.log('❌ [useFileUploadManager] No valid files found after validation');
       event.target.value = '';
       return;
     }
 
     try {
-      console.log(`✅ Processing ${validFiles.length} valid files for LOCAL part ${localPartId}`);
+      console.log('✅ [useFileUploadManager] Processing valid files:', validFiles.map(f => f.name));
       
       const newFiles: UploadedFile[] = [];
       
@@ -47,7 +51,7 @@ export const useFileUploadManagerWithDatabase = () => {
         const folderPath = `temp-parts/${localPartId}/${fileTypeFolder}`;
         
         try {
-          console.log(`📤 Uploading ${file.name} to ${folderPath} for LOCAL part ${localPartId}`);
+          console.log(`📤 [useFileUploadManager] Uploading "${file.name}" to ${folderPath} for LOCAL part ${localPartId}`);
           const uploadPath = await uploadFile(file, folderPath);
           const fileExtension = file.name.split('.').pop()?.toLowerCase();
           
@@ -68,16 +72,20 @@ export const useFileUploadManagerWithDatabase = () => {
           };
 
           newFiles.push(newFile);
-          console.log(`✅ File uploaded successfully for LOCAL part ${localPartId}: ${file.name}`);
+          console.log(`✅ [useFileUploadManager] File uploaded successfully: ${file.name}`);
+          console.log('  - File object:', newFile);
         } catch (uploadError) {
-          console.error(`❌ Error uploading ${file.name}:`, uploadError);
+          console.error(`❌ [useFileUploadManager] Error uploading ${file.name}:`, uploadError);
         }
       }
 
       if (newFiles.length > 0) {
+        console.log(`📂 [useFileUploadManager] Adding ${newFiles.length} files to LOCAL part ${localPartId}`);
+        
         // CRITICAL: Update files for this specific LOCAL part only
         setPartFiles(prev => {
           const currentPartFiles = prev[localPartId] || [];
+          console.log(`📋 [useFileUploadManager] Current files for part ${localPartId}:`, currentPartFiles.map(f => f.name));
           
           // Remove existing files of the same type and context to prevent duplicates
           const filteredFiles = currentPartFiles.filter(existingFile => {
@@ -85,20 +93,29 @@ export const useFileUploadManagerWithDatabase = () => {
               extension: nf?.fileExtension, 
               uploadContext: nf?.uploadContext
             }));
-            return !newFileTypes.some(nf => 
+            const shouldKeep = !newFileTypes.some(nf => 
               nf.extension === existingFile.fileExtension && 
               nf.uploadContext === existingFile.uploadContext
             );
+            console.log(`📁 [useFileUploadManager] Existing file "${existingFile.name}" shouldKeep: ${shouldKeep}`);
+            return shouldKeep;
           });
           
           const updatedPartFiles = [...filteredFiles, ...newFiles];
+          console.log(`📂 [useFileUploadManager] Updated files for LOCAL part ${localPartId}:`, updatedPartFiles.map(f => f.name));
           
-          console.log(`📂 Updated files for LOCAL part ${localPartId}:`, updatedPartFiles.map(f => f.name));
-          
-          return {
+          const newState = {
             ...prev,
             [localPartId]: updatedPartFiles
           };
+          
+          console.log('🔄 [useFileUploadManager] New partFiles state:', Object.keys(newState).map(key => ({ 
+            partId: key, 
+            fileCount: newState[key].length,
+            files: newState[key].map(f => f.name)
+          })));
+          
+          return newState;
         });
 
         toast({
@@ -108,7 +125,7 @@ export const useFileUploadManagerWithDatabase = () => {
       }
 
     } catch (error) {
-      console.error('❌ Upload error:', error);
+      console.error('❌ [useFileUploadManager] Upload error:', error);
       toast({
         title: "Upload-Fehler",
         description: "Es gab einen Fehler beim Hochladen der Dateien.",
@@ -122,16 +139,26 @@ export const useFileUploadManagerWithDatabase = () => {
 
   const handleFileRemove = (file: UploadedFile) => {
     if (!file.partId) {
-      console.log('❌ Cannot remove file: no partId');
+      console.error('❌ [useFileUploadManager] Cannot remove file: no partId');
       return;
     }
     
-    console.log(`🗑️ Removing file ${file.name} from LOCAL part ${file.partId}`);
+    console.log(`🗑️ [useFileUploadManager] Removing file "${file.name}" from LOCAL part ${file.partId}`);
     
-    setPartFiles(prev => ({
-      ...prev,
-      [file.partId!]: (prev[file.partId!] || []).filter(f => f.id !== file.id)
-    }));
+    setPartFiles(prev => {
+      const newState = {
+        ...prev,
+        [file.partId!]: (prev[file.partId!] || []).filter(f => f.id !== file.id)
+      };
+      
+      console.log('🔄 [useFileUploadManager] Updated partFiles after removal:', Object.keys(newState).map(key => ({ 
+        partId: key, 
+        fileCount: newState[key].length,
+        files: newState[key].map(f => f.name)
+      })));
+      
+      return newState;
+    });
     
     toast({
       title: "Datei gelöscht",
@@ -140,18 +167,23 @@ export const useFileUploadManagerWithDatabase = () => {
   };
 
   const handleFileDownload = (file: UploadedFile) => {
-    console.log('📥 Downloading file:', file.name, 'from path:', file.path);
+    console.log('📥 [useFileUploadManager] Downloading file:', file.name, 'from path:', file.path);
   };
 
   const getFilesForPart = (localPartId: string): UploadedFile[] => {
     const files = partFiles[localPartId] || [];
-    console.log(`📋 Getting files for LOCAL part ${localPartId}:`, files.map(f => f.name));
+    console.log(`📋 [useFileUploadManager] Getting files for LOCAL part ${localPartId}:`, files.map(f => f.name));
     return files;
   };
 
   const getAllFiles = (): UploadedFile[] => {
     const allFiles = Object.values(partFiles).flat();
-    console.log('📋 All files across all LOCAL parts:', allFiles.map(f => ({ name: f.name, partId: f.partId })));
+    console.log('📋 [useFileUploadManager] All files across all LOCAL parts:');
+    console.log('  - Total files:', allFiles.length);
+    console.log('  - Files by part:', allFiles.reduce((acc, file) => {
+      acc[file.partId || 'no-part'] = (acc[file.partId || 'no-part'] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>));
     return allFiles;
   };
 

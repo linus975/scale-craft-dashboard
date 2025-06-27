@@ -77,13 +77,30 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
     onPartSelect
   });
 
+  console.log('🔍 [MultiPartFileManager] DEBUGGING - Current state:');
+  console.log('📋 Available parts:', designParts.map(p => ({ id: p.id, name: p.name })));
+  console.log('🎯 Active part ID:', activePart);
+  console.log('📁 Total uploaded files:', uploadedFiles.length);
+  console.log('📂 Files by part:', uploadedFiles.reduce((acc, file) => {
+    acc[file.partId || 'no-part'] = (acc[file.partId || 'no-part'] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>));
+
   // CRITICAL: Ensure file upload is always targeted to the ACTIVE LOCAL part
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
-    console.log(`🎯 CRITICAL: MultiPartFileManager uploading to ACTIVE LOCAL part: ${activePart}`);
-    console.log(`📝 Event target files:`, event.target.files?.length || 0);
+    console.log('🎯 [MultiPartFileManager] UPLOAD TRIGGERED:');
+    console.log('  - Target part ID:', activePart);
+    console.log('  - Files to upload:', event.target.files?.length || 0);
+    console.log('  - Event target value:', event.target.value);
+    
+    if (!activePart) {
+      console.error('❌ [MultiPartFileManager] No active part - cannot upload!');
+      return;
+    }
     
     // Always pass the current active LOCAL part to ensure proper file assignment
+    console.log('✅ [MultiPartFileManager] Calling onFileUpload with partId:', activePart);
     onFileUpload(event, activePart);
   };
 
@@ -91,25 +108,29 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   const currentPart = organizedParts.find(part => part.id === activePart) || organizedParts[0];
   
   if (!currentPart) {
-    console.log('❌ No current part found');
+    console.error('❌ [MultiPartFileManager] No current part found');
     return <div>No part selected</div>;
   }
 
-  console.log(`📋 MultiPartFileManager - Active LOCAL part: ${activePart}`);
-  console.log(`📂 Current part: ${currentPart.name} (${currentPart.id})`);
+  console.log('📋 [MultiPartFileManager] Current part details:');
+  console.log('  - ID:', currentPart.id);
+  console.log('  - Name:', currentPart.name);
+  console.log('  - Type:', currentPart.partType);
   
   // CRITICAL: Filter files to show ONLY files for the current active LOCAL part
   const currentPartFiles = uploadedFiles.filter(file => {
     const belongsToCurrentPart = file.partId === currentPart.id;
-    console.log(`📁 File ${file.name}: localPartId=${file.partId}, currentLocalPartId=${currentPart.id}, belongs=${belongsToCurrentPart}`);
+    console.log(`📁 [MultiPartFileManager] File "${file.name}": partId=${file.partId}, currentPartId=${currentPart.id}, belongs=${belongsToCurrentPart}`);
     return belongsToCurrentPart;
   });
   
-  console.log(`🎯 Filtered files for LOCAL part ${currentPart.id}:`, currentPartFiles.map(f => f.name));
+  console.log('🎯 [MultiPartFileManager] Filtered files for current part:', currentPartFiles.map(f => f.name));
   
   const validation = currentPart ? 
     (externalValidatePartFiles ? externalValidatePartFiles(currentPart) : validatePartFiles(currentPart)) : 
     { hasF3D: false, hasINI: false, hasPersonalizedFiles: false };
+
+  console.log('✅ [MultiPartFileManager] Validation result:', validation);
 
   // Get G-code file for current part
   const currentPartGcodeFile = getGcodeFileForPart ? getGcodeFileForPart(activePart) : null;
@@ -120,13 +141,25 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         designParts={designParts}
         activePart={activePart}
         onPartChange={(value) => {
-          console.log(`🔄 Switching from LOCAL part ${activePart} to LOCAL part: ${value}`);
+          console.log('🔄 [MultiPartFileManager] Part change requested from', activePart, 'to', value);
           handlePartChange(value, externalOnPartChange);
         }}
-        onAddPart={(name) => addNewPart(name, externalOnAddPart)}
-        onRemovePart={(partId) => removePart(partId, externalOnRemovePart)}
-        onRenamePart={(partId, newName) => renamePart(partId, newName, externalOnRenamePart)}
-        onPartTypeChange={(partId, partType) => handlePartTypeChange(partId, partType, externalOnPartTypeChange)}
+        onAddPart={(name) => {
+          console.log('➕ [MultiPartFileManager] Adding new part:', name);
+          addNewPart(name, externalOnAddPart);
+        }}
+        onRemovePart={(partId) => {
+          console.log('🗑️ [MultiPartFileManager] Removing part:', partId);
+          removePart(partId, externalOnRemovePart);
+        }}
+        onRenamePart={(partId, newName) => {
+          console.log('✏️ [MultiPartFileManager] Renaming part:', partId, 'to', newName);
+          renamePart(partId, newName, externalOnRenamePart);
+        }}
+        onPartTypeChange={(partId, partType) => {
+          console.log('🔄 [MultiPartFileManager] Changing part type:', partId, 'to', partType);
+          handlePartTypeChange(partId, partType, externalOnPartTypeChange);
+        }}
         validatePartFiles={externalValidatePartFiles || validatePartFiles}
       />
 
@@ -139,13 +172,20 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
         onFileUpload={handleFileUpload}
         onFileRemove={onFileRemove}
         onFileDownload={onFileDownload}
-        onPartParametersChange={(partId, field, value) => 
-          handlePartParametersChange(partId, field, value, onPartParametersChange)
-        }
+        onPartParametersChange={(partId, field, value) => {
+          console.log('⚙️ [MultiPartFileManager] Parameter change:', partId, field, value);
+          handlePartParametersChange(partId, field, value, onPartParametersChange);
+        }}
         onPartSpecificationChange={onPartSpecificationChange}
         gcodeFile={currentPartGcodeFile}
-        onGcodeFileChange={onGcodeFileChange ? (event) => onGcodeFileChange(event, activePart) : undefined}
-        onRemoveGcodeFile={onRemoveGcodeFile ? () => onRemoveGcodeFile(activePart) : undefined}
+        onGcodeFileChange={onGcodeFileChange ? (event) => {
+          console.log('📤 [MultiPartFileManager] G-code upload for part:', activePart);
+          onGcodeFileChange(event, activePart);
+        } : undefined}
+        onRemoveGcodeFile={onRemoveGcodeFile ? () => {
+          console.log('🗑️ [MultiPartFileManager] G-code removal for part:', activePart);
+          onRemoveGcodeFile(activePart);
+        } : undefined}
         machines={machines}
         designParts={designParts}
         activePart={activePart}

@@ -45,20 +45,28 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   designParts = [],
   activePart
 }) => {
-  // CRITICAL: Filter files to show ONLY files that belong to the current LOCAL part
-  const currentPartFiles = uploadedFiles.filter(file => file.partId === currentPart.id);
+  console.log('📂 [FileManagerContent] DEBUGGING - Component state:');
+  console.log('  - Current LOCAL part:', currentPart.id, '(', currentPart.name, ')');
+  console.log('  - Upload files received:', uploadedFiles.length);
+  console.log('  - Files details:', uploadedFiles.map(f => ({ name: f.name, partId: f.partId, extension: f.fileExtension })));
   
-  console.log(`📂 FileManagerContent - Current LOCAL part: ${currentPart.id} (${currentPart.name})`);
-  console.log(`📁 All uploaded files:`, uploadedFiles.map(f => ({ name: f.name, partId: f.partId })));
-  console.log(`🎯 Files for current LOCAL part ${currentPart.id}:`, currentPartFiles.map(f => f.name));
+  // CRITICAL: Double-check filtering - files should ONLY belong to current LOCAL part
+  const currentPartFiles = uploadedFiles.filter(file => {
+    const matches = file.partId === currentPart.id;
+    console.log(`📁 [FileManagerContent] File "${file.name}": partId=${file.partId}, currentPartId=${currentPart.id}, matches=${matches}`);
+    return matches;
+  });
+  
+  console.log('🎯 [FileManagerContent] Final filtered files for current part:', currentPartFiles.map(f => f.name));
 
   const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalizable') => {
-    console.log(`🔄 Changing file ${fileId} to ${designType} for LOCAL part ${currentPart.id}`);
+    console.log(`🔄 [FileManagerContent] Changing file ${fileId} to ${designType} for LOCAL part ${currentPart.id}`);
   };
 
   // Create a wrapper for file upload that ensures proper LOCAL part assignment
   const handlePartSpecificFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(`🎯 UPLOAD: FileManagerContent uploading for LOCAL part: ${currentPart.id}`);
+    console.log(`🎯 [FileManagerContent] Upload wrapper called for LOCAL part: ${currentPart.id}`);
+    console.log('  - Files to upload:', event.target.files?.length || 0);
     onFileUpload(event);
   };
 
