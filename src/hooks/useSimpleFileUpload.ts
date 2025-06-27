@@ -68,79 +68,20 @@ export const useSimpleFileUpload = () => {
     }
   };
 
-  const testStorageAccess = async (): Promise<boolean> => {
-    try {
-      console.log('🧪 [SimpleUpload] Testing storage access...');
-      
-      // Test 1: Check authentication
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) {
-        console.error('❌ [SimpleUpload] Auth error:', authError);
-        return false;
-      }
-      if (!user) {
-        console.error('❌ [SimpleUpload] User not authenticated');
-        toast({
-          title: "Authentifizierung erforderlich",
-          description: "Bitte melden Sie sich an, um Dateien hochzuladen.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      console.log('✅ [SimpleUpload] User authenticated:', user.id);
-
-      // Test 2: Check bucket access
-      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-      if (bucketError) {
-        console.error('❌ [SimpleUpload] Bucket list error:', bucketError);
-        return false;
-      }
-      
-      const designFilesBucket = buckets?.find(bucket => bucket.id === 'design-files');
-      if (!designFilesBucket) {
-        console.error('❌ [SimpleUpload] design-files bucket not found');
-        toast({
-          title: "Storage-Fehler",
-          description: "Der design-files Bucket wurde nicht gefunden.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      console.log('✅ [SimpleUpload] design-files bucket found');
-
-      // Test 3: Try to list user's folder
-      const { data: userFiles, error: listError } = await supabase.storage
-        .from('design-files')
-        .list(user.id, { limit: 1 });
-
-      if (listError) {
-        console.log('⚠️ [SimpleUpload] User folder list error (might be empty):', listError);
-      } else {
-        console.log('✅ [SimpleUpload] User folder accessible, files:', userFiles?.length || 0);
-      }
-
-      return true;
-    } catch (error) {
-      console.error('❌ [SimpleUpload] Storage access test failed:', error);
-      return false;
-    }
-  };
-
   const uploadFile = async (file: File): Promise<void> => {
     setUploading(true);
     
     try {
       console.log('🚀 [SimpleUpload] Starting upload process for:', file.name);
       
-      // Test storage access first
-      const hasAccess = await testStorageAccess();
-      if (!hasAccess) {
-        throw new Error('Storage access test failed');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('❌ [SimpleUpload] Auth error:', authError);
+        throw new Error('Authentifizierung fehlgeschlagen');
       }
-
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        throw new Error('User not authenticated');
+        console.error('❌ [SimpleUpload] User not authenticated');
+        throw new Error('Benutzer nicht angemeldet');  
       }
 
       const fileCategory = getFileCategory(file.name);
@@ -163,9 +104,6 @@ export const useSimpleFileUpload = () => {
 
       if (error) {
         console.error('❌ [SimpleUpload] Upload error:', error);
-        console.error('❌ [SimpleUpload] Error details:', {
-          message: error.message
-        });
         throw error;
       }
 
@@ -202,6 +140,7 @@ export const useSimpleFileUpload = () => {
         description: errorMessage,
         variant: "destructive",
       });
+      throw error;
     } finally {
       setUploading(false);
     }
@@ -227,7 +166,6 @@ export const useSimpleFileUpload = () => {
     uploadFile,
     removeFile,
     clearAllFiles,
-    previewImage,
-    testStorageAccess
+    previewImage
   };
 };

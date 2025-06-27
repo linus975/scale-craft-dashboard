@@ -14,8 +14,15 @@ const SimpleFileUpload: React.FC = () => {
     const files = event.target.files;
     if (!files) return;
 
-    for (const file of Array.from(files)) {
-      await uploadFile(file);
+    console.log('📁 [SimpleFileUpload] Files selected:', files.length);
+
+    try {
+      for (const file of Array.from(files)) {
+        console.log('📤 [SimpleFileUpload] Uploading file:', file.name);
+        await uploadFile(file);
+      }
+    } catch (error) {
+      console.error('❌ [SimpleFileUpload] Upload error:', error);
     }
 
     // Clear input
@@ -51,6 +58,11 @@ const SimpleFileUpload: React.FC = () => {
             onChange={handleFileChange}
             disabled={uploading}
           />
+          {uploading && (
+            <p className="text-sm text-blue-600 mt-2">
+              Dateien werden hochgeladen...
+            </p>
+          )}
         </div>
 
         {uploadedFiles.length > 0 && (
@@ -79,12 +91,6 @@ const SimpleFileUpload: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {uploading && (
-          <div className="text-sm text-blue-600">
-            Uploading files...
           </div>
         )}
       </CardContent>
