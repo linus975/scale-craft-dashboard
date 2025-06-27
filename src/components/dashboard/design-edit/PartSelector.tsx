@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface DesignPart {
   id: string;
   name: string;
-  partType?: 'static' | 'customisable';
+  partType?: 'static' | 'personalizable';
 }
 
 interface PartSelectorProps {

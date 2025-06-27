@@ -9,7 +9,7 @@ interface DesignPart {
   id: string;
   name: string;
   files: any[];
-  partType?: 'static' | 'personalized';
+  partType?: 'static' | 'personalizable';
   parameters?: {
     sketchName?: string;
     replacementValue?: string;

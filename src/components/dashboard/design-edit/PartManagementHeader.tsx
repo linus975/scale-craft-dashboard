@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -7,19 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Pencil, Plus, Trash2, Check, AlertTriangle } from 'lucide-react';
 import PartTypeSelector from './PartTypeSelector';
-
-interface DesignPart {
-  id: string;
-  name: string;
-  files: any[];
-  partType?: 'static' | 'personalizable';
-  parameters?: {
-    sketchName?: string;
-    replacementValue?: string;
-  };
-  cadSoftware?: string;
-  slicer?: string;
-}
+import type { DesignPart } from '@/types/designPart';
 
 interface PartManagementHeaderProps {
   designParts: DesignPart[];
