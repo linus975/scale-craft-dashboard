@@ -22,20 +22,13 @@ interface AddDesignFormProps {
   onSave: () => void;
 }
 
-interface DesignFormData {
+interface FormData {
   name: string;
   trackingType: string;
   eanNumber: string;
   description: string;
   category: string;
   color: string;
-  machine: string;
-  cadSoftware: string;
-  slicer: string;
-  nozzleDiameter: string;
-  material: string;
-  sketchName?: string;
-  replacementValue?: string;
 }
 
 interface FileManagementData {
@@ -77,21 +70,14 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const [machinePresets, setMachinePresets] = useState<string[]>([]);
   const [filamentPresets, setFilamentPresets] = useState<string[]>([]);
 
-  const form = useForm<DesignFormData>({
+  const form = useForm<FormData>({
     defaultValues: {
       name: '',
       trackingType: '',
       eanNumber: '',
       description: '',
       category: '',
-      color: '',
-      machine: '',
-      cadSoftware: '',
-      slicer: '',
-      nozzleDiameter: '',
-      material: '',
-      sketchName: '',
-      replacementValue: ''
+      color: ''
     }
   });
 
@@ -111,7 +97,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     };
   }, []);
 
-  const onSubmit = async (data: DesignFormData) => {
+  const onSubmit = async (data: FormData) => {
     if (saving) return;
     
     console.log('🚀 Starting optimized product save process...', data);
@@ -158,20 +144,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         filamentType: part.filamentType
       }));
 
-      // Create complete form data with file management data
-      const completeFormData = {
-        ...data,
-        machine: fileManagementData.machineType || data.machine || '',
-        cadSoftware: fileManagementData.cadSoftware || data.cadSoftware || '',
-        slicer: fileManagementData.slicerSoftware || data.slicer || '',
-        nozzleDiameter: fileManagementData.nozzleDiameter || data.nozzleDiameter || '',
-        material: fileManagementData.filamentType || data.material || '',
-        sketchName: fileManagementData.sketchName || data.sketchName || '',
-        replacementValue: fileManagementData.replacementType || data.replacementValue || ''
-      };
-
       await saveDesignAsProduct(
-        completeFormData,
+        data,
         mappedDesignParts,
         fileUpload.uploadedFiles,
         previewImageFile || undefined,
