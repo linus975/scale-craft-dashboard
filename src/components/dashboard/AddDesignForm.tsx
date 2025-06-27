@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -101,6 +100,20 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       multiImageUpload.cleanupPreviews();
     };
   }, []);
+
+  // Handler for when a new part is added - automatically select it
+  const handleAddPart = (name: string) => {
+    const newPartId = designParts.handleAddPart(name);
+    if (newPartId) {
+      designParts.handlePartSelect(newPartId);
+      setFileManagementData(prev => ({ ...prev, selectedPart: newPartId }));
+    }
+  };
+
+  // Handler for when preset values are added - automatically select them
+  const handleFileManagementDataChange = (newData: FileManagementData) => {
+    setFileManagementData(newData);
+  };
 
   const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
@@ -210,11 +223,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           {/* File Management Section */}
           <FileManagementSection
             data={fileManagementData}
-            onChange={setFileManagementData}
+            onChange={handleFileManagementDataChange}
             designParts={designParts.designParts}
             activePart={designParts.activePart}
             onPartChange={designParts.handlePartSelect}
-            onAddPart={designParts.handleAddPart}
+            onAddPart={handleAddPart}
             onRemovePart={designParts.handleRemovePart}
             onRenamePart={designParts.handleRenamePart}
             onPartTypeChange={designParts.handlePartTypeChange}

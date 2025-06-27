@@ -137,6 +137,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleAddColor = () => {
     if (newColorName.trim()) {
       presetManager.addPreset('colors', newColorName.trim());
+      // Automatically select the newly added color
+      updateData('partColor', newColorName.trim());
       setNewColorName('');
       setShowAddColorDialog(false);
     }
@@ -151,6 +153,10 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleSaveColorEdit = () => {
     if (editingColorIndex !== null && editColorName.trim()) {
       presetManager.updatePreset('colors', editingColorIndex, editColorName.trim());
+      // Update the selected value if it was the one being edited
+      if (data.partColor === presetManager.presets.colors[editingColorIndex]) {
+        updateData('partColor', editColorName.trim());
+      }
       setEditingColorIndex(null);
       setEditColorName('');
       setShowEditColorDialog(false);
@@ -165,6 +171,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleAddMachine = () => {
     if (newMachineName.trim()) {
       presetManager.addPreset('machineTypes', newMachineName.trim());
+      // Automatically select the newly added machine
+      updateData('machineType', newMachineName.trim());
       setNewMachineName('');
       setShowAddMachineDialog(false);
     }
@@ -179,6 +187,10 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleSaveMachineEdit = () => {
     if (editingMachineIndex !== null && editMachineName.trim()) {
       presetManager.updatePreset('machineTypes', editingMachineIndex, editMachineName.trim());
+      // Update the selected value if it was the one being edited
+      if (data.machineType === presetManager.presets.machineTypes[editingMachineIndex]) {
+        updateData('machineType', editMachineName.trim());
+      }
       setEditingMachineIndex(null);
       setEditMachineName('');
       setShowEditMachineDialog(false);
@@ -193,6 +205,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleAddFilament = () => {
     if (newFilamentName.trim()) {
       presetManager.addPreset('filamentTypes', newFilamentName.trim());
+      // Automatically select the newly added filament
+      updateData('filamentType', newFilamentName.trim());
       setNewFilamentName('');
       setShowAddFilamentDialog(false);
     }
@@ -207,6 +221,10 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const handleSaveFilamentEdit = () => {
     if (editingFilamentIndex !== null && editFilamentName.trim()) {
       presetManager.updatePreset('filamentTypes', editingFilamentIndex, editFilamentName.trim());
+      // Update the selected value if it was the one being edited
+      if (data.filamentType === presetManager.presets.filamentTypes[editingFilamentIndex]) {
+        updateData('filamentType', editFilamentName.trim());
+      }
       setEditingFilamentIndex(null);
       setEditFilamentName('');
       setShowEditFilamentDialog(false);
