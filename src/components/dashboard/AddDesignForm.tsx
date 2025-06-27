@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -19,15 +20,6 @@ import { useDesignToProduct } from '@/hooks/useDesignToProduct';
 interface AddDesignFormProps {
   onCancel: () => void;
   onSave: () => void;
-}
-
-interface FormData {
-  name: string;
-  trackingType: string;
-  eanNumber: string;
-  description: string;
-  category: string;
-  color: string;
 }
 
 interface DesignFormData {

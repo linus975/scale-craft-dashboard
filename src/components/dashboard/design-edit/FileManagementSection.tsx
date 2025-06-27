@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Upload, FileText, Settings2, Plus, Edit, Trash } from 'lucide-react';
 import { usePresetManager } from '@/hooks/usePresetManager';
-import PresetSelector from './PresetSelector';
 
 interface FileManagementData {
   selectedPart: string;
@@ -59,6 +58,18 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   const [newPartName, setNewPartName] = useState('');
   const [editingPart, setEditingPart] = useState<string | null>(null);
   const [editPartName, setEditPartName] = useState('');
+
+  // Preset management states
+  const [showAddColorDialog, setShowAddColorDialog] = useState(false);
+  const [showAddMachineDialog, setShowAddMachineDialog] = useState(false);
+  const [showEditColorDialog, setShowEditColorDialog] = useState(false);
+  const [showEditMachineDialog, setShowEditMachineDialog] = useState(false);
+  const [newColorName, setNewColorName] = useState('');
+  const [newMachineName, setNewMachineName] = useState('');
+  const [editColorName, setEditColorName] = useState('');
+  const [editMachineName, setEditMachineName] = useState('');
+  const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
+  const [editingMachineIndex, setEditingMachineIndex] = useState<number | null>(null);
 
   const presetManager = usePresetManager();
 
@@ -112,6 +123,62 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     updateData('partType', value);
     const mappedType = value === 'static' ? 'static' : 'personalized';
     onPartTypeChange(activePart, mappedType);
+  };
+
+  // Color preset functions
+  const handleAddColor = () => {
+    if (newColorName.trim()) {
+      presetManager.addPreset('colors', newColorName.trim());
+      setNewColorName('');
+      setShowAddColorDialog(false);
+    }
+  };
+
+  const handleEditColor = (index: number, currentValue: string) => {
+    setEditingColorIndex(index);
+    setEditColorName(currentValue);
+    setShowEditColorDialog(true);
+  };
+
+  const handleSaveColorEdit = () => {
+    if (editingColorIndex !== null && editColorName.trim()) {
+      presetManager.updatePreset('colors', editingColorIndex, editColorName.trim());
+      setEditingColorIndex(null);
+      setEditColorName('');
+      setShowEditColorDialog(false);
+    }
+  };
+
+  const handleDeleteColor = (index: number) => {
+    presetManager.removePreset('colors', index);
+  };
+
+  // Machine preset functions
+  const handleAddMachine = () => {
+    if (newMachineName.trim()) {
+      presetManager.addPreset('machineTypes', newMachineName.trim());
+      setNewMachineName('');
+      setShowAddMachineDialog(false);
+    }
+  };
+
+  const handleEditMachine = (index: number, currentValue: string) => {
+    setEditingMachineIndex(index);
+    setEditMachineName(currentValue);
+    setShowEditMachineDialog(true);
+  };
+
+  const handleSaveMachineEdit = () => {
+    if (editingMachineIndex !== null && editMachineName.trim()) {
+      presetManager.updatePreset('machineTypes', editingMachineIndex, editMachineName.trim());
+      setEditingMachineIndex(null);
+      setEditMachineName('');
+      setShowEditMachineDialog(false);
+    }
+  };
+
+  const handleDeleteMachine = (index: number) => {
+    presetManager.removePreset('machineTypes', index);
   };
 
   const currentPart = designParts.find(part => part.id === activePart);
@@ -270,47 +337,227 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Color and Machine Type with Preset Management */}
+        {/* Color and Machine Type with Preset Management (like Part selector) */}
         <div className="grid grid-cols-2 gap-4">
-          <PresetSelector
-            label="Color"
-            value={data.partColor}
-            onChange={(value) => updateData('partColor', value)}
-            presets={presetManager.presets.colors}
-            onAddPreset={() => presetManager.openAddDialog('colors')}
-            onEditPreset={(index, currentValue) => presetManager.startEditing('colors', index, currentValue)}
-            onRemovePreset={(index) => presetManager.removePreset('colors', index)}
-            showAddDialog={presetManager.showAddDialog.isOpen && presetManager.showAddDialog.type === 'colors'}
-            onCloseAddDialog={presetManager.closeAddDialog}
-            newPresetValue={presetManager.newPresetValue}
-            onNewPresetValueChange={presetManager.setNewPresetValue}
-            onSaveNewPreset={presetManager.handleAddPreset}
-            editingPreset={presetManager.editingPreset?.type === 'colors' ? { index: presetManager.editingPreset.index, value: presetManager.editingPreset.value } : null}
-            onEditValueChange={(value) => presetManager.setEditingPreset(prev => prev ? { ...prev, value } : null)}
-            onSaveEdit={presetManager.saveEdit}
-            onCancelEdit={presetManager.cancelEdit}
-            placeholder="Select color"
-          />
+          <div className="space-y-2">
+            <Label>Color</Label>
+            <div className="flex gap-2">
+              <Select value={data.partColor} onValueChange={(value) => updateData('partColor', value)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {presetManager.presets.colors.map((color, index) => (
+                    <SelectItem key={index} value={color}>
+                      {color}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {/* Color Management Controls */}
+              <div className="flex gap-1">
+                <Dialog open={showAddColorDialog} onOpenChange={setShowAddColorDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-10 w-10 p-0">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Color</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Color Name</Label>
+                        <Input
+                          placeholder="Enter color name"
+                          value={newColorName}
+                          onChange={(e) => setNewColorName(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddColorDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddColor} disabled={!newColorName.trim()}>
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
 
-          <PresetSelector
-            label="Machine Type"
-            value={data.machineType}
-            onChange={(value) => updateData('machineType', value)}
-            presets={presetManager.presets.machineTypes}
-            onAddPreset={() => presetManager.openAddDialog('machineTypes')}
-            onEditPreset={(index, currentValue) => presetManager.startEditing('machineTypes', index, currentValue)}
-            onRemovePreset={(index) => presetManager.removePreset('machineTypes', index)}
-            showAddDialog={presetManager.showAddDialog.isOpen && presetManager.showAddDialog.type === 'machineTypes'}
-            onCloseAddDialog={presetManager.closeAddDialog}
-            newPresetValue={presetManager.newPresetValue}
-            onNewPresetValueChange={presetManager.setNewPresetValue}
-            onSaveNewPreset={presetManager.handleAddPreset}
-            editingPreset={presetManager.editingPreset?.type === 'machineTypes' ? { index: presetManager.editingPreset.index, value: presetManager.editingPreset.value } : null}
-            onEditValueChange={(value) => presetManager.setEditingPreset(prev => prev ? { ...prev, value } : null)}
-            onSaveEdit={presetManager.saveEdit}
-            onCancelEdit={presetManager.cancelEdit}
-            placeholder="Select machine"
-          />
+                <Dialog open={showEditColorDialog} onOpenChange={setShowEditColorDialog}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-10 w-10 p-0"
+                      onClick={() => {
+                        const selectedIndex = presetManager.presets.colors.findIndex(color => color === data.partColor);
+                        if (selectedIndex !== -1) {
+                          handleEditColor(selectedIndex, data.partColor);
+                        }
+                      }}
+                      disabled={!data.partColor}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Color</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Color Name</Label>
+                        <Input
+                          placeholder="Enter color name"
+                          value={editColorName}
+                          onChange={(e) => setEditColorName(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowEditColorDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveColorEdit} disabled={!editColorName.trim()}>
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-10 w-10 p-0"
+                  onClick={() => {
+                    const selectedIndex = presetManager.presets.colors.findIndex(color => color === data.partColor);
+                    if (selectedIndex !== -1) {
+                      handleDeleteColor(selectedIndex);
+                      updateData('partColor', '');
+                    }
+                  }}
+                  disabled={!data.partColor || presetManager.presets.colors.length <= 1}
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Machine Type</Label>
+            <div className="flex gap-2">
+              <Select value={data.machineType} onValueChange={(value) => updateData('machineType', value)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select machine" />
+                </SelectTrigger>
+                <SelectContent>
+                  {presetManager.presets.machineTypes.map((machine, index) => (
+                    <SelectItem key={index} value={machine}>
+                      {machine}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {/* Machine Management Controls */}
+              <div className="flex gap-1">
+                <Dialog open={showAddMachineDialog} onOpenChange={setShowAddMachineDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-10 w-10 p-0">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Machine</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Machine Name</Label>
+                        <Input
+                          placeholder="Enter machine name"
+                          value={newMachineName}
+                          onChange={(e) => setNewMachineName(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddMachineDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddMachine} disabled={!newMachineName.trim()}>
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={showEditMachineDialog} onOpenChange={setShowEditMachineDialog}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-10 w-10 p-0"
+                      onClick={() => {
+                        const selectedIndex = presetManager.presets.machineTypes.findIndex(machine => machine === data.machineType);
+                        if (selectedIndex !== -1) {
+                          handleEditMachine(selectedIndex, data.machineType);
+                        }
+                      }}
+                      disabled={!data.machineType}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Machine</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Machine Name</Label>
+                        <Input
+                          placeholder="Enter machine name"
+                          value={editMachineName}
+                          onChange={(e) => setEditMachineName(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowEditMachineDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveMachineEdit} disabled={!editMachineName.trim()}>
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-10 w-10 p-0"
+                  onClick={() => {
+                    const selectedIndex = presetManager.presets.machineTypes.findIndex(machine => machine === data.machineType);
+                    if (selectedIndex !== -1) {
+                      handleDeleteMachine(selectedIndex);
+                      updateData('machineType', '');
+                    }
+                  }}
+                  disabled={!data.machineType || presetManager.presets.machineTypes.length <= 1}
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* File Upload Row */}
