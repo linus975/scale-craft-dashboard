@@ -70,8 +70,54 @@ export const useHighPerformanceUpload = () => {
     }
   };
 
+  const uploadMultipleFiles = async (
+    files: File[], 
+    folderPath: string
+  ): Promise<Array<{ file: File; path?: string; error?: string }>> => {
+    setUploading(true);
+    const results: Array<{ file: File; path?: string; error?: string }> = [];
+    
+    try {
+      console.log(`🚀 [HighPerformanceUpload] Starting multiple upload: ${files.length} files`);
+      
+      // Upload files sequentially to avoid overwhelming the system
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setUploadProgress((i / files.length) * 100);
+        
+        try {
+          const path = await uploadFile(file, folderPath);
+          results.push({ file, path });
+          console.log(`✅ [HighPerformanceUpload] File ${i + 1}/${files.length} uploaded: ${file.name}`);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+          results.push({ file, error: errorMessage });
+          console.error(`❌ [HighPerformanceUpload] File ${i + 1}/${files.length} failed: ${file.name}`, error);
+        }
+      }
+      
+      const successful = results.filter(r => r.path).length;
+      const failed = results.filter(r => r.error).length;
+      
+      console.log(`📊 [HighPerformanceUpload] Upload complete: ${successful} successful, ${failed} failed`);
+      
+      if (successful > 0) {
+        toast({
+          title: "Upload erfolgreich",
+          description: `${successful} Datei(en) erfolgreich hochgeladen${failed > 0 ? `, ${failed} fehlgeschlagen` : ''}.`,
+        });
+      }
+      
+      return results;
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
   return {
     uploadFile,
+    uploadMultipleFiles,
     uploading,
     uploadProgress
   };
