@@ -17,6 +17,7 @@ interface StaticDesignFormProps {
   onSave: (designData: any) => void;
 }
 
+// Use the UploadedFile type from useSimpleFileUpload to match the expected interface
 interface UploadedFile {
   id: string;
   name: string;
@@ -24,7 +25,8 @@ interface UploadedFile {
   size: string;
   uploadDate: string;
   path: string;
-  originalName?: string;
+  originalName: string;
+  fileCategory: 'CAD' | 'INI' | 'GCODE';
   partId?: string;
 }
 
@@ -37,6 +39,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedPartId, setSelectedPartId] = useState('main');
   
+  // ... keep existing code (formData state)
   const [formData, setFormData] = useState({
     name: '',
     trackingType: 'ean' as 'ean' | 'sku',
@@ -51,6 +54,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     slicer: ''
   });
 
+  // ... keep existing code (handleSubmit function)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -104,6 +108,29 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     }
   };
 
+  const getFileCategory = (fileName: string): 'CAD' | 'INI' | 'GCODE' => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    switch (extension) {
+      case 'f3d':
+      case 'step':
+      case 'stp':
+      case 'iges':
+      case 'igs':
+      case 'dwg':
+      case 'dxf':
+      case 'stl':
+        return 'CAD';
+      case 'ini':
+        return 'INI';
+      case 'gcode':
+      case 'g':
+        return 'GCODE';
+      default:
+        return 'CAD';
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partId: string = 'main') => {
     const files = event.target.files;
     if (!files) return;
@@ -122,6 +149,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
           uploadDate: new Date().toISOString().split('T')[0],
           path: `temp/${fileName}`,
           originalName: file.name,
+          fileCategory: getFileCategory(file.name), // Add the missing fileCategory property
           partId: partId
         };
         
