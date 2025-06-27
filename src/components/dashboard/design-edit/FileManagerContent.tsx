@@ -49,20 +49,12 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
   console.log('  - Part ID:', currentPart.id);
   console.log('  - Part NAME:', currentPart.name);
   console.log('  - Part Type:', currentPart.partType);
-  console.log('  - All files count:', uploadedFiles.length);
+  console.log('  - Files for this part:', uploadedFiles.length);
   
-  // STRICT filtering: Only files that belong to this EXACT part name
-  const currentPartFiles = uploadedFiles.filter(file => {
-    const isMatch = file.partId === currentPart.name;
-    if (!isMatch) {
-      console.log(`❌ [FileManagerContent] File "${file.name}" belongs to "${file.partId}", not "${currentPart.name}"`);
-    } else {
-      console.log(`✅ [FileManagerContent] File "${file.name}" belongs to current part "${currentPart.name}"`);
-    }
-    return isMatch;
+  // Verify files are correctly filtered by part name
+  uploadedFiles.forEach(file => {
+    console.log(`📁 [FileManagerContent] File "${file.name}" belongs to part "${file.partId}"`);
   });
-  
-  console.log(`🎯 [FileManagerContent] Final files for part "${currentPart.name}":`, currentPartFiles.map(f => f.name));
 
   const handleFileTypeChange = (fileId: string, designType: 'static' | 'personalizable') => {
     console.log(`🔄 [FileManagerContent] File type change for "${fileId}" to "${designType}" in part "${currentPart.name}"`);
@@ -96,7 +88,7 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         partType={currentPart.partType === 'personalizable' ? 'personalized' : 'static'}
         uploading={uploading}
         onFileUpload={handlePartSpecificFileUpload}
-        uploadedFiles={currentPartFiles}
+        uploadedFiles={uploadedFiles} // These are already filtered by part name
         onPartSpecificationChange={onPartSpecificationChange}
         gcodeFile={gcodeFile}
         onGcodeFileChange={onGcodeFileChange}
@@ -112,9 +104,9 @@ const FileManagerContent: React.FC<FileManagerContentProps> = ({
         />
       )}
 
-      {(loadingFiles || currentPartFiles.length > 0) && (
+      {(loadingFiles || uploadedFiles.length > 0) && (
         <FileList
-          files={currentPartFiles}
+          files={uploadedFiles} // These are already filtered by part name
           partName={currentPart.name}
           loadingFiles={loadingFiles}
           onFileRemove={onFileRemove}

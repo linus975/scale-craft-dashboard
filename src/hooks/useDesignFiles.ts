@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useFileUpload } from '@/hooks/useFileUpload';
@@ -11,7 +12,7 @@ interface UploadedFile {
   uploadDate: string;
   path: string;
   originalName?: string;
-  partId?: string;
+  partId?: string; // This will now store the part NAME
 }
 
 export const useDesignFiles = (design: any, isOpen: boolean) => {
@@ -104,7 +105,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: design.gcode_file_path,
           originalName: fileName,
-          partId: 'main'
+          partId: 'main' // Default part name for legacy files
         });
       }
 
@@ -118,7 +119,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: '',
           originalName: `${design.name || 'design'}.gcode`,
-          partId: 'main'
+          partId: 'main' // Default part name for legacy files
         });
       }
       
@@ -133,7 +134,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: design.cad_file_path,
           originalName: fileName,
-          partId: 'main'
+          partId: 'main' // Default part name for legacy files
         });
       }
 
@@ -148,7 +149,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: design.ini_file_path,
           originalName: fileName,
-          partId: 'main'
+          partId: 'main' // Default part name for legacy files
         });
       }
 
@@ -163,7 +164,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
           uploadDate: new Date(design.created_at).toISOString().split('T')[0],
           path: design.preview_image_path,
           originalName: fileName,
-          partId: 'main'
+          partId: 'main' // Default part name for legacy files
         });
       }
 
@@ -171,33 +172,41 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Look for files in a design-specific folder
-          const designFolderPath = `${user.id}/designs/${design.id}/`;
+          // Look for files in the new temp-parts structure
+          const tempPartsPath = `${user.id}/temp-parts/`;
           const { data: storageFiles, error } = await supabase.storage
             .from('design-files')
-            .list(designFolderPath, {
+            .list(tempPartsPath, {
               limit: 100
             });
 
           if (storageFiles && !error) {
-            for (const file of storageFiles) {
-              const fullPath = `${designFolderPath}${file.name}`;
-              // Only add if not already in the list
-              if (!files.find(f => f.path === fullPath)) {
-                // Extract part ID from filename if it exists
-                const partMatch = file.name.match(/^part-([^_]+)_/);
-                const partId = partMatch ? partMatch[1] : 'main';
-                
-                files.push({
-                  id: file.id || file.name,
-                  name: file.name,
-                  type: getFileType(file.name),
-                  size: file.metadata?.size ? `${(file.metadata.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown',
-                  uploadDate: new Date(file.created_at || design.created_at).toISOString().split('T')[0],
-                  path: fullPath,
-                  originalName: file.name,
-                  partId: partId
-                });
+            // Process each part folder
+            for (const partFolder of storageFiles) {
+              if (partFolder.name) {
+                const partPath = `${tempPartsPath}${partFolder.name}/`;
+                const { data: partFiles, error: partError } = await supabase.storage
+                  .from('design-files')
+                  .list(partPath, {
+                    limit: 100
+                  });
+
+                if (partFiles && !partError) {
+                  for (const file of partFiles) {
+                    const fullPath = `${partPath}${file.name}`;
+                    
+                    files.push({
+                      id: file.id || `${partFolder.name}-${file.name}`,
+                      name: file.name,
+                      type: getFileType(file.name),
+                      size: file.metadata?.size ? `${(file.metadata.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown',
+                      uploadDate: new Date(file.created_at || design.created_at).toISOString().split('T')[0],
+                      path: fullPath,
+                      originalName: file.name,
+                      partId: partFolder.name // Use the part folder name as partId
+                    });
+                  }
+                }
               }
             }
           }
@@ -206,6 +215,7 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
         console.error('Error loading storage files:', storageError);
       }
 
+      console.log('🔄 [useDesignFiles] Loaded files:', files.map(f => ({ name: f.name, partId: f.partId })));
       setUploadedFiles(files);
     } catch (error) {
       console.error('Error loading design files:', error);
@@ -214,37 +224,39 @@ export const useDesignFiles = (design: any, isOpen: boolean) => {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partId: string = 'main') => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partName: string = 'main') => {
     const files = event.target.files;
     if (!files || !design?.id) return;
 
+    console.log('🎯 [useDesignFiles] UPLOAD START for part:', partName);
+    console.log('  - Files to upload:', files.length);
+
     try {
       for (const file of Array.from(files)) {
-        // Add part prefix to filename if not main part
-        const fileName = partId === 'main' ? file.name : `part-${partId}_${file.name}`;
-        
-        // Upload files to a design-specific folder
+        // Upload files to part-specific folder structure: temp-parts/{partName}/
         const filePath = await uploadFile(
-          new File([file], fileName, { type: file.type }), 
-          `designs/${design.id}`
+          file, 
+          `temp-parts/${partName}`
         );
         
         const newFile: UploadedFile = {
-          id: Date.now() + Math.random() + '',
+          id: `${partName}-${Date.now()}-${Math.random()}`,
           name: file.name,
           type: getFileType(file.name),
           size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
           uploadDate: new Date().toISOString().split('T')[0],
           path: filePath,
           originalName: file.name,
-          partId: partId
+          partId: partName // FIXED: Use the correct part name
         };
+        
+        console.log('✅ [useDesignFiles] File uploaded:', { name: file.name, partId: partName });
         
         setUploadedFiles(prev => [...prev, newFile]);
         
         toast({
           title: "Datei hochgeladen",
-          description: `${file.name} wurde erfolgreich zu "${partId === 'main' ? 'Hauptteil' : partId}" hinzugefügt.`,
+          description: `${file.name} wurde erfolgreich zu "${partName}" hinzugefügt.`,
         });
       }
       

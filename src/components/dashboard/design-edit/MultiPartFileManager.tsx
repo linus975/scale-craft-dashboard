@@ -81,12 +81,8 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   console.log('📋 Available parts:', designParts.map(p => ({ id: p.id, name: p.name })));
   console.log('🎯 Active part ID:', activePart);
   console.log('📁 Total uploaded files:', uploadedFiles.length);
-  console.log('📂 Files by part:', uploadedFiles.reduce((acc, file) => {
-    acc[file.partId || 'no-part'] = (acc[file.partId || 'no-part'] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>));
-
-  // CHANGED: Find current part and use part name for file operations
+  
+  // Find current part and get its name for file operations
   const currentPart = designParts.find(part => part.id === activePart) || designParts[0];
   
   if (!currentPart) {
@@ -100,25 +96,23 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
   console.log('  - NAME:', currentPartName);
   console.log('  - Type:', currentPart.partType);
 
-  // CHANGED: Use part name for file filtering
+  // FIXED: Use part name for file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
-    console.log('🎯 [MultiPartFileManager] UPLOAD TRIGGERED:');
-    console.log('  - Target part NAME:', currentPartName);
+    console.log('🎯 [MultiPartFileManager] UPLOAD TRIGGERED for part NAME:', currentPartName);
     console.log('  - Files to upload:', event.target.files?.length || 0);
-    console.log('  - Event target value:', event.target.value);
     
     if (!currentPartName) {
       console.error('❌ [MultiPartFileManager] No current part name - cannot upload!');
       return;
     }
     
-    // CHANGED: Pass the current part NAME to ensure proper file assignment
+    // FIXED: Pass the current part NAME to ensure proper file assignment
     console.log('✅ [MultiPartFileManager] Calling onFileUpload with partName:', currentPartName);
     onFileUpload(event, currentPartName);
   };
 
-  // CHANGED: Filter files by part name instead of part ID
+  // STRICT: Filter files by exact part name match
   const currentPartFiles = uploadedFiles.filter(file => {
     const belongsToCurrentPart = file.partId === currentPartName;
     console.log(`📁 [MultiPartFileManager] File "${file.name}": partId=${file.partId}, currentPartName=${currentPartName}, belongs=${belongsToCurrentPart}`);
@@ -167,7 +161,7 @@ const MultiPartFileManager: React.FC<MultiPartFileManagerProps> = ({
       <FileManagerContent
         currentPart={currentPart}
         validation={validation}
-        uploadedFiles={currentPartFiles} // CHANGED: Pass only files for current PART NAME
+        uploadedFiles={currentPartFiles} // FIXED: Pass only files for current PART NAME
         loadingFiles={loadingFiles}
         uploading={uploading}
         onFileUpload={handleFileUpload}
