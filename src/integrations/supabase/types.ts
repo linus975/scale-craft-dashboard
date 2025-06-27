@@ -474,12 +474,14 @@ export type Database = {
           ini_file_path: string | null
           is_customizable: boolean
           nozzle_diameter: number | null
+          part_id: string
           part_name: string
           printer_model: string | null
           product_id: string | null
           replacement_type: string | null
           sketch_name: string | null
           slicer_software: string | null
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
@@ -492,12 +494,14 @@ export type Database = {
           ini_file_path?: string | null
           is_customizable: boolean
           nozzle_diameter?: number | null
+          part_id?: string
           part_name: string
           printer_model?: string | null
           product_id?: string | null
           replacement_type?: string | null
           sketch_name?: string | null
           slicer_software?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
@@ -510,12 +514,14 @@ export type Database = {
           ini_file_path?: string | null
           is_customizable?: boolean
           nozzle_diameter?: number | null
+          part_id?: string
           part_name?: string
           printer_model?: string | null
           product_id?: string | null
           replacement_type?: string | null
           sketch_name?: string | null
           slicer_software?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: [
