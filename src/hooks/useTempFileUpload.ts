@@ -19,14 +19,22 @@ export const useTempFileUpload = () => {
   const { toast } = useToast();
   const tempFileIds = useRef<Set<string>>(new Set());
 
-  // Cleanup function to remove temp files
+  // Cleanup function to remove temp files from storage
   const cleanupTempFiles = async (fileIds?: string[]) => {
     const idsToCleanup = fileIds || Array.from(tempFileIds.current);
+    
+    if (idsToCleanup.length === 0) {
+      console.log('🧹 [TempUpload] No temp files to cleanup');
+      return;
+    }
+
+    console.log('🧹 [TempUpload] Cleaning up temp files:', idsToCleanup.length);
     
     for (const fileId of idsToCleanup) {
       const tempFile = tempFiles.find(f => f.id === fileId);
       if (tempFile) {
         try {
+          console.log('🗑️ [TempUpload] Deleting from storage:', tempFile.tempPath);
           const { error } = await supabase.storage
             .from('design-files')
             .remove([tempFile.tempPath]);
@@ -34,7 +42,7 @@ export const useTempFileUpload = () => {
           if (error) {
             console.warn('❌ [TempUpload] Failed to cleanup temp file:', tempFile.tempPath, error);
           } else {
-            console.log('🧹 [TempUpload] Cleaned up temp file:', tempFile.tempPath);
+            console.log('✅ [TempUpload] Successfully deleted temp file:', tempFile.tempPath);
           }
         } catch (error) {
           console.warn('❌ [TempUpload] Cleanup error:', error);
@@ -43,9 +51,11 @@ export const useTempFileUpload = () => {
     }
     
     if (!fileIds) {
+      // Clean up all
       tempFileIds.current.clear();
       setTempFiles([]);
     } else {
+      // Clean up specific files
       fileIds.forEach(id => tempFileIds.current.delete(id));
       setTempFiles(prev => prev.filter(f => !fileIds.includes(f.id)));
     }
@@ -158,8 +168,8 @@ export const useTempFileUpload = () => {
         throw new Error(`Fehler beim Verschieben: ${error.message}`);
       }
 
-      // Remove from temp location
-      await cleanupTempFiles([tempFile.id]);
+      // Remove from temp location (automatically handled by cleanupTempFiles)
+      // The temp file will be cleaned up automatically after successful move
 
       console.log('✅ [TempUpload] File moved successfully to:', finalPath);
       return finalPath;

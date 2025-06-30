@@ -15,7 +15,7 @@ export interface SelectedFile {
 export const useFileSelection = () => {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const { toast } = useToast();
-  const { uploadToTemp, removeTempFile, uploading } = useTempFileUpload();
+  const { uploadToTemp, removeTempFile, uploading, tempFiles } = useTempFileUpload();
 
   const addFiles = async (files: File[], partId: string, expectedType?: 'static' | 'personalizable') => {
     console.log('📁 [FileSelection] Adding files for part:', partId, 'type:', expectedType);
@@ -120,8 +120,12 @@ export const useFileSelection = () => {
     
     const fileToRemove = selectedFiles.find(f => f.id === fileId);
     if (fileToRemove && fileToRemove.isUploaded && fileToRemove.tempPath) {
-      // Remove from temp storage
-      await removeTempFile(fileId);
+      // Find the corresponding temp file and remove it
+      const tempFile = tempFiles.find(tf => tf.tempPath === fileToRemove.tempPath);
+      if (tempFile) {
+        console.log('🗑️ [FileSelection] Removing temp file from storage:', tempFile.id);
+        await removeTempFile(tempFile.id);
+      }
     }
     
     setSelectedFiles(prev => {
@@ -149,7 +153,10 @@ export const useFileSelection = () => {
     // Remove all temp files
     for (const file of selectedFiles) {
       if (file.isUploaded && file.tempPath) {
-        await removeTempFile(file.id);
+        const tempFile = tempFiles.find(tf => tf.tempPath === file.tempPath);
+        if (tempFile) {
+          await removeTempFile(tempFile.id);
+        }
       }
     }
     

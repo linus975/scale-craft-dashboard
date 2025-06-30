@@ -157,7 +157,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     console.log('🚀 [AddDesignForm] Starting save process with temp upload system...');
     console.log('📋 [AddDesignForm] Form data:', data);
     console.log('🔧 [AddDesignForm] Design parts:', designParts.designParts);
-    console.log('📁 [AddDesignForm] Selected files at submit:', selectedFiles);
     console.log('📦 [AddDesignForm] Temp files available:', tempFiles);
     
     setSaving(true);
@@ -177,24 +176,15 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(20);
       setCurrentStep('Dateien werden überprüft...');
 
-      // Step 2: Validate that we have selected files AND they are uploaded to temp
-      console.log('🔍 [AddDesignForm] Checking selected files:', selectedFiles.length);
-      if (selectedFiles.length === 0) {
-        throw new Error('Bitte wählen Sie mindestens eine Datei über das Datei-Management aus.');
+      // Step 2: Validate that we have temp files
+      console.log('🔍 [AddDesignForm] Checking temp files:', tempFiles.length);
+      if (tempFiles.length === 0) {
+        throw new Error('Bitte laden Sie mindestens eine Datei über das Datei-Management hoch.');
       }
 
-      // Check if all selected files are uploaded to temp storage
-      const notUploadedFiles = selectedFiles.filter(f => !f.isUploaded || !f.tempPath);
-      console.log('⚠️ [AddDesignForm] Files not uploaded to temp:', notUploadedFiles.length);
-      
-      if (notUploadedFiles.length > 0) {
-        console.error('❌ [AddDesignForm] Some files not in temp storage:', notUploadedFiles.map(f => f.file.name));
-        throw new Error(`Folgende Dateien wurden noch nicht temporär hochgeladen: ${notUploadedFiles.map(f => f.file.name).join(', ')}. Bitte warten Sie einen Moment.`);
-      }
-
-      // Check if all parts have at least one file
+      // Check if all parts have at least one temp file
       const partsWithoutFiles = designParts.designParts.filter(part => 
-        !selectedFiles.some(file => file.partId === part.id)
+        !tempFiles.some(file => file.partId === part.id)
       );
 
       if (partsWithoutFiles.length > 0) {
@@ -228,8 +218,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         console.log(`🔧 [AddDesignForm] Processing part: ${partData.name} (ID: ${partData.id})`);
         
         // Get temp files for this specific part
-        const partSelectedFiles = selectedFiles.filter(f => f.partId === partData.id && f.isUploaded && f.tempPath);
-        console.log(`📁 [AddDesignForm] Found ${partSelectedFiles.length} temp files for part ${partData.name}`);
+        const partTempFiles = tempFiles.filter(f => f.partId === partData.id);
+        console.log(`📁 [AddDesignForm] Found ${partTempFiles.length} temp files for part ${partData.name}`);
 
         // Initialize file paths
         let gcodeFilePath = null;
@@ -237,37 +227,34 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         let iniFilePath = null;
 
         // Move temp files to final locations: userid/Products/productname/partname/filename
-        for (const selectedFile of partSelectedFiles) {
-          const tempFile = tempFiles.find(tf => tf.tempPath === selectedFile.tempPath);
-          if (tempFile) {
-            // Create final path: userid/Products/productname/partname/filename
-            const sanitizedProductName = data.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const sanitizedPartName = partData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const finalPath = `${user.id}/Products/${sanitizedProductName}/${sanitizedPartName}/${selectedFile.file.name}`;
-            
-            console.log(`📦 [AddDesignForm] Moving ${selectedFile.file.name} from temp to: ${finalPath}`);
-            const movedPath = await moveToFinal(tempFile, finalPath);
-            
-            if (movedPath) {
-              // Set file path based on category
-              switch (selectedFile.fileCategory) {
-                case 'GCODE':
-                  gcodeFilePath = finalPath;
-                  console.log(`✅ [AddDesignForm] G-Code moved to: ${gcodeFilePath}`);
-                  break;
-                case 'CAD':
-                  cadFilePath = finalPath;
-                  console.log(`✅ [AddDesignForm] CAD moved to: ${cadFilePath}`);
-                  break;
-                case 'INI':
-                  iniFilePath = finalPath;
-                  console.log(`✅ [AddDesignForm] INI moved to: ${iniFilePath}`);
-                  break;
-              }
-            } else {
-              console.error(`❌ [AddDesignForm] Failed to move file: ${selectedFile.file.name}`);
-              throw new Error(`Fehler beim Verschieben der Datei: ${selectedFile.file.name}`);
+        for (const tempFile of partTempFiles) {
+          // Create final path: userid/Products/productname/partname/filename
+          const sanitizedProductName = data.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+          const sanitizedPartName = partData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+          const finalPath = `${user.id}/Products/${sanitizedProductName}/${sanitizedPartName}/${tempFile.name}`;
+          
+          console.log(`📦 [AddDesignForm] Moving ${tempFile.name} from temp to: ${finalPath}`);
+          const movedPath = await moveToFinal(tempFile, finalPath);
+          
+          if (movedPath) {
+            // Set file path based on category
+            switch (tempFile.category) {
+              case 'GCODE':
+                gcodeFilePath = finalPath;
+                console.log(`✅ [AddDesignForm] G-Code moved to: ${gcodeFilePath}`);
+                break;
+              case 'CAD':
+                cadFilePath = finalPath;
+                console.log(`✅ [AddDesignForm] CAD moved to: ${cadFilePath}`);
+                break;
+              case 'INI':
+                iniFilePath = finalPath;
+                console.log(`✅ [AddDesignForm] INI moved to: ${iniFilePath}`);
+                break;
             }
+          } else {
+            console.error(`❌ [AddDesignForm] Failed to move file: ${tempFile.name}`);
+            throw new Error(`Fehler beim Verschieben der Datei: ${tempFile.name}`);
           }
         }
 
@@ -354,7 +341,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       
       toast({
         title: "Produkt erfolgreich erstellt",
-        description: `Das Produkt "${data.name}" wurde mit ${selectedFiles.length} Datei(en) erfolgreich gespeichert.`,
+        description: `Das Produkt "${data.name}" wurde mit ${tempFiles.length} Datei(en) erfolgreich gespeichert.`,
       });
 
       // Cleanup any remaining temp files
