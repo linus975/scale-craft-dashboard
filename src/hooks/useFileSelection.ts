@@ -15,6 +15,7 @@ export const useFileSelection = () => {
 
   const addFiles = (files: File[], partId: string, expectedType?: 'static' | 'personalizable') => {
     console.log('📁 [FileSelection] Adding files for part:', partId, 'type:', expectedType);
+    console.log('📁 [FileSelection] Files to add:', files.map(f => f.name));
     
     const validFiles: SelectedFile[] = [];
     
@@ -73,6 +74,7 @@ export const useFileSelection = () => {
           fileCategory
         };
         validFiles.push(selectedFile);
+        console.log('✅ [FileSelection] Valid file added:', selectedFile.file.name, 'Category:', selectedFile.fileCategory);
       }
     }
 
@@ -82,26 +84,44 @@ export const useFileSelection = () => {
         const filtered = prev.filter(f => 
           !(f.partId === partId && validFiles.some(vf => vf.fileCategory === f.fileCategory))
         );
-        return [...filtered, ...validFiles];
+        const newSelection = [...filtered, ...validFiles];
+        console.log('✅ [FileSelection] Updated selection. Total files:', newSelection.length);
+        console.log('✅ [FileSelection] Selection details:', newSelection.map(f => `${f.file.name} (${f.fileCategory})`));
+        return newSelection;
       });
 
       console.log('✅ [FileSelection] Added files:', validFiles.map(f => f.file.name));
+      
+      toast({
+        title: "Dateien hinzugefügt",
+        description: `${validFiles.length} Datei(en) wurden ausgewählt.`,
+      });
     }
   };
 
   const removeFile = (fileId: string) => {
-    setSelectedFiles(prev => prev.filter(f => f.id !== fileId));
+    console.log('🗑️ [FileSelection] Removing file:', fileId);
+    setSelectedFiles(prev => {
+      const newSelection = prev.filter(f => f.id !== fileId);
+      console.log('🗑️ [FileSelection] Remaining files:', newSelection.length);
+      return newSelection;
+    });
   };
 
   const getFilesForPart = (partId: string): SelectedFile[] => {
-    return selectedFiles.filter(f => f.partId === partId);
+    const partFiles = selectedFiles.filter(f => f.partId === partId);
+    console.log('📂 [FileSelection] Files for part', partId, ':', partFiles.length);
+    return partFiles;
   };
 
   const getAllFiles = (): File[] => {
-    return selectedFiles.map(f => f.file);
+    const allFiles = selectedFiles.map(f => f.file);
+    console.log('📂 [FileSelection] All selected files:', allFiles.length);
+    return allFiles;
   };
 
   const clearAllFiles = () => {
+    console.log('🧹 [FileSelection] Clearing all files');
     setSelectedFiles([]);
   };
 

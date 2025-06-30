@@ -137,25 +137,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
     
-    console.log('🚀 Starting structured product save process...');
-    console.log('📋 Form data:', data);
-    console.log('🔧 Design parts:', designParts.designParts);
-    
-    // Get current selected files directly from the hook
-    const currentSelectedFiles = selectedFiles;
-    console.log('📁 Current selected files:', currentSelectedFiles);
-    console.log('📁 Total files:', currentSelectedFiles.length);
-    
-    // Debug: Log each file
-    currentSelectedFiles.forEach((file, index) => {
-      console.log(`📄 File ${index + 1}:`, {
-        name: file.file.name,
-        size: file.file.size,
-        type: file.file.type,
-        partId: file.partId,
-        category: file.fileCategory
-      });
-    });
+    console.log('🚀 [AddDesignForm] Starting structured product save process...');
+    console.log('📋 [AddDesignForm] Form data:', data);
+    console.log('🔧 [AddDesignForm] Design parts:', designParts.designParts);
     
     setSaving(true);
     setProgress(0);
@@ -173,11 +157,21 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         return;
       }
 
-      // Step 2: Check if we have files to upload
+      // Step 2: Get files directly from the hook at submit time
+      console.log('📁 [AddDesignForm] Checking selected files at submit time...');
+      const currentSelectedFiles = selectedFiles; // Get fresh reference
+      console.log('📁 [AddDesignForm] Selected files count:', currentSelectedFiles.length);
+      console.log('📁 [AddDesignForm] Selected files details:', currentSelectedFiles.map(f => ({
+        name: f.file.name,
+        partId: f.partId,
+        category: f.fileCategory
+      })));
+
       if (currentSelectedFiles.length === 0) {
+        console.log('❌ [AddDesignForm] No files found in selection');
         toast({
-          title: "No Files Selected",
-          description: "Please select at least one file before saving the product",
+          title: "Keine Dateien ausgewählt",
+          description: "Bitte wählen Sie mindestens eine Datei aus, bevor Sie das Produkt speichern",
           variant: "destructive",
         });
         setSaving(false);
@@ -210,8 +204,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         previewImageFile = multiImageUpload.images[0].file;
       }
 
-      console.log('📦 Saving with structured file paths...');
-      console.log('📁 Files to upload:', currentSelectedFiles.length);
+      console.log('📦 [AddDesignForm] Saving with structured file paths...');
+      console.log('📁 [AddDesignForm] Files to upload:', currentSelectedFiles.length);
+      console.log('📁 [AddDesignForm] Files details:', currentSelectedFiles.map(f => `${f.file.name} (${f.fileCategory}) for part ${f.partId}`));
 
       await saveDesignAsProductWithFiles(
         data,
@@ -224,14 +219,19 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(100);
       setCurrentStep('Complete!');
 
+      toast({
+        title: "Produkt gespeichert",
+        description: "Das Produkt wurde erfolgreich mit allen Dateien gespeichert",
+      });
+
       // Close the dialog immediately after successful save
       onSave();
       
     } catch (error) {
-      console.error('❌ Error creating product with structured files:', error);
+      console.error('❌ [AddDesignForm] Error creating product with structured files:', error);
       toast({
-        title: "Error Creating Product",
-        description: error instanceof Error ? error.message : "There was an error saving the product. Please try again.",
+        title: "Fehler beim Speichern",
+        description: error instanceof Error ? error.message : "Es gab einen Fehler beim Speichern des Produkts. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {
@@ -295,21 +295,35 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   </div>
                   <Progress value={progress} className="w-full" />
                   <p className="text-xs text-muted-foreground">
-                    Product is being saved with structured file paths... Please wait.
+                    Produkt wird mit strukturierten Dateipfaden gespeichert... Bitte warten.
                   </p>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Debug Info */}
+          {/* Enhanced Debug Info */}
           <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-            <p><strong>Current Files in Selection:</strong> {selectedFiles.length}</p>
-            {selectedFiles.map((file, index) => (
-              <p key={file.id}>
-                {index + 1}. {file.file.name} (Part: {file.partId}, Type: {file.fileCategory})
-              </p>
-            ))}
+            <p><strong>🔍 LIVE DEBUG INFO:</strong></p>
+            <p><strong>Aktuelle Dateien in Selection:</strong> {selectedFiles.length}</p>
+            <p><strong>Formularbereich bereit:</strong> {data.name ? 'Ja' : 'Nein'}</p>
+            <p><strong>Speicher-Status:</strong> {saving ? 'Läuft...' : 'Bereit'}</p>
+            {selectedFiles.length > 0 && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                <p><strong>✅ Dateien bereit zum Upload:</strong></p>
+                {selectedFiles.map((file, index) => (
+                  <p key={file.id} className="text-green-700">
+                    {index + 1}. {file.file.name} (Part: {file.partId}, Typ: {file.fileCategory})
+                  </p>
+                ))}
+              </div>
+            )}
+            {selectedFiles.length === 0 && (
+              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                <p className="text-red-700"><strong>⚠️ Keine Dateien ausgewählt</strong></p>
+                <p className="text-red-600 text-xs">Bitte wählen Sie Dateien über das File Management aus</p>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -317,7 +331,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || selectedFiles.length === 0}>
               {saving ? 'Saving...' : 'Save Product'}
             </Button>
           </div>
