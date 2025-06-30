@@ -249,7 +249,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           product_id: product.product_id,
           part_name: partData.name,
           is_customizable: partData.partType === 'personalizable',
-          cad_software: partData.cadSoftware || partData.software || null,
+          cad_software: partData.cadSoftware || null,
           slicer_software: partData.slicer || null,
           nozzle_diameter: partData.nozzleDiameter ? parseFloat(partData.nozzleDiameter) : null,
           filament_type: partData.filamentType || null,
