@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -5,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings2 } from 'lucide-react';
 import { usePresetManager } from '@/hooks/usePresetManager';
+import { useFileSelection, SelectedFile } from '@/hooks/useFileSelection';
 import PartManagementControls from './PartManagementControls';
 import PresetManagementControls from './PresetManagementControls';
-import FileUploadArea from './FileUploadArea';
 import PersonalizationFields from './PersonalizationFields';
+import PartTypeFileUpload from './PartTypeFileUpload';
 import type { DesignPart } from '@/types/designPart';
 
 interface FileManagementData {
@@ -47,11 +49,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
   onRenamePart,
   onPartTypeChange
 }) => {
-  const [gcodeFile, setGcodeFile] = useState<File | null>(null);
-  const [cadFile, setCadFile] = useState<File | null>(null);
-  const [iniFile, setIniFile] = useState<File | null>(null);
-
   const presetManager = usePresetManager();
+  const { selectedFiles, addFiles, removeFile, getFilesForPart } = useFileSelection();
 
   const updateData = (field: keyof FileManagementData, value: string) => {
     onChange({ ...data, [field]: value });
@@ -78,27 +77,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
       });
     }
   }, [activePart, currentPart]);
-
-  const handleGcodeUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setGcodeFile(file);
-    }
-  };
-
-  const handleCadUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setCadFile(file);
-    }
-  };
-
-  const handleIniUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setIniFile(file);
-    }
-  };
 
   const handlePartTypeChange = (value: 'static' | 'personalizable') => {
     updateData('partType', value);
@@ -155,6 +133,18 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
             </Select>
           </div>
         </div>
+
+        {/* Part-specific File Upload */}
+        {currentPart && (
+          <PartTypeFileUpload
+            partId={currentPart.id}
+            partName={currentPart.name}
+            partType={currentPart.partType || 'static'}
+            selectedFiles={getFilesForPart(currentPart.id)}
+            onFileSelect={addFiles}
+            onFileRemove={removeFile}
+          />
+        )}
 
         {/* Conditional Row: CAD and Slicer Software (only for personalizable) */}
         {(currentPart?.partType === 'personalizable') && (
@@ -245,17 +235,6 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
             </div>
           </div>
         </div>
-
-        {/* File Upload Row */}
-        <FileUploadArea
-          partType={data.partType}
-          onGcodeUpload={handleGcodeUpload}
-          onCadUpload={handleCadUpload}
-          onIniUpload={handleIniUpload}
-          gcodeFile={gcodeFile}
-          cadFile={cadFile}
-          iniFile={iniFile}
-        />
 
         {/* Sketch Name and Replacement Type (only for personalizable) */}
         {data.partType === 'personalizable' && (

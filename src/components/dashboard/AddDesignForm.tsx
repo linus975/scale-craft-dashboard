@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -10,11 +11,12 @@ import FileManagementSection from './design-edit/FileManagementSection';
 import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
 import { useCategoryManager } from '@/hooks/useCategoryManager';
-import { useSimpleFileUpload } from '@/hooks/useSimpleFileUpload';
 import { useDesignParts } from '@/hooks/useDesignParts';
 import { useDesignFormValidation } from '@/hooks/useDesignFormValidation';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
 import { useDesignToProduct } from '@/hooks/useDesignToProduct';
+import { useFileSelection } from '@/hooks/useFileSelection';
+import { useDirectFileUpload } from '@/hooks/useDirectFileUpload';
 
 interface AddDesignFormProps {
   onCancel: () => void;
@@ -52,6 +54,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { machines } = useMachines();
   const { toast } = useToast();
   const { saveDesignAsProduct } = useDesignToProduct();
+  const { selectedFiles, getAllFiles } = useFileSelection();
+  const { uploading, uploadFiles } = useDirectFileUpload();
   
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -89,9 +93,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
   // Use custom hooks
   const categoryManager = useCategoryManager(form);
-  const fileUpload = useSimpleFileUpload();
   const designParts = useDesignParts();
-  const { validateForm } = useDesignFormValidation(designParts, fileUpload);
   const multiImageUpload = useMultiImageUpload();
 
   // Clean up image previews on unmount
@@ -146,6 +148,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     
     console.log('🚀 Starting optimized product save process...', data);
     console.log('🔧 Design parts:', designParts.designParts);
+    console.log('📁 Selected files:', selectedFiles);
     setSaving(true);
     setProgress(0);
     setCurrentStep('Validating...');
@@ -165,18 +168,41 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(20);
       setCurrentStep('Uploading files...');
 
-      // Step 2: Upload files in parallel
-      let previewImageFile = null;
-      if (fileUpload.previewImage) {
-        previewImageFile = fileUpload.previewImage;
-      } else if (multiImageUpload.images.length > 0) {
-        previewImageFile = multiImageUpload.images[0].file;
+      // Step 2: Upload all selected files
+      const uploadedFilesList = [];
+      
+      if (selectedFiles.length > 0) {
+        console.log('📤 [AddDesignForm] Starting file uploads...');
+        
+        // Group files by part
+        const filesByPart = selectedFiles.reduce((acc, selectedFile) => {
+          if (!acc[selectedFile.partId]) {
+            acc[selectedFile.partId] = [];
+          }
+          acc[selectedFile.partId].push(selectedFile.file);
+          return acc;
+        }, {} as Record<string, File[]>);
+
+        // Upload files for each part
+        for (const [partId, files] of Object.entries(filesByPart)) {
+          console.log(`📤 [AddDesignForm] Uploading ${files.length} files for part: ${partId}`);
+          const uploadedForPart = await uploadFiles(files, partId);
+          uploadedFilesList.push(...uploadedForPart);
+        }
+        
+        console.log('✅ [AddDesignForm] All files uploaded:', uploadedFilesList.length);
       }
 
       setProgress(60);
       setCurrentStep('Saving product...');
 
-      // Step 3: Save as product with new structure - map design parts to the correct interface
+      // Step 3: Prepare preview image
+      let previewImageFile = null;
+      if (multiImageUpload.images.length > 0) {
+        previewImageFile = multiImageUpload.images[0].file;
+      }
+
+      // Step 4: Save as product with design parts
       const mappedDesignParts = designParts.designParts.map(part => ({
         id: part.id,
         name: part.name,
@@ -196,7 +222,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       await saveDesignAsProduct(
         data,
         mappedDesignParts,
-        fileUpload.uploadedFiles,
+        uploadedFilesList,
         previewImageFile || undefined,
         multiImageUpload.images
       );
@@ -265,13 +291,15 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           />
 
           {/* Progress Indicator when saving */}
-          {saving && (
+          {(saving || uploading) && (
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm font-medium">{currentStep}</span>
+                    <span className="text-sm font-medium">
+                      {uploading ? 'Dateien werden hochgeladen...' : currentStep}
+                    </span>
                   </div>
                   <Progress value={progress} className="w-full" />
                   <p className="text-xs text-muted-foreground">
@@ -284,11 +312,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
+            <Button type="button" variant="outline" onClick={onCancel} disabled={saving || uploading}>
               Abbrechen
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Wird gespeichert...' : 'Produkt speichern'}
+            <Button type="submit" disabled={saving || uploading}>
+              {saving || uploading ? 'Wird gespeichert...' : 'Produkt speichern'}
             </Button>
           </div>
         </form>
