@@ -27,10 +27,10 @@ export const useSimpleUpload = () => {
         throw new Error('Benutzer nicht angemeldet');
       }
 
-      // Create structured path
+      // Create structured path: {userid}/Products/{productname}/{partname}/{filename}
       const sanitizedProductName = productName.replace(/[^a-zA-Z0-9_-]/g, '_');
       const sanitizedPartName = partName.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filePath = `${user.id}/products/${sanitizedProductName}/${sanitizedPartName}/${file.name}`;
+      const filePath = `${user.id}/Products/${sanitizedProductName}/${sanitizedPartName}/${file.name}`;
       
       console.log('📤 [SimpleUpload] Upload path:', filePath);
 
