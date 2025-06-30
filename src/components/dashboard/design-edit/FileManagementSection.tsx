@@ -4,13 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Settings2, Upload, X, FileText, Code, Settings } from 'lucide-react';
 import { usePresetManager } from '@/hooks/usePresetManager';
 import { useFileSelection, SelectedFile } from '@/hooks/useFileSelection';
 import PartManagementControls from './PartManagementControls';
 import PresetManagementControls from './PresetManagementControls';
-import PersonalizationFields from './PersonalizationFields';
-import PartTypeFileUpload from './PartTypeFileUpload';
 import type { DesignPart } from '@/types/designPart';
 
 interface FileManagementData {
@@ -83,6 +82,32 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     onPartTypeChange(activePart, value);
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, fileType: 'gcode' | 'cad' | 'ini') => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Only allow one file per type
+    const file = files[0];
+    addFiles([file], activePart, currentPart?.partType);
+    
+    // Reset input
+    event.target.value = '';
+  };
+
+  const getFileIcon = (category: string) => {
+    switch (category) {
+      case 'CAD': return <FileText className="h-4 w-4" />;
+      case 'INI': return <Settings className="h-4 w-4" />;
+      case 'GCODE': return <Code className="h-4 w-4" />;
+      default: return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const partFiles = getFilesForPart(activePart);
+  const gcodeFile = partFiles.find(f => f.fileCategory === 'GCODE');
+  const cadFile = partFiles.find(f => f.fileCategory === 'CAD');
+  const iniFile = partFiles.find(f => f.fileCategory === 'INI');
+
   return (
     <Card>
       <CardHeader>
@@ -92,7 +117,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* First Row: Select Part with Controls and Part Type */}
+        {/* Row 1: Select Part (left) and Part Type (right) */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Select Part</Label>
@@ -134,20 +159,8 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         </div>
 
-        {/* Part-specific File Upload */}
-        {currentPart && (
-          <PartTypeFileUpload
-            partId={currentPart.id}
-            partName={currentPart.name}
-            partType={currentPart.partType || 'static'}
-            selectedFiles={getFilesForPart(currentPart.id)}
-            onFileSelect={addFiles}
-            onFileRemove={removeFile}
-          />
-        )}
-
-        {/* Conditional Row: CAD and Slicer Software (only for personalizable) */}
-        {(currentPart?.partType === 'personalizable') && (
+        {/* Row 2: CAD Software (left) and Slicer Software (right) - only for personalizable */}
+        {currentPart?.partType === 'personalizable' && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>CAD Software</Label>
@@ -177,7 +190,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         )}
 
-        {/* Color and Machine Type Row */}
+        {/* Row 3: Color (left) and Machine Type (right) */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Color</Label>
@@ -236,17 +249,164 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         </div>
 
-        {/* Sketch Name and Replacement Type (only for personalizable) */}
-        {data.partType === 'personalizable' && (
-          <PersonalizationFields
-            sketchName={data.sketchName}
-            replacementType={data.replacementType}
-            onSketchNameChange={(value) => updateData('sketchName', value)}
-            onReplacementTypeChange={(value) => updateData('replacementType', value)}
-          />
+        {/* Row 4: File Upload - Static: G-Code (full width), Personalizable: CAD (left) + INI (right) */}
+        {currentPart?.partType === 'static' ? (
+          /* Static: G-Code Upload (full width) */
+          <div className="space-y-2">
+            <Label>G-Code Datei</Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+              <div className="text-center">
+                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                {gcodeFile ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 p-2 bg-gray-50 rounded border">
+                      <Code className="h-4 w-4" />
+                      <span className="text-sm font-medium">{gcodeFile.file.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(gcodeFile.id)}
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Label htmlFor={`gcode-upload-${activePart}`} className="cursor-pointer">
+                      <span className="text-sm font-medium text-blue-600 hover:text-blue-500">
+                        G-Code Datei auswählen
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">
+                        .gcode, .g Dateien
+                      </p>
+                    </Label>
+                    <Input
+                      id={`gcode-upload-${activePart}`}
+                      type="file"
+                      accept=".gcode,.g"
+                      onChange={(e) => handleFileUpload(e, 'gcode')}
+                      className="hidden"
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Personalizable: CAD (left) + INI (right) */
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>CAD File (.f3d)</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <div className="text-center">
+                  <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
+                  {cadFile ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-center gap-1 p-2 bg-gray-50 rounded border">
+                        <FileText className="h-3 w-3" />
+                        <span className="text-xs font-medium truncate">{cadFile.file.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(cadFile.id)}
+                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700 ml-1"
+                        >
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Label htmlFor={`cad-upload-${activePart}`} className="cursor-pointer">
+                        <span className="text-xs font-medium text-blue-600 hover:text-blue-500">
+                          F3D auswählen
+                        </span>
+                      </Label>
+                      <Input
+                        id={`cad-upload-${activePart}`}
+                        type="file"
+                        accept=".f3d"
+                        onChange={(e) => handleFileUpload(e, 'cad')}
+                        className="hidden"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>INI File</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <div className="text-center">
+                  <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
+                  {iniFile ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-center gap-1 p-2 bg-gray-50 rounded border">
+                        <Settings className="h-3 w-3" />
+                        <span className="text-xs font-medium truncate">{iniFile.file.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(iniFile.id)}
+                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700 ml-1"
+                        >
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Label htmlFor={`ini-upload-${activePart}`} className="cursor-pointer">
+                        <span className="text-xs font-medium text-blue-600 hover:text-blue-500">
+                          INI auswählen
+                        </span>
+                      </Label>
+                      <Input
+                        id={`ini-upload-${activePart}`}
+                        type="file"
+                        accept=".ini"
+                        onChange={(e) => handleFileUpload(e, 'ini')}
+                        className="hidden"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* Nozzle Diameter and Filament Type Row */}
+        {/* Row 5: Sketch Name (left) and Replacement Type (right) - only for personalizable */}
+        {currentPart?.partType === 'personalizable' && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Sketch Name</Label>
+              <Input
+                placeholder="Enter sketch name"
+                value={data.sketchName}
+                onChange={(e) => updateData('sketchName', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Replacement Type</Label>
+              <Select value={data.replacementType} onValueChange={(value: 'text' | 'dimension') => updateData('replacementType', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">Text</SelectItem>
+                  <SelectItem value="dimension">Dimension</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {/* Row 6: Nozzle Diameter (left) and Filament Type (right) */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nozzle Diameter (mm)</Label>
