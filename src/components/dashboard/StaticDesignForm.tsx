@@ -172,10 +172,24 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         console.log('📤 [StaticDesignForm] Uploading file:', file.name, 'for part:', partId);
         
         const uploadedFile = await uploadToTemporary(file, partId);
-        console.log('✅ [StaticDesignForm] File uploaded:', uploadedFile);
+        
+        // Erweitere das uploadedFile mit Formulardaten
+        const enrichedFile: UploadedFile = {
+          ...uploadedFile,
+          originalName: file.name, // Stelle sicher, dass originalName gesetzt ist
+          productName: formData.name,
+          material: formData.material,
+          color: formData.color,
+          machine: formData.machine,
+          nozzleDiameter: formData.nozzleDiameter,
+          cadSoftware: formData.cadSoftware,
+          slicer: formData.slicer
+        };
+        
+        console.log('✅ [StaticDesignForm] File uploaded and enriched:', enrichedFile);
         
         setUploadedFiles(prev => {
-          const updated = [...prev, uploadedFile];
+          const updated = [...prev, enrichedFile];
           console.log('📋 [StaticDesignForm] Updated files list:', updated.length, 'files');
           return updated;
         });

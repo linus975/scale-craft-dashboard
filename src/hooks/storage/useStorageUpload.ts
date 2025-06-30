@@ -104,7 +104,7 @@ export const useStorageUpload = () => {
         size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
         uploadDate: new Date().toISOString().split('T')[0],
         path: data.path,
-        originalName: file.name,
+        originalName: file.name, // Stelle sicher, dass originalName immer gesetzt ist
         fileCategory: fileCategory,
         partId: partId
       };

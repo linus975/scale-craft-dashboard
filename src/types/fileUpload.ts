@@ -6,7 +6,7 @@ export interface UploadedFile {
   size: string;
   uploadDate: string;
   path: string;
-  originalName?: string;
+  originalName: string; // Machen wir required für Konsistenz
   partId?: string;
   designType?: 'static' | 'personalizable';
   fileExtension?: string;
@@ -14,6 +14,14 @@ export interface UploadedFile {
   isINIFile?: boolean;
   uploadContext?: string;
   fileCategory?: 'CAD' | 'INI' | 'GCODE';
+  // Zusätzliche Felder für Formulardaten
+  productName?: string;
+  material?: string;
+  color?: string;
+  machine?: string;
+  nozzleDiameter?: string;
+  cadSoftware?: string;
+  slicer?: string;
 }
 
 export type ExpectedFileType = 'f3d' | 'ini' | 'gcode';
