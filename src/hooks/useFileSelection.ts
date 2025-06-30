@@ -1,21 +1,23 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useSimpleUpload } from './useSimpleUpload';
+import { useTempFileUpload } from './useTempFileUpload';
 
 export interface SelectedFile {
   id: string;
   file: File;
   partId: string;
   fileCategory: 'CAD' | 'INI' | 'GCODE';
+  tempPath?: string; // Path in temp storage
   finalPath?: string; // Path in final storage
-  isUploaded?: boolean; // Whether file is uploaded
+  isUploaded?: boolean; // Whether file is uploaded to temp
+  isMovedToFinal?: boolean; // Whether file is moved to final location
 }
 
 export const useFileSelection = () => {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const { toast } = useToast();
-  const { uploadFile } = useSimpleUpload();
+  const { uploadToTemp, moveToFinal, cleanupTempFiles } = useTempFileUpload();
 
   const addFiles = async (files: File[], partId: string, expectedType?: 'static' | 'personalizable') => {
     console.log('📁 [FileSelection] Adding files for part:', partId, 'type:', expectedType);
@@ -71,16 +73,25 @@ export const useFileSelection = () => {
       }
 
       if (isValid) {
-        const selectedFile: SelectedFile = {
-          id: `${partId}-${Date.now()}-${Math.random()}`,
-          file,
-          partId,
-          fileCategory,
-          isUploaded: false
-        };
+        console.log('📤 [FileSelection] Uploading file to temp storage:', file.name);
+        
+        // Upload to temp storage immediately
+        const tempFile = await uploadToTemp(file, partId, fileCategory);
+        
+        if (tempFile) {
+          const selectedFile: SelectedFile = {
+            id: tempFile.id,
+            file,
+            partId,
+            fileCategory,
+            tempPath: tempFile.tempPath,
+            isUploaded: true,
+            isMovedToFinal: false
+          };
 
-        validFiles.push(selectedFile);
-        console.log('✅ [FileSelection] File added to selection:', selectedFile.file.name);
+          validFiles.push(selectedFile);
+          console.log('✅ [FileSelection] File uploaded to temp:', selectedFile.tempPath);
+        }
       }
     }
 
@@ -92,15 +103,12 @@ export const useFileSelection = () => {
         );
         const newSelection = [...filtered, ...validFiles];
         console.log('✅ [FileSelection] Updated selection. Total files:', newSelection.length);
-        console.log('✅ [FileSelection] Selection details:', newSelection.map(f => `${f.file.name} (${f.fileCategory})`));
         return newSelection;
       });
 
-      console.log('✅ [FileSelection] Added files to selection:', validFiles.map(f => f.file.name));
-      
       toast({
-        title: "Dateien ausgewählt",
-        description: `${validFiles.length} Datei(en) wurden zur Auswahl hinzugefügt.`,
+        title: "Dateien temporär hochgeladen",
+        description: `${validFiles.length} Datei(en) wurden temporär gespeichert.`,
       });
     }
   };
@@ -129,34 +137,63 @@ export const useFileSelection = () => {
 
   const clearAllFiles = async () => {
     console.log('🧹 [FileSelection] Clearing all files');
+    await cleanupTempFiles();
     setSelectedFiles([]);
   };
 
-  // New function to upload files directly to final destination
-  const uploadSelectedFiles = async (productName: string, partName: string) => {
-    const filesToUpload = selectedFiles.filter(f => f.partId === partName && !f.isUploaded);
+  // New function to move files from temp to final destination
+  const moveFilesToFinal = async (productName: string) => {
+    console.log('📦 [FileSelection] Moving files from temp to final destination');
+    console.log('📦 [FileSelection] Product name:', productName);
+    console.log('📦 [FileSelection] Files to move:', selectedFiles.length);
     
-    if (filesToUpload.length === 0) {
-      console.log('📤 [FileSelection] No files to upload for part:', partName);
-      return [];
-    }
-
-    console.log('📤 [FileSelection] Uploading files directly to final destination:', filesToUpload.length);
+    const movedFiles = [];
     
-    const uploadedFiles = [];
-    for (const selectedFile of filesToUpload) {
+    for (const selectedFile of selectedFiles) {
+      if (!selectedFile.tempPath || selectedFile.isMovedToFinal) {
+        console.log('⏭️ [FileSelection] Skipping file (already moved or no temp path):', selectedFile.file.name);
+        continue;
+      }
+      
       try {
-        console.log('📤 [FileSelection] Uploading file:', selectedFile.file.name);
-        const result = await uploadFile(selectedFile.file, productName, partName, selectedFile.fileCategory);
+        // Create final path: {userid}/Products/{productName}/{partName}/{filename}
+        const sanitizedProductName = productName.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const sanitizedPartName = selectedFile.partId.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const finalPath = `Products/${sanitizedProductName}/${sanitizedPartName}/${selectedFile.file.name}`;
         
-        // Update the selected file with upload info
-        selectedFile.finalPath = result.path;
-        selectedFile.isUploaded = true;
+        console.log('📦 [FileSelection] Moving file:', selectedFile.file.name);
+        console.log('📦 [FileSelection] From temp:', selectedFile.tempPath);
+        console.log('📦 [FileSelection] To final:', finalPath);
         
-        uploadedFiles.push(result);
-        console.log('✅ [FileSelection] File uploaded successfully:', result.path);
+        const finalStoragePath = await moveToFinal(
+          {
+            id: selectedFile.id,
+            name: selectedFile.file.name,
+            tempPath: selectedFile.tempPath,
+            file: selectedFile.file,
+            category: selectedFile.fileCategory,
+            partId: selectedFile.partId,
+            uploadedAt: Date.now()
+          },
+          finalPath
+        );
+        
+        if (finalStoragePath) {
+          // Update the selected file with final path
+          selectedFile.finalPath = finalStoragePath;
+          selectedFile.isMovedToFinal = true;
+          
+          movedFiles.push({
+            path: finalStoragePath,
+            name: selectedFile.file.name,
+            category: selectedFile.fileCategory,
+            partName: selectedFile.partId
+          });
+          
+          console.log('✅ [FileSelection] File moved successfully:', finalStoragePath);
+        }
       } catch (error) {
-        console.error('❌ [FileSelection] Failed to upload file:', selectedFile.file.name, error);
+        console.error('❌ [FileSelection] Failed to move file:', selectedFile.file.name, error);
         throw error;
       }
     }
@@ -164,7 +201,8 @@ export const useFileSelection = () => {
     // Update the state
     setSelectedFiles(prev => [...prev]);
     
-    return uploadedFiles;
+    console.log('✅ [FileSelection] All files moved successfully:', movedFiles.length);
+    return movedFiles;
   };
 
   return {
@@ -174,7 +212,7 @@ export const useFileSelection = () => {
     getFilesForPart,
     getAllFiles,
     clearAllFiles,
-    uploadSelectedFiles,
+    moveFilesToFinal,
     uploading: false
   };
 };

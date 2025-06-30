@@ -54,7 +54,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { toast } = useToast();
   const { uploadMultipleFiles } = useSimpleUpload();
   const { createProduct, createPart, createProductImage } = useProducts();
-  const { selectedFiles, clearAllFiles, uploadSelectedFiles } = useFileSelection();
+  const { selectedFiles, clearAllFiles, moveFilesToFinal } = useFileSelection();
   
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -149,10 +149,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
     
-    console.log('🚀 [AddDesignForm] Starting save process with direct upload...');
+    console.log('🚀 [AddDesignForm] Starting save process with temp files...');
     console.log('📋 [AddDesignForm] Form data:', data);
     console.log('🔧 [AddDesignForm] Design parts:', designParts.designParts);
-    console.log('📦 [AddDesignForm] Selected files:', selectedFiles);
+    console.log('📦 [AddDesignForm] Selected files (temp):', selectedFiles);
     
     setSaving(true);
     setProgress(10);
@@ -185,52 +185,54 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       console.log('✅ [AddDesignForm] Product created with ID:', product.product_id);
 
       setProgress(50);
-      setCurrentStep('Dateien werden hochgeladen...');
+      setCurrentStep('Dateien werden von temp zu final verschoben...');
 
-      // Step 3: Process files for each part
+      // Step 3: Move files from temp to final destination
+      let movedFiles = [];
+      if (selectedFiles.length > 0) {
+        try {
+          console.log('📦 [AddDesignForm] Moving files from temp to final destination');
+          movedFiles = await moveFilesToFinal(data.name);
+          console.log('✅ [AddDesignForm] Files moved successfully:', movedFiles.length);
+        } catch (moveError) {
+          console.error('❌ [AddDesignForm] Error moving files:', moveError);
+          throw new Error(`Fehler beim Verschieben der Dateien: ${moveError instanceof Error ? moveError.message : 'Unbekannter Fehler'}`);
+        }
+      }
+
+      setProgress(70);
+      setCurrentStep('Parts werden erstellt...');
+
+      // Step 4: Process parts and create them with final file paths
       for (const partData of designParts.designParts) {
         console.log(`🔧 [AddDesignForm] Processing part: ${partData.name} (ID: ${partData.id})`);
         
-        // Get files for this specific part
-        const partFiles = selectedFiles.filter(f => f.partId === partData.id);
-        console.log(`📁 [AddDesignForm] Found ${partFiles.length} files for part ${partData.name}`);
+        // Get moved files for this specific part
+        const partMovedFiles = movedFiles.filter(f => f.partName === partData.id);
+        console.log(`📁 [AddDesignForm] Found ${partMovedFiles.length} moved files for part ${partData.name}`);
 
         // Initialize file paths
         let gcodeFilePath = null;
         let cadFilePath = null;
         let iniFilePath = null;
 
-        // Upload files directly to final destination
-        if (partFiles.length > 0) {
-          try {
-            console.log(`📤 [AddDesignForm] Uploading files for part ${partData.name}`);
-            const uploadResults = await uploadSelectedFiles(data.name, partData.name);
-            
-            // Set file paths based on category
-            for (const result of uploadResults) {
-              switch (result.category) {
-                case 'GCODE':
-                  gcodeFilePath = result.path;
-                  console.log(`✅ [AddDesignForm] G-Code uploaded: ${gcodeFilePath}`);
-                  break;
-                case 'CAD':
-                  cadFilePath = result.path;
-                  console.log(`✅ [AddDesignForm] CAD uploaded: ${cadFilePath}`);
-                  break;
-                case 'INI':
-                  iniFilePath = result.path;
-                  console.log(`✅ [AddDesignForm] INI uploaded: ${iniFilePath}`);
-                  break;
-              }
-            }
-          } catch (uploadError) {
-            console.error(`❌ [AddDesignForm] Error uploading files for part ${partData.name}:`, uploadError);
-            throw new Error(`Fehler beim Hochladen der Dateien für Part ${partData.name}: ${uploadError instanceof Error ? uploadError.message : 'Unbekannter Fehler'}`);
+        // Set file paths based on category
+        for (const movedFile of partMovedFiles) {
+          switch (movedFile.category) {
+            case 'GCODE':
+              gcodeFilePath = movedFile.path;
+              console.log(`✅ [AddDesignForm] G-Code path set: ${gcodeFilePath}`);
+              break;
+            case 'CAD':
+              cadFilePath = movedFile.path;
+              console.log(`✅ [AddDesignForm] CAD path set: ${cadFilePath}`);
+              break;
+            case 'INI':
+              iniFilePath = movedFile.path;
+              console.log(`✅ [AddDesignForm] INI path set: ${iniFilePath}`);
+              break;
           }
         }
-
-        setProgress(60);
-        setCurrentStep('Parts werden erstellt...');
 
         // Create part record with final file paths
         const partToCreate = {
@@ -243,13 +245,13 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           filament_type: partData.filamentType || null,
           color: partData.color || null,
           printer_model: partData.machine || null,
-          // File paths from uploaded files
+          // File paths from moved files
           gcode_path: gcodeFilePath,
           f3d_file_path: cadFilePath,
           ini_file_path: iniFilePath
         };
 
-        console.log('💾 [AddDesignForm] Creating part with file paths:', {
+        console.log('💾 [AddDesignForm] Creating part with moved file paths:', {
           part_name: partToCreate.part_name,
           gcode_path: partToCreate.gcode_path,
           f3d_file_path: partToCreate.f3d_file_path,
@@ -260,10 +262,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         console.log('✅ [AddDesignForm] Part created successfully:', createdPart);
       }
 
-      setProgress(80);
+      setProgress(90);
       setCurrentStep('Bilder werden verarbeitet...');
 
-      // Step 4: Handle preview image upload
+      // Step 5: Handle preview image upload
       if (multiImageUpload.images.length > 0) {
         console.log('🖼️ [AddDesignForm] Processing preview image');
         try {
@@ -374,7 +376,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             getValues={form.getValues}
           />
 
-          {/* File Management Section with direct upload system */}
+          {/* File Management Section with temp upload system */}
           <FileManagementSection
             data={fileManagementData}
             onChange={handleFileManagementDataChange}
