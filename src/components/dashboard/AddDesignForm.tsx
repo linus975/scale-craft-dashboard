@@ -140,11 +140,14 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     console.log('🚀 Starting structured product save process...');
     console.log('📋 Form data:', data);
     console.log('🔧 Design parts:', designParts.designParts);
-    console.log('📁 Selected files:', selectedFiles);
-    console.log('📁 Total files:', selectedFiles.length);
+    
+    // Get current selected files directly from the hook
+    const currentSelectedFiles = selectedFiles;
+    console.log('📁 Current selected files:', currentSelectedFiles);
+    console.log('📁 Total files:', currentSelectedFiles.length);
     
     // Debug: Log each file
-    selectedFiles.forEach((file, index) => {
+    currentSelectedFiles.forEach((file, index) => {
       console.log(`📄 File ${index + 1}:`, {
         name: file.file.name,
         size: file.file.size,
@@ -171,7 +174,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       }
 
       // Step 2: Check if we have files to upload
-      if (selectedFiles.length === 0) {
+      if (currentSelectedFiles.length === 0) {
         toast({
           title: "No Files Selected",
           description: "Please select at least one file before saving the product",
@@ -208,12 +211,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       }
 
       console.log('📦 Saving with structured file paths...');
-      console.log('📁 Files to upload:', selectedFiles.length);
+      console.log('📁 Files to upload:', currentSelectedFiles.length);
 
       await saveDesignAsProductWithFiles(
         data,
         mappedDesignParts,
-        selectedFiles,
+        currentSelectedFiles,
         previewImageFile || undefined,
         multiImageUpload.images
       );
@@ -298,6 +301,16 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               </CardContent>
             </Card>
           )}
+
+          {/* Debug Info */}
+          <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+            <p><strong>Current Files in Selection:</strong> {selectedFiles.length}</p>
+            {selectedFiles.map((file, index) => (
+              <p key={file.id}>
+                {index + 1}. {file.file.name} (Part: {file.partId}, Type: {file.fileCategory})
+              </p>
+            ))}
+          </div>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
