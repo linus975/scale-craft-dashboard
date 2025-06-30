@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import DesignInformationSection from './design-edit/DesignInformationSection';
@@ -266,7 +266,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   </div>
                   <Progress value={progress} className="w-full" />
                   <p className="text-xs text-muted-foreground">
-                    Produkt wird mit strukturierten Dateipfaden gespeichert... Bitte warten Sie.
+                    Product is being saved with structured file paths... Please wait.
                   </p>
                 </div>
               </CardContent>
@@ -276,10 +276,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
-              Abbrechen
+              Cancel
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Wird gespeichert...' : 'Produkt speichern'}
+              {saving ? 'Saving...' : 'Save Product'}
             </Button>
           </div>
         </form>
