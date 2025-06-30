@@ -177,15 +177,15 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(20);
       setCurrentStep('Dateien werden überprüft...');
 
-      // Step 2: Validate file selection
+      // Step 2: Validate file selection with improved messages for temp system
       if (selectedFiles.length === 0) {
-        throw new Error('Bitte wählen Sie mindestens eine Datei aus');
+        throw new Error('Bitte wählen Sie mindestens eine Datei über das Datei-Management aus. Dateien werden automatisch in den temporären Speicher hochgeladen.');
       }
 
       // Check if all selected files are uploaded to temp
       const notUploadedFiles = selectedFiles.filter(f => !f.isUploaded || !f.tempPath);
       if (notUploadedFiles.length > 0) {
-        throw new Error(`Folgende Dateien sind noch nicht hochgeladen: ${notUploadedFiles.map(f => f.file.name).join(', ')}`);
+        throw new Error(`Folgende Dateien wurden noch nicht in den temporären Speicher hochgeladen: ${notUploadedFiles.map(f => f.file.name).join(', ')}. Bitte warten Sie, bis der Upload abgeschlossen ist.`);
       }
 
       // Check if all parts have at least one file
@@ -194,7 +194,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       );
 
       if (partsWithoutFiles.length > 0) {
-        throw new Error(`Folgende Parts haben keine Dateien: ${partsWithoutFiles.map(p => p.name).join(', ')}`);
+        throw new Error(`Folgende Parts haben keine Dateien: ${partsWithoutFiles.map(p => p.name).join(', ')}. Bitte fügen Sie Dateien über das Datei-Management hinzu.`);
       }
 
       setProgress(30);
@@ -445,7 +445,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             <Button type="button" variant="outline" onClick={handleCancel} disabled={saving || uploadingFiles}>
               Abbrechen
             </Button>
-            <Button type="submit" disabled={saving || uploadingFiles || selectedFiles.length === 0}>
+            <Button type="submit" disabled={saving || uploadingFiles}>
               {(saving || uploadingFiles) ? 'Speichert...' : 'Produkt speichern'}
             </Button>
           </div>
