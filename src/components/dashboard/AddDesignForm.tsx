@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -11,11 +12,9 @@ import { useMachines } from '@/hooks/useMachines';
 import { useToast } from '@/hooks/use-toast';
 import { useCategoryManager } from '@/hooks/useCategoryManager';
 import { useDesignParts } from '@/hooks/useDesignParts';
-import { useDesignFormValidation } from '@/hooks/useDesignFormValidation';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
-import { useDesignToProduct } from '@/hooks/useDesignToProduct';
 import { useFileSelection } from '@/hooks/useFileSelection';
-import { useDirectFileUpload } from '@/hooks/useDirectFileUpload';
+import { useEnhancedDesignToProduct } from '@/hooks/useEnhancedDesignToProduct';
 
 interface AddDesignFormProps {
   onCancel: () => void;
@@ -52,9 +51,8 @@ interface FileManagementData {
 const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { machines } = useMachines();
   const { toast } = useToast();
-  const { saveDesignAsProduct } = useDesignToProduct();
+  const { saveDesignAsProductWithFiles } = useEnhancedDesignToProduct();
   const { selectedFiles, getAllFiles } = useFileSelection();
-  const { uploading, uploadFiles } = useDirectFileUpload();
   
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -105,7 +103,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   // Handler for when a new part is added - automatically select it
   const handleAddPart = (name: string) => {
     designParts.handleAddPart(name);
-    // The newest part will be automatically selected since handleAddPart already does this
   };
 
   // Handler for when preset values are added - automatically select them
@@ -140,7 +137,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
     
-    console.log('🚀 Starting optimized product save process...', data);
+    console.log('🚀 Starting structured product save process...', data);
     console.log('🔧 Design parts:', designParts.designParts);
     console.log('📁 Selected files:', selectedFiles);
     setSaving(true);
@@ -148,7 +145,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     setCurrentStep('Validating...');
     
     try {
-      // Step 1: Basic validation - only name is required
+      // Step 1: Basic validation
       if (!data.name.trim()) {
         toast({
           title: "Validation Error",
@@ -160,43 +157,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       }
 
       setProgress(20);
-      setCurrentStep('Uploading files...');
+      setCurrentStep('Uploading files and saving product...');
 
-      // Step 2: Upload all selected files
-      const uploadedFilesList = [];
-      
-      if (selectedFiles.length > 0) {
-        console.log('📤 [AddDesignForm] Starting file uploads...');
-        
-        // Group files by part
-        const filesByPart = selectedFiles.reduce((acc, selectedFile) => {
-          if (!acc[selectedFile.partId]) {
-            acc[selectedFile.partId] = [];
-          }
-          acc[selectedFile.partId].push(selectedFile.file);
-          return acc;
-        }, {} as Record<string, File[]>);
-
-        // Upload files for each part
-        for (const [partId, files] of Object.entries(filesByPart)) {
-          console.log(`📤 [AddDesignForm] Uploading ${files.length} files for part: ${partId}`);
-          const uploadedForPart = await uploadFiles(files, partId);
-          uploadedFilesList.push(...uploadedForPart);
-        }
-        
-        console.log('✅ [AddDesignForm] All files uploaded:', uploadedFilesList.length);
-      }
-
-      setProgress(60);
-      setCurrentStep('Saving product...');
-
-      // Step 3: Prepare preview image
-      let previewImageFile = null;
-      if (multiImageUpload.images.length > 0) {
-        previewImageFile = multiImageUpload.images[0].file;
-      }
-
-      // Step 4: Save as product with design parts
+      // Step 2: Save product with structured file upload
       const mappedDesignParts = designParts.designParts.map(part => ({
         id: part.id,
         name: part.name,
@@ -211,12 +174,20 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         machine: part.machine
       }));
 
-      console.log('📦 Mapped design parts for saving:', mappedDesignParts);
+      setProgress(60);
 
-      await saveDesignAsProduct(
+      // Prepare preview image
+      let previewImageFile = null;
+      if (multiImageUpload.images.length > 0) {
+        previewImageFile = multiImageUpload.images[0].file;
+      }
+
+      console.log('📦 Saving with structured file paths...');
+
+      await saveDesignAsProductWithFiles(
         data,
         mappedDesignParts,
-        uploadedFilesList,
+        selectedFiles,
         previewImageFile || undefined,
         multiImageUpload.images
       );
@@ -228,7 +199,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       onSave();
       
     } catch (error) {
-      console.error('❌ Error creating product:', error);
+      console.error('❌ Error creating product with structured files:', error);
       toast({
         title: "Fehler beim Erstellen des Produkts",
         description: error instanceof Error ? error.message : "Es gab einen Fehler beim Speichern des Produkts. Bitte versuchen Sie es erneut.",
@@ -271,7 +242,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             getValues={form.getValues}
           />
 
-          {/* File Management Section with part-specific handling */}
+          {/* File Management Section with structured file handling */}
           <FileManagementSection
             data={fileManagementData}
             onChange={handleFileManagementDataChange}
@@ -285,19 +256,17 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           />
 
           {/* Progress Indicator when saving */}
-          {(saving || uploading) && (
+          {saving && (
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm font-medium">
-                      {uploading ? 'Dateien werden hochgeladen...' : currentStep}
-                    </span>
+                    <span className="text-sm font-medium">{currentStep}</span>
                   </div>
                   <Progress value={progress} className="w-full" />
                   <p className="text-xs text-muted-foreground">
-                    Produkt wird gespeichert... Bitte warten Sie.
+                    Produkt wird mit strukturierten Dateipfaden gespeichert... Bitte warten Sie.
                   </p>
                 </div>
               </CardContent>
@@ -306,11 +275,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onCancel} disabled={saving || uploading}>
+            <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
               Abbrechen
             </Button>
-            <Button type="submit" disabled={saving || uploading}>
-              {saving || uploading ? 'Wird gespeichert...' : 'Produkt speichern'}
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Wird gespeichert...' : 'Produkt speichern'}
             </Button>
           </div>
         </form>
