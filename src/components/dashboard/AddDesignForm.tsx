@@ -173,28 +173,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         throw new Error('EAN-Nummer ist erforderlich');
       }
 
-      setProgress(20);
-      setCurrentStep('Dateien werden überprüft...');
-
-      // Step 2: Validate that we have temp files
-      console.log('🔍 [AddDesignForm] Checking temp files:', tempFiles.length);
-      if (tempFiles.length === 0) {
-        throw new Error('Bitte laden Sie mindestens eine Datei über das Datei-Management hoch.');
-      }
-
-      // Check if all parts have at least one temp file
-      const partsWithoutFiles = designParts.designParts.filter(part => 
-        !tempFiles.some(file => file.partId === part.id)
-      );
-
-      if (partsWithoutFiles.length > 0) {
-        throw new Error(`Folgende Parts haben keine Dateien: ${partsWithoutFiles.map(p => p.name).join(', ')}. Bitte fügen Sie Dateien hinzu.`);
-      }
-
       setProgress(30);
       setCurrentStep('Produkt wird erstellt...');
 
-      // Step 3: Create the product first
+      // Step 2: Create the product first
       const productData = {
         name: data.name,
         identifier_type: data.trackingType,
@@ -210,89 +192,111 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(40);
       setCurrentStep('Dateien werden zu finalen Ordnern verschoben...');
 
-      // Step 4: Process each part and move temp files to final locations
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Benutzer nicht angemeldet');
+      // Step 3: Process temp files if they exist
+      if (tempFiles.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Benutzer nicht angemeldet');
 
-      for (const partData of designParts.designParts) {
-        console.log(`🔧 [AddDesignForm] Processing part: ${partData.name} (ID: ${partData.id})`);
-        
-        // Get temp files for this specific part
-        const partTempFiles = tempFiles.filter(f => f.partId === partData.id);
-        console.log(`📁 [AddDesignForm] Found ${partTempFiles.length} temp files for part ${partData.name}`);
-
-        // Initialize file paths
-        let gcodeFilePath = null;
-        let cadFilePath = null;
-        let iniFilePath = null;
-
-        // Move temp files to final locations: userid/Products/productname/partname/filename
-        for (const tempFile of partTempFiles) {
-          // Create final path: userid/Products/productname/partname/filename
-          const sanitizedProductName = data.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-          const sanitizedPartName = partData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-          const finalPath = `${user.id}/Products/${sanitizedProductName}/${sanitizedPartName}/${tempFile.name}`;
+        for (const partData of designParts.designParts) {
+          console.log(`🔧 [AddDesignForm] Processing part: ${partData.name} (ID: ${partData.id})`);
           
-          console.log(`📦 [AddDesignForm] Moving ${tempFile.name} from temp to: ${finalPath}`);
-          const movedPath = await moveToFinal(tempFile, finalPath);
-          
-          if (movedPath) {
-            // Set file path based on category
-            switch (tempFile.category) {
-              case 'GCODE':
-                gcodeFilePath = finalPath;
-                console.log(`✅ [AddDesignForm] G-Code moved to: ${gcodeFilePath}`);
-                break;
-              case 'CAD':
-                cadFilePath = finalPath;
-                console.log(`✅ [AddDesignForm] CAD moved to: ${cadFilePath}`);
-                break;
-              case 'INI':
-                iniFilePath = finalPath;
-                console.log(`✅ [AddDesignForm] INI moved to: ${iniFilePath}`);
-                break;
+          // Get temp files for this specific part
+          const partTempFiles = tempFiles.filter(f => f.partId === partData.id);
+          console.log(`📁 [AddDesignForm] Found ${partTempFiles.length} temp files for part ${partData.name}`);
+
+          // Initialize file paths
+          let gcodeFilePath = null;
+          let cadFilePath = null;
+          let iniFilePath = null;
+
+          // Move temp files to final locations: userid/Products/productname/partname/filename
+          for (const tempFile of partTempFiles) {
+            // Create final path: userid/Products/productname/partname/filename
+            const sanitizedProductName = data.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const sanitizedPartName = partData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const finalPath = `${user.id}/Products/${sanitizedProductName}/${sanitizedPartName}/${tempFile.name}`;
+            
+            console.log(`📦 [AddDesignForm] Moving ${tempFile.name} from temp to: ${finalPath}`);
+            const movedPath = await moveToFinal(tempFile, finalPath);
+            
+            if (movedPath) {
+              // Set file path based on category
+              switch (tempFile.category) {
+                case 'GCODE':
+                  gcodeFilePath = finalPath;
+                  console.log(`✅ [AddDesignForm] G-Code moved to: ${gcodeFilePath}`);
+                  break;
+                case 'CAD':
+                  cadFilePath = finalPath;
+                  console.log(`✅ [AddDesignForm] CAD moved to: ${cadFilePath}`);
+                  break;
+                case 'INI':
+                  iniFilePath = finalPath;
+                  console.log(`✅ [AddDesignForm] INI moved to: ${iniFilePath}`);
+                  break;
+              }
+            } else {
+              console.error(`❌ [AddDesignForm] Failed to move file: ${tempFile.name}`);
+              throw new Error(`Fehler beim Verschieben der Datei: ${tempFile.name}`);
             }
-          } else {
-            console.error(`❌ [AddDesignForm] Failed to move file: ${tempFile.name}`);
-            throw new Error(`Fehler beim Verschieben der Datei: ${tempFile.name}`);
           }
+
+          setProgress(60);
+          setCurrentStep('Parts werden erstellt...');
+
+          // Create part record with final file paths
+          const partToCreate = {
+            product_id: product.product_id,
+            part_name: partData.name,
+            is_customizable: partData.partType === 'personalizable',
+            cad_software: partData.cadSoftware || null,
+            slicer_software: partData.slicer || null,
+            nozzle_diameter: partData.nozzleDiameter ? parseFloat(partData.nozzleDiameter) : null,
+            filament_type: partData.filamentType || null,
+            color: partData.color || null,
+            printer_model: partData.machine || null,
+            // File paths from moved files
+            gcode_path: gcodeFilePath,
+            f3d_file_path: cadFilePath,
+            ini_file_path: iniFilePath
+          };
+
+          console.log('💾 [AddDesignForm] Creating part with final file paths:', {
+            part_name: partToCreate.part_name,
+            gcode_path: partToCreate.gcode_path,
+            f3d_file_path: partToCreate.f3d_file_path,
+            ini_file_path: partToCreate.ini_file_path
+          });
+
+          const createdPart = await createPart(partToCreate);
+          console.log('✅ [AddDesignForm] Part created successfully:', createdPart);
         }
+      } else {
+        // Create parts without files if no temp files exist
+        for (const partData of designParts.designParts) {
+          const partToCreate = {
+            product_id: product.product_id,
+            part_name: partData.name,
+            is_customizable: partData.partType === 'personalizable',
+            cad_software: partData.cadSoftware || null,
+            slicer_software: partData.slicer || null,
+            nozzle_diameter: partData.nozzleDiameter ? parseFloat(partData.nozzleDiameter) : null,
+            filament_type: partData.filamentType || null,
+            color: partData.color || null,
+            printer_model: partData.machine || null,
+            gcode_path: null,
+            f3d_file_path: null,
+            ini_file_path: null
+          };
 
-        setProgress(60);
-        setCurrentStep('Parts werden erstellt...');
-
-        // Create part record with final file paths
-        const partToCreate = {
-          product_id: product.product_id,
-          part_name: partData.name,
-          is_customizable: partData.partType === 'personalizable',
-          cad_software: partData.cadSoftware || null,
-          slicer_software: partData.slicer || null,
-          nozzle_diameter: partData.nozzleDiameter ? parseFloat(partData.nozzleDiameter) : null,
-          filament_type: partData.filamentType || null,
-          color: partData.color || null,
-          printer_model: partData.machine || null,
-          // File paths from moved files
-          gcode_path: gcodeFilePath,
-          f3d_file_path: cadFilePath,
-          ini_file_path: iniFilePath
-        };
-
-        console.log('💾 [AddDesignForm] Creating part with final file paths:', {
-          part_name: partToCreate.part_name,
-          gcode_path: partToCreate.gcode_path,
-          f3d_file_path: partToCreate.f3d_file_path,
-          ini_file_path: partToCreate.ini_file_path
-        });
-
-        const createdPart = await createPart(partToCreate);
-        console.log('✅ [AddDesignForm] Part created successfully:', createdPart);
+          await createPart(partToCreate);
+        }
       }
 
       setProgress(80);
       setCurrentStep('Bilder werden verarbeitet...');
 
-      // Step 5: Handle preview image upload (using normal upload, not temp)
+      // Step 4: Handle preview image upload (using normal upload, not temp)
       if (multiImageUpload.images.length > 0) {
         console.log('🖼️ [AddDesignForm] Processing preview image');
         try {
@@ -339,9 +343,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
       console.log('✅ [AddDesignForm] ALL operations completed successfully');
       
+      const fileCount = tempFiles.length;
       toast({
         title: "Produkt erfolgreich erstellt",
-        description: `Das Produkt "${data.name}" wurde mit ${tempFiles.length} Datei(en) erfolgreich gespeichert.`,
+        description: fileCount > 0 
+          ? `Das Produkt "${data.name}" wurde mit ${fileCount} Datei(en) erfolgreich gespeichert.`
+          : `Das Produkt "${data.name}" wurde erfolgreich gespeichert.`,
       });
 
       // Cleanup any remaining temp files
