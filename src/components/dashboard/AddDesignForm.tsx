@@ -211,33 +211,38 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
           // Move temp files to final locations: userid/Products/productname/partname/filename
           for (const tempFile of partTempFiles) {
-            // Create final path: userid/Products/productname/partname/filename
-            const sanitizedProductName = data.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const sanitizedPartName = partData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const finalPath = `${user.id}/Products/${sanitizedProductName}/${sanitizedPartName}/${tempFile.name}`;
-            
-            console.log(`📦 [AddDesignForm] Moving ${tempFile.name} from temp to: ${finalPath}`);
-            const movedPath = await moveToFinal(tempFile, finalPath);
-            
-            if (movedPath) {
-              // Set file path based on category
-              switch (tempFile.category) {
-                case 'GCODE':
-                  gcodeFilePath = finalPath;
-                  console.log(`✅ [AddDesignForm] G-Code moved to: ${gcodeFilePath}`);
-                  break;
-                case 'CAD':
-                  cadFilePath = finalPath;
-                  console.log(`✅ [AddDesignForm] CAD moved to: ${cadFilePath}`);
-                  break;
-                case 'INI':
-                  iniFilePath = finalPath;
-                  console.log(`✅ [AddDesignForm] INI moved to: ${iniFilePath}`);
-                  break;
+            try {
+              // Create final path: userid/Products/productname/partname/filename
+              const sanitizedProductName = data.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+              const sanitizedPartName = partData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+              const finalPath = `${user.id}/Products/${sanitizedProductName}/${sanitizedPartName}/${tempFile.name}`;
+              
+              console.log(`📦 [AddDesignForm] Moving ${tempFile.name} from temp to: ${finalPath}`);
+              const movedPath = await moveToFinal(tempFile, finalPath);
+              
+              if (movedPath) {
+                // Set file path based on category - use the actual returned path
+                switch (tempFile.category) {
+                  case 'GCODE':
+                    gcodeFilePath = movedPath;
+                    console.log(`✅ [AddDesignForm] G-Code moved to: ${gcodeFilePath}`);
+                    break;
+                  case 'CAD':
+                    cadFilePath = movedPath;
+                    console.log(`✅ [AddDesignForm] CAD moved to: ${cadFilePath}`);
+                    break;
+                  case 'INI':
+                    iniFilePath = movedPath;
+                    console.log(`✅ [AddDesignForm] INI moved to: ${iniFilePath}`);
+                    break;
+                }
+              } else {
+                console.error(`❌ [AddDesignForm] Failed to move file: ${tempFile.name}`);
+                throw new Error(`Fehler beim Verschieben der Datei: ${tempFile.name}`);
               }
-            } else {
-              console.error(`❌ [AddDesignForm] Failed to move file: ${tempFile.name}`);
-              throw new Error(`Fehler beim Verschieben der Datei: ${tempFile.name}`);
+            } catch (moveError) {
+              console.error(`❌ [AddDesignForm] Error moving file ${tempFile.name}:`, moveError);
+              throw new Error(`Fehler beim Verschieben der Datei ${tempFile.name}: ${moveError instanceof Error ? moveError.message : 'Unbekannter Fehler'}`);
             }
           }
 

@@ -156,7 +156,9 @@ export const useTempFileUpload = () => {
     finalPath: string
   ): Promise<string | null> => {
     try {
-      console.log('📦 [TempUpload] Moving temp file to final location:', tempFile.tempPath, '->', finalPath);
+      console.log('📦 [TempUpload] Moving temp file to final location:');
+      console.log('📦 [TempUpload] From:', tempFile.tempPath);
+      console.log('📦 [TempUpload] To:', finalPath);
       
       // Download the file from temp location
       const { data: fileData, error: downloadError } = await supabase.storage
@@ -167,6 +169,8 @@ export const useTempFileUpload = () => {
         console.error('❌ [TempUpload] Download error:', downloadError);
         throw new Error(`Fehler beim Herunterladen: ${downloadError.message}`);
       }
+
+      console.log('✅ [TempUpload] File downloaded from temp location, size:', fileData.size);
 
       // Upload to final location
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -181,6 +185,8 @@ export const useTempFileUpload = () => {
         throw new Error(`Fehler beim Upload: ${uploadError.message}`);
       }
 
+      console.log('✅ [TempUpload] File uploaded to final location:', uploadData.path);
+
       // Delete temp file after successful move
       const { error: deleteError } = await supabase.storage
         .from('design-files')
@@ -193,11 +199,11 @@ export const useTempFileUpload = () => {
       }
 
       console.log('✅ [TempUpload] File moved successfully to:', finalPath);
-      return finalPath;
+      return uploadData.path; // Return the actual path from Supabase
 
     } catch (error: any) {
       console.error('❌ [TempUpload] Move failed:', error);
-      return null;
+      throw error; // Re-throw the error so the calling function can handle it
     }
   };
 
