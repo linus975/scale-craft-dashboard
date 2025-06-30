@@ -90,11 +90,13 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     console.log('🔄 [FileManagementSection] Current part:', activePart);
     console.log('🔄 [FileManagementSection] Part type:', currentPart?.partType);
 
-    // Convert FileList to File array
+    // Convert FileList to File array and add to selection
     const fileArray = Array.from(files);
     
-    // Add files to the selection
-    addFiles(fileArray, activePart, currentPart?.partType);
+    // Add files to the global selection with proper part type
+    addFiles(fileArray, activePart, currentPart?.partType || 'static');
+    
+    console.log('✅ [FileManagementSection] Files added to global selection');
     
     // Reset input
     event.target.value = '';
@@ -470,13 +472,22 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
           </div>
         </div>
 
-        {/* Debug info */}
-        <div className="text-xs text-gray-500 mt-4">
-          <p>Selected files: {selectedFiles.length}</p>
-          <p>Files for current part: {partFiles.length}</p>
+        {/* Debug info - showing global and local file counts */}
+        <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded border">
+          <p><strong>Selected files (local UI):</strong> {partFiles.length}</p>
+          <p><strong>Files for current part ({activePart}):</strong> {partFiles.length}</p>
+          <p><strong>Total files in global selection:</strong> {selectedFiles.length}</p>
           {partFiles.map(file => (
             <p key={file.id}>- {file.file.name} ({file.fileCategory})</p>
           ))}
+          {selectedFiles.length > 0 && (
+            <div className="mt-2">
+              <p><strong>All selected files:</strong></p>
+              {selectedFiles.map(file => (
+                <p key={file.id}>- {file.file.name} (Part: {file.partId}, Type: {file.fileCategory})</p>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
