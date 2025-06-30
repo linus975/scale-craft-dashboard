@@ -1,19 +1,23 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useDirectStorageUpload } from '@/hooks/useDirectStorageUpload';
 
 export interface SelectedFile {
   id: string;
   file: File;
   partId: string;
   fileCategory: 'CAD' | 'INI' | 'GCODE';
+  uploaded?: boolean;
+  storagePath?: string;
 }
 
 export const useFileSelection = () => {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const { toast } = useToast();
+  const { uploadFileToStorage } = useDirectStorageUpload();
 
-  const addFiles = (files: File[], partId: string, expectedType?: 'static' | 'personalizable') => {
+  const addFiles = async (files: File[], partId: string, expectedType?: 'static' | 'personalizable') => {
     console.log('📁 [FileSelection] Adding files for part:', partId, 'type:', expectedType);
     console.log('📁 [FileSelection] Files to add:', files.map(f => f.name));
     
@@ -71,7 +75,8 @@ export const useFileSelection = () => {
           id: `${partId}-${Date.now()}-${Math.random()}`,
           file,
           partId,
-          fileCategory
+          fileCategory,
+          uploaded: false
         };
         validFiles.push(selectedFile);
         console.log('✅ [FileSelection] Valid file added:', selectedFile.file.name, 'Category:', selectedFile.fileCategory);
@@ -94,8 +99,51 @@ export const useFileSelection = () => {
       
       toast({
         title: "Dateien hinzugefügt",
-        description: `${validFiles.length} Datei(en) wurden ausgewählt.`,
+        description: `${validFiles.length} Datei(en) wurden zur Auswahl hinzugefügt.`,
       });
+    }
+  };
+
+  const uploadSelectedFiles = async (productName: string) => {
+    console.log('🚀 [FileSelection] Starting upload of selected files to storage...');
+    const uploadPromises = selectedFiles.map(async (selectedFile) => {
+      if (selectedFile.uploaded) {
+        console.log('⏭️ [FileSelection] File already uploaded:', selectedFile.file.name);
+        return selectedFile;
+      }
+
+      try {
+        console.log(`📤 [FileSelection] Uploading ${selectedFile.file.name} to storage...`);
+        const uploadedFile = await uploadFileToStorage(
+          selectedFile.file,
+          productName,
+          selectedFile.partId,
+          selectedFile.partId, // Using partId as partName for now
+          selectedFile.fileCategory
+        );
+
+        const updatedFile: SelectedFile = {
+          ...selectedFile,
+          uploaded: true,
+          storagePath: uploadedFile.path
+        };
+
+        console.log(`✅ [FileSelection] File uploaded successfully: ${selectedFile.file.name} -> ${uploadedFile.path}`);
+        return updatedFile;
+      } catch (error) {
+        console.error(`❌ [FileSelection] Upload failed for ${selectedFile.file.name}:`, error);
+        throw error;
+      }
+    });
+
+    try {
+      const uploadedFiles = await Promise.all(uploadPromises);
+      setSelectedFiles(uploadedFiles);
+      console.log('✅ [FileSelection] All files uploaded successfully to storage');
+      return uploadedFiles;
+    } catch (error) {
+      console.error('❌ [FileSelection] Upload process failed:', error);
+      throw error;
     }
   };
 
@@ -131,6 +179,7 @@ export const useFileSelection = () => {
     removeFile,
     getFilesForPart,
     getAllFiles,
-    clearAllFiles
+    clearAllFiles,
+    uploadSelectedFiles
   };
 };
