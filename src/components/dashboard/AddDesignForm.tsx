@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -376,8 +377,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     }
   };
 
-  const currentFormData = form.getValues();
-
   return (
     <div className="space-y-6">
       <Form {...form}>
@@ -440,45 +439,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               </CardContent>
             </Card>
           )}
-
-          {/* Debug Info with temp file status */}
-          <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-            <p><strong>🔍 TEMP UPLOAD SYSTEM DEBUG INFO:</strong></p>
-            <p><strong>Aktuelle Dateien in Selection:</strong> {selectedFiles.length}</p>
-            <p><strong>Temp Dateien hochgeladen:</strong> {tempFiles.length}</p>
-            <p><strong>Formularbereich bereit:</strong> {currentFormData.name ? 'Ja' : 'Nein'}</p>
-            <p><strong>Speicher-Status:</strong> {saving ? 'Läuft...' : 'Bereit'}</p>
-            <p><strong>Upload-Status:</strong> {uploadingFiles ? 'Läuft...' : 'Bereit'}</p>
-            {selectedFiles.length > 0 && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                <p><strong>✅ Dateien bereit (temp uploaded):</strong></p>
-                {selectedFiles.map((file, index) => (
-                  <p key={file.id} className="text-green-700">
-                    {index + 1}. {file.file.name} (Part: {file.partId}, Typ: {file.fileCategory}) 
-                    - Temp: {file.isUploaded ? '✅' : '❌'}
-                  </p>
-                ))}
-              </div>
-            )}
-            {selectedFiles.length === 0 && (
-              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
-                <p className="text-red-700"><strong>⚠️ Keine Dateien ausgewählt</strong></p>
-                <p className="text-red-600 text-xs">Bitte wählen Sie Dateien über das File Management aus</p>
-              </div>
-            )}
-            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
-              <p><strong>📊 Parts Overview:</strong></p>
-              {designParts.designParts.map(part => {
-                const partFileCount = selectedFiles.filter(f => f.partId === part.id).length;
-                const uploadedCount = selectedFiles.filter(f => f.partId === part.id && f.isUploaded).length;
-                return (
-                  <p key={part.id} className={`${partFileCount > 0 ? 'text-green-700' : 'text-red-700'}`}>
-                    - {part.name} ({part.partType}): {partFileCount} Datei(en), {uploadedCount} temp uploaded
-                  </p>
-                );
-              })}
-            </div>
-          </div>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
