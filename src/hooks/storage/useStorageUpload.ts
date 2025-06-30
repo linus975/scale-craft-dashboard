@@ -108,8 +108,7 @@ export const useStorageUpload = () => {
       if (error) {
         console.error('❌ [StorageUpload] Upload error details:', {
           message: error.message,
-          name: error.name,
-          cause: error.cause
+          name: error.name
         });
         
         // Check if it's a policy error
