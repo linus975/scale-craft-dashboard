@@ -158,18 +158,39 @@ export const useTempFileUpload = () => {
     try {
       console.log('📦 [TempUpload] Moving temp file to final location:', tempFile.tempPath, '->', finalPath);
       
-      // Copy file to final location
-      const { data, error } = await supabase.storage
+      // Download the file from temp location
+      const { data: fileData, error: downloadError } = await supabase.storage
         .from('design-files')
-        .copy(tempFile.tempPath, finalPath);
+        .download(tempFile.tempPath);
 
-      if (error) {
-        console.error('❌ [TempUpload] Move error:', error);
-        throw new Error(`Fehler beim Verschieben: ${error.message}`);
+      if (downloadError) {
+        console.error('❌ [TempUpload] Download error:', downloadError);
+        throw new Error(`Fehler beim Herunterladen: ${downloadError.message}`);
       }
 
-      // Remove from temp location (automatically handled by cleanupTempFiles)
-      // The temp file will be cleaned up automatically after successful move
+      // Upload to final location
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('design-files')
+        .upload(finalPath, fileData, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('❌ [TempUpload] Upload to final location error:', uploadError);
+        throw new Error(`Fehler beim Upload: ${uploadError.message}`);
+      }
+
+      // Delete temp file after successful move
+      const { error: deleteError } = await supabase.storage
+        .from('design-files')
+        .remove([tempFile.tempPath]);
+
+      if (deleteError) {
+        console.warn('⚠️ [TempUpload] Warning: Could not delete temp file:', deleteError);
+      } else {
+        console.log('✅ [TempUpload] Temp file deleted successfully');
+      }
 
       console.log('✅ [TempUpload] File moved successfully to:', finalPath);
       return finalPath;
