@@ -137,9 +137,23 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
     
-    console.log('🚀 Starting structured product save process...', data);
+    console.log('🚀 Starting structured product save process...');
+    console.log('📋 Form data:', data);
     console.log('🔧 Design parts:', designParts.designParts);
     console.log('📁 Selected files:', selectedFiles);
+    console.log('📁 Total files:', selectedFiles.length);
+    
+    // Debug: Log each file
+    selectedFiles.forEach((file, index) => {
+      console.log(`📄 File ${index + 1}:`, {
+        name: file.file.name,
+        size: file.file.size,
+        type: file.file.type,
+        partId: file.partId,
+        category: file.fileCategory
+      });
+    });
+    
     setSaving(true);
     setProgress(0);
     setCurrentStep('Validating...');
@@ -156,10 +170,21 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
         return;
       }
 
+      // Step 2: Check if we have files to upload
+      if (selectedFiles.length === 0) {
+        toast({
+          title: "No Files Selected",
+          description: "Please select at least one file before saving the product",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
       setProgress(20);
       setCurrentStep('Uploading files and saving product...');
 
-      // Step 2: Save product with structured file upload
+      // Step 3: Save product with structured file upload
       const mappedDesignParts = designParts.designParts.map(part => ({
         id: part.id,
         name: part.name,
@@ -183,6 +208,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       }
 
       console.log('📦 Saving with structured file paths...');
+      console.log('📁 Files to upload:', selectedFiles.length);
 
       await saveDesignAsProductWithFiles(
         data,
@@ -201,8 +227,8 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     } catch (error) {
       console.error('❌ Error creating product with structured files:', error);
       toast({
-        title: "Fehler beim Erstellen des Produkts",
-        description: error instanceof Error ? error.message : "Es gab einen Fehler beim Speichern des Produkts. Bitte versuchen Sie es erneut.",
+        title: "Error Creating Product",
+        description: error instanceof Error ? error.message : "There was an error saving the product. Please try again.",
         variant: "destructive",
       });
     } finally {

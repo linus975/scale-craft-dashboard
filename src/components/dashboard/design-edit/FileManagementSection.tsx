@@ -82,13 +82,19 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     onPartTypeChange(activePart, value);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, fileType: 'gcode' | 'cad' | 'ini') => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    // Only allow one file per type
-    const file = files[0];
-    addFiles([file], activePart, currentPart?.partType);
+    console.log('🔄 [FileManagementSection] Files selected:', files.length);
+    console.log('🔄 [FileManagementSection] Current part:', activePart);
+    console.log('🔄 [FileManagementSection] Part type:', currentPart?.partType);
+
+    // Convert FileList to File array
+    const fileArray = Array.from(files);
+    
+    // Add files to the selection
+    addFiles(fileArray, activePart, currentPart?.partType);
     
     // Reset input
     event.target.value = '';
@@ -267,7 +273,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
         {currentPart?.partType === 'static' ? (
           /* Static: G-Code Upload (full width) */
           <div className="space-y-2">
-            <Label>G-Code Datei</Label>
+            <Label>G-Code File</Label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
               <div className="text-center">
                 <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
@@ -290,17 +296,17 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                   <>
                     <Label htmlFor={`gcode-upload-${activePart}`} className="cursor-pointer">
                       <span className="text-sm font-medium text-blue-600 hover:text-blue-500">
-                        G-Code Datei auswählen
+                        Select G-Code File
                       </span>
                       <p className="text-xs text-gray-500 mt-1">
-                        .gcode, .g Dateien
+                        .gcode, .g files
                       </p>
                     </Label>
                     <Input
                       id={`gcode-upload-${activePart}`}
                       type="file"
                       accept=".gcode,.g"
-                      onChange={(e) => handleFileUpload(e, 'gcode')}
+                      onChange={handleFileUpload}
                       className="hidden"
                     />
                   </>
@@ -335,14 +341,14 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                     <>
                       <Label htmlFor={`cad-upload-${activePart}`} className="cursor-pointer">
                         <span className="text-xs font-medium text-blue-600 hover:text-blue-500">
-                          F3D auswählen
+                          Select F3D File
                         </span>
                       </Label>
                       <Input
                         id={`cad-upload-${activePart}`}
                         type="file"
                         accept=".f3d"
-                        onChange={(e) => handleFileUpload(e, 'cad')}
+                        onChange={handleFileUpload}
                         className="hidden"
                       />
                     </>
@@ -375,14 +381,14 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                     <>
                       <Label htmlFor={`ini-upload-${activePart}`} className="cursor-pointer">
                         <span className="text-xs font-medium text-blue-600 hover:text-blue-500">
-                          INI auswählen
+                          Select INI File
                         </span>
                       </Label>
                       <Input
                         id={`ini-upload-${activePart}`}
                         type="file"
                         accept=".ini"
-                        onChange={(e) => handleFileUpload(e, 'ini')}
+                        onChange={handleFileUpload}
                         className="hidden"
                       />
                     </>
@@ -462,6 +468,15 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
               />
             </div>
           </div>
+        </div>
+
+        {/* Debug info */}
+        <div className="text-xs text-gray-500 mt-4">
+          <p>Selected files: {selectedFiles.length}</p>
+          <p>Files for current part: {partFiles.length}</p>
+          {partFiles.map(file => (
+            <p key={file.id}>- {file.file.name} ({file.fileCategory})</p>
+          ))}
         </div>
       </CardContent>
     </Card>
