@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
 import { getFileTypeFolder, getFileType } from '@/utils/fileTypeUtils';
 import { useFileValidation } from '@/utils/fileValidation';
+import { getFileCategory } from '@/utils/fileCategories';
 import type { UploadedFile, ExpectedFileType } from '@/types/fileUpload';
 
 export const useFileUploadManager = () => {
@@ -46,6 +46,7 @@ export const useFileUploadManager = () => {
         try {
           const uploadPath = await uploadFile(file, folderPath);
           const fileExtension = file.name.split('.').pop()?.toLowerCase();
+          const fileCategory = getFileCategory(file.name);
           
           const newFile: UploadedFile = {
             id: `${partId}-${Date.now()}-${Math.random()}`,
@@ -60,7 +61,8 @@ export const useFileUploadManager = () => {
             fileExtension: fileExtension,
             isF3DFile: fileExtension === 'f3d',
             isINIFile: fileExtension === 'ini',
-            uploadContext: expectedFileType || 'general'
+            uploadContext: expectedFileType || 'general',
+            fileCategory: fileCategory // Stelle sicher, dass fileCategory immer gesetzt ist
           };
 
           newFiles.push(newFile);
