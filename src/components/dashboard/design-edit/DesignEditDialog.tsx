@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DesignForm from './DesignForm';
-import SimpleFileUpload from '@/components/SimpleFileUpload';
 import ActionsPanel from './ActionsPanel';
 
 interface DesignEditDialogProps {
@@ -70,7 +69,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Design: {design.name}</DialogTitle>
+          <DialogTitle>Configure Design: {design.name}</DialogTitle>
           <DialogDescription>
             Modify design settings and manage printing options
           </DialogDescription>
@@ -92,10 +91,12 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
 
             <Card>
               <CardHeader>
-                <CardTitle>File Management</CardTitle>
+                <CardTitle>Design Settings</CardTitle>
               </CardHeader>
               <CardContent>
-                <SimpleFileUpload />
+                <p className="text-sm text-gray-600">
+                  Configure your design parameters above. File management is handled during the design creation process.
+                </p>
               </CardContent>
             </Card>
           </div>

@@ -2,9 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDesignFiles } from '@/hooks/useDesignFiles';
 import DesignForm from './design-edit/DesignForm';
-import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import ActionsPanel from './design-edit/ActionsPanel';
 
 interface DesignEditDialogProps {
@@ -36,16 +34,6 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
   });
 
   const [selectedMachine, setSelectedMachine] = useState('');
-
-  const {
-    uploadedFiles,
-    loadingFiles,
-    uploading,
-    handleFileUpload,
-    handleFileRemove,
-    handleFileDownload,
-    getFilesForPart
-  } = useDesignFiles(design, isOpen);
 
   const idleMachines = machines.filter(machine => machine.status === 'idle');
 
@@ -80,9 +68,9 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Design: {design.name}</DialogTitle>
+          <DialogTitle>Configure Design: {design.name}</DialogTitle>
           <DialogDescription>
-            Modify design settings and manage printing options
+            Modify design settings and configure printing options
           </DialogDescription>
         </DialogHeader>
 
@@ -102,18 +90,12 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
 
             <Card>
               <CardHeader>
-                <CardTitle>File Management</CardTitle>
+                <CardTitle>Configuration</CardTitle>
               </CardHeader>
               <CardContent>
-                <MultiPartFileManager
-                  uploadedFiles={uploadedFiles}
-                  loadingFiles={loadingFiles}
-                  uploading={uploading}
-                  onFileUpload={handleFileUpload}
-                  onFileRemove={handleFileRemove}
-                  onFileDownload={handleFileDownload}
-                  getFilesForPart={getFilesForPart}
-                />
+                <p className="text-sm text-gray-600">
+                  Use the form above to configure your design settings. Files are managed during the design creation process in "Add Design".
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -121,7 +103,7 @@ const DesignEditDialog: React.FC<DesignEditDialogProps> = ({
           <ActionsPanel
             design={design}
             formData={formData}
-            uploadedFiles={uploadedFiles}
+            uploadedFiles={[]}
             selectedMachine={selectedMachine}
             setSelectedMachine={setSelectedMachine}
             idleMachines={idleMachines}
