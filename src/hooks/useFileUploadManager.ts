@@ -1,6 +1,7 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
+import { useSimpleUpload } from '@/hooks/useSimpleUpload';
 import { getFileTypeFolder, getFileType } from '@/utils/fileTypeUtils';
 import { useFileValidation } from '@/utils/fileValidation';
 import { getFileCategory } from '@/utils/fileCategories';
@@ -9,7 +10,7 @@ import type { UploadedFile, ExpectedFileType } from '@/types/fileUpload';
 export const useFileUploadManager = () => {
   const [partFiles, setPartFiles] = useState<Record<string, UploadedFile[]>>({});
   const { toast } = useToast();
-  const { uploadFile, uploading, uploadProgress } = useHighPerformanceUpload();
+  const { uploadFile, uploading } = useSimpleUpload();
   const { validateFiles } = useFileValidation();
 
   const handleFileUpload = async (
@@ -44,7 +45,7 @@ export const useFileUploadManager = () => {
         const folderPath = `parts/${partId}/${fileTypeFolder}`;
         
         try {
-          const uploadPath = await uploadFile(file, folderPath);
+          const uploadResult = await uploadFile(file, 'temp-product', partId);
           const fileExtension = file.name.split('.').pop()?.toLowerCase();
           const fileCategory = getFileCategory(file.name);
           
@@ -54,7 +55,7 @@ export const useFileUploadManager = () => {
             type: getFileType(file.name),
             size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
             uploadDate: new Date().toISOString().split('T')[0],
-            path: uploadPath,
+            path: uploadResult.path,
             originalName: file.name,
             partId: partId,
             designType: 'static' as const,
@@ -62,11 +63,11 @@ export const useFileUploadManager = () => {
             isF3DFile: fileExtension === 'f3d',
             isINIFile: fileExtension === 'ini',
             uploadContext: expectedFileType || 'general',
-            fileCategory: fileCategory // Stelle sicher, dass fileCategory immer gesetzt ist
+            fileCategory: fileCategory
           };
 
           newFiles.push(newFile);
-          console.log(`✅ File uploaded to EXACT part ${partId}: ${folderPath}/${file.name}`);
+          console.log(`✅ File uploaded to EXACT part ${partId}: ${file.name}`);
         } catch (uploadError) {
           console.error(`❌ Error uploading ${file.name}:`, uploadError);
         }
@@ -147,7 +148,7 @@ export const useFileUploadManager = () => {
   return {
     partFiles,
     uploading,
-    uploadProgress,
+    uploadProgress: 0,
     handleFileUpload,
     handleFileRemove,
     handleFileDownload,

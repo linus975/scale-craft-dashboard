@@ -1,12 +1,12 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useHighPerformanceUpload } from '@/hooks/useHighPerformanceUpload';
+import { useSimpleUpload } from '@/hooks/useSimpleUpload';
 
 export const useGcodeFileManager = () => {
   const [gcodeFiles, setGcodeFiles] = useState<Record<string, File>>({});
   const { toast } = useToast();
-  const { uploadFile } = useHighPerformanceUpload();
+  const { uploadFile } = useSimpleUpload();
 
   const handleGcodeFileChange = (event: React.ChangeEvent<HTMLInputElement>, partId: string) => {
     const file = event.target.files?.[0];
@@ -52,10 +52,10 @@ export const useGcodeFileManager = () => {
 
     try {
       console.log(`⚙️ Uploading G-Code for part ${partId}:`, gcodeFile.name);
-      const path = await uploadFile(gcodeFile, `parts/${partId}/gcode-files`);
-      console.log('✅ G-Code uploaded to organized folder:', path);
+      const result = await uploadFile(gcodeFile, 'temp-product', partId);
+      console.log('✅ G-Code uploaded:', result.path);
       
-      return { path, content: null };
+      return { path: result.path, content: null };
     } catch (error) {
       console.error('❌ G-Code upload error:', error);
       throw error;

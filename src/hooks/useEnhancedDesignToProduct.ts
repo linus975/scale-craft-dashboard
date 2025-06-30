@@ -1,7 +1,7 @@
 
 import { useProducts } from './useProducts';
 import { useToast } from '@/hooks/use-toast';
-import { useStructuredFileUpload, StructuredUploadedFile } from './useStructuredFileUpload';
+import { useSimpleUpload } from './useSimpleUpload';
 
 interface DesignFormData {
   name: string;
@@ -46,7 +46,7 @@ interface SelectedFile {
 
 export const useEnhancedDesignToProduct = () => {
   const { createProduct, createPart, createProductImage } = useProducts();
-  const { uploadFileToProduct } = useStructuredFileUpload();
+  const { uploadMultipleFiles } = useSimpleUpload();
   const { toast } = useToast();
 
   const saveDesignAsProductWithFiles = async (
@@ -101,21 +101,18 @@ export const useEnhancedDesignToProduct = () => {
         let iniFilePath = null;
 
         // Upload all files for this part and collect their paths
-        for (const selectedFile of partFiles) {
-          try {
-            console.log(`📤 [EnhancedDesignToProduct] Uploading file: ${selectedFile.file.name} (${selectedFile.fileCategory})`);
-            
-            const uploadedFile = await uploadFileToProduct(
-              selectedFile.file,
-              designData.name,
-              partData.id,
-              partData.name
-            );
+        if (partFiles.length > 0) {
+          const filesToUpload = partFiles.map(selectedFile => ({
+            file: selectedFile.file,
+            partName: partData.name,
+            category: selectedFile.fileCategory
+          }));
 
-            console.log(`✅ [EnhancedDesignToProduct] File uploaded successfully:`, uploadedFile.path);
+          const uploadedFiles = await uploadMultipleFiles(filesToUpload, designData.name);
 
-            // Store the correct path based on file category
-            switch (selectedFile.fileCategory) {
+          // Map uploaded files to correct paths
+          for (const uploadedFile of uploadedFiles) {
+            switch (uploadedFile.category) {
               case 'GCODE':
                 gcodeFilePath = uploadedFile.path;
                 console.log(`✅ [EnhancedDesignToProduct] G-Code path set: ${gcodeFilePath}`);
@@ -129,9 +126,6 @@ export const useEnhancedDesignToProduct = () => {
                 console.log(`✅ [EnhancedDesignToProduct] INI path set: ${iniFilePath}`);
                 break;
             }
-          } catch (uploadError) {
-            console.error(`❌ [EnhancedDesignToProduct] File upload failed for ${selectedFile.file.name}:`, uploadError);
-            throw new Error(`Datei-Upload fehlgeschlagen: ${selectedFile.file.name} - ${uploadError.message}`);
           }
         }
 
@@ -167,16 +161,14 @@ export const useEnhancedDesignToProduct = () => {
       if (previewImage) {
         console.log('🖼️ [EnhancedDesignToProduct] Processing preview image');
         try {
-          const previewUpload = await uploadFileToProduct(
-            previewImage,
-            designData.name,
-            'preview',
-            'preview'
+          const previewUpload = await uploadMultipleFiles(
+            [{ file: previewImage, partName: 'preview', category: 'CAD' as const }],
+            designData.name
           );
           
           await createProductImage({
             product_id: product.product_id,
-            image_path: previewUpload.path,
+            image_path: previewUpload[0].path,
             is_preview_image: true
           });
           console.log('✅ [EnhancedDesignToProduct] Preview image saved');
@@ -191,16 +183,14 @@ export const useEnhancedDesignToProduct = () => {
         const image = additionalImages[i];
         console.log(`🖼️ [EnhancedDesignToProduct] Processing additional image ${i + 1}/${additionalImages.length}`);
         try {
-          const imageUpload = await uploadFileToProduct(
-            image.file,
-            designData.name,
-            `image-${i}`,
-            `image-${i}`
+          const imageUpload = await uploadMultipleFiles(
+            [{ file: image.file, partName: `image-${i}`, category: 'CAD' as const }],
+            designData.name
           );
           
           await createProductImage({
             product_id: product.product_id,
-            image_path: imageUpload.path,
+            image_path: imageUpload[0].path,
             is_preview_image: false
           });
           console.log(`✅ [EnhancedDesignToProduct] Additional image ${i + 1} saved`);
