@@ -58,6 +58,7 @@ export const useEnhancedDesignToProduct = () => {
   ) => {
     try {
       console.log('🚀 [EnhancedDesignToProduct] Starting enhanced save process...');
+      console.log('📁 [EnhancedDesignToProduct] Selected files to process:', selectedFiles.length);
       
       // Validate required fields
       if (!designData.name.trim()) {
@@ -68,7 +69,11 @@ export const useEnhancedDesignToProduct = () => {
         throw new Error('EAN-Nummer ist erforderlich');
       }
 
-      // Create the product
+      if (selectedFiles.length === 0) {
+        throw new Error('Mindestens eine Datei muss ausgewählt werden');
+      }
+
+      // Create the product first
       const productData = {
         name: designData.name,
         identifier_type: designData.trackingType,
@@ -79,23 +84,27 @@ export const useEnhancedDesignToProduct = () => {
 
       console.log('📦 [EnhancedDesignToProduct] Creating product:', productData);
       const product = await createProduct(productData);
-      console.log('✅ [EnhancedDesignToProduct] Product created:', product.product_id);
+      console.log('✅ [EnhancedDesignToProduct] Product created with ID:', product.product_id);
 
-      // Upload files with structured paths and create parts with file paths
+      // Process each part and upload files
       for (const partData of designParts) {
-        console.log(`🔧 [EnhancedDesignToProduct] Processing part: ${partData.name}`);
+        console.log(`🔧 [EnhancedDesignToProduct] Processing part: ${partData.name} (ID: ${partData.id})`);
         
-        // Get files for this part
+        // Get files for this specific part
         const partFiles = selectedFiles.filter(f => f.partId === partData.id);
-        console.log(`📁 [EnhancedDesignToProduct] Found ${partFiles.length} files for part ${partData.name}:`, partFiles.map(f => f.file.name));
+        console.log(`📁 [EnhancedDesignToProduct] Found ${partFiles.length} files for part ${partData.name}:`, 
+          partFiles.map(f => `${f.file.name} (${f.fileCategory})`));
 
+        // Initialize file paths
         let gcodeFilePath = null;
         let cadFilePath = null;
         let iniFilePath = null;
 
-        // Upload files and collect paths
+        // Upload all files for this part and collect their paths
         for (const selectedFile of partFiles) {
           try {
+            console.log(`📤 [EnhancedDesignToProduct] Uploading file: ${selectedFile.file.name} (${selectedFile.fileCategory})`);
+            
             const uploadedFile = await uploadFileToProduct(
               selectedFile.file,
               designData.name,
@@ -103,7 +112,9 @@ export const useEnhancedDesignToProduct = () => {
               partData.name
             );
 
-            // Store paths based on file category
+            console.log(`✅ [EnhancedDesignToProduct] File uploaded successfully:`, uploadedFile.path);
+
+            // Store the correct path based on file category
             switch (selectedFile.fileCategory) {
               case 'GCODE':
                 gcodeFilePath = uploadedFile.path;
@@ -120,11 +131,11 @@ export const useEnhancedDesignToProduct = () => {
             }
           } catch (uploadError) {
             console.error(`❌ [EnhancedDesignToProduct] File upload failed for ${selectedFile.file.name}:`, uploadError);
-            throw new Error(`Datei-Upload fehlgeschlagen: ${selectedFile.file.name}`);
+            throw new Error(`Datei-Upload fehlgeschlagen: ${selectedFile.file.name} - ${uploadError.message}`);
           }
         }
 
-        // Create part with file paths
+        // Create part record with all collected file paths
         const partToCreate = {
           product_id: product.product_id,
           part_name: partData.name,
@@ -135,47 +146,86 @@ export const useEnhancedDesignToProduct = () => {
           filament_type: partData.filamentType || null,
           color: partData.color || null,
           printer_model: partData.machine || null,
-          // Add file paths based on part type
+          // File paths based on what was actually uploaded
           gcode_path: gcodeFilePath,
           f3d_file_path: cadFilePath,
           ini_file_path: iniFilePath
         };
 
-        console.log('💾 [EnhancedDesignToProduct] Creating part with paths:', partToCreate);
-        await createPart(partToCreate);
+        console.log('💾 [EnhancedDesignToProduct] Creating part with file paths:', {
+          part_name: partToCreate.part_name,
+          gcode_path: partToCreate.gcode_path,
+          f3d_file_path: partToCreate.f3d_file_path,
+          ini_file_path: partToCreate.ini_file_path
+        });
+
+        const createdPart = await createPart(partToCreate);
+        console.log('✅ [EnhancedDesignToProduct] Part created successfully:', createdPart);
       }
 
-      // Handle preview image
+      // Handle preview image upload
       if (previewImage) {
-        console.log('🖼️ [EnhancedDesignToProduct] Adding preview image');
-        await createProductImage({
-          product_id: product.product_id,
-          image_path: `preview-${Date.now()}-${previewImage.name}`,
-          is_preview_image: true
-        });
+        console.log('🖼️ [EnhancedDesignToProduct] Processing preview image');
+        try {
+          const previewUpload = await uploadFileToProduct(
+            previewImage,
+            designData.name,
+            'preview',
+            'preview'
+          );
+          
+          await createProductImage({
+            product_id: product.product_id,
+            image_path: previewUpload.path,
+            is_preview_image: true
+          });
+          console.log('✅ [EnhancedDesignToProduct] Preview image saved');
+        } catch (imageError) {
+          console.warn('⚠️ [EnhancedDesignToProduct] Preview image upload failed:', imageError);
+          // Don't fail the entire process for image upload issues
+        }
       }
 
       // Handle additional images
-      for (const image of additionalImages) {
-        console.log('🖼️ [EnhancedDesignToProduct] Adding additional image');
-        await createProductImage({
-          product_id: product.product_id,
-          image_path: `image-${Date.now()}-${image.file.name}`,
-          is_preview_image: false
-        });
+      for (let i = 0; i < additionalImages.length; i++) {
+        const image = additionalImages[i];
+        console.log(`🖼️ [EnhancedDesignToProduct] Processing additional image ${i + 1}/${additionalImages.length}`);
+        try {
+          const imageUpload = await uploadFileToProduct(
+            image.file,
+            designData.name,
+            `image-${i}`,
+            `image-${i}`
+          );
+          
+          await createProductImage({
+            product_id: product.product_id,
+            image_path: imageUpload.path,
+            is_preview_image: false
+          });
+          console.log(`✅ [EnhancedDesignToProduct] Additional image ${i + 1} saved`);
+        } catch (imageError) {
+          console.warn(`⚠️ [EnhancedDesignToProduct] Additional image ${i + 1} upload failed:`, imageError);
+          // Don't fail the entire process for image upload issues
+        }
       }
 
       console.log('✅ [EnhancedDesignToProduct] All components saved successfully');
       
       toast({
         title: "Produkt erfolgreich erstellt",
-        description: `Das Produkt "${designData.name}" wurde mit strukturierten Dateipfaden gespeichert.`,
+        description: `Das Produkt "${designData.name}" wurde mit ${selectedFiles.length} Datei(en) gespeichert.`,
       });
 
       return product;
 
     } catch (error: any) {
-      console.error('❌ [EnhancedDesignToProduct] Save failed:', error);
+      console.error('❌ [EnhancedDesignToProduct] Save process failed:', error);
+      toast({
+        title: "Fehler beim Speichern",
+        description: error.message || "Ein unbekannter Fehler ist aufgetreten",
+        variant: "destructive",
+      });
       throw error;
     }
   };

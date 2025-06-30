@@ -30,7 +30,15 @@ export const useStructuredFileUpload = () => {
     setUploading(true);
     
     try {
-      console.log('🚀 [StructuredUpload] Starting structured upload...');
+      console.log('🚀 [StructuredUpload] Starting file upload...');
+      console.log('📁 [StructuredUpload] File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        productName,
+        partId,
+        partName
+      });
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -38,15 +46,32 @@ export const useStructuredFileUpload = () => {
       }
 
       const fileCategory = getFileCategory(file.name);
+      console.log('📂 [StructuredUpload] File category determined:', fileCategory);
       
       // Strukturierter Pfad: /{user_id}/products/{product_name}/{part_name}/{filename}
-      const structuredPath = `${user.id}/products/${productName}/${partName}/${file.name}`;
+      // Sanitize names for file system
+      const sanitizedProductName = productName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const sanitizedPartName = partName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const structuredPath = `${user.id}/products/${sanitizedProductName}/${sanitizedPartName}/${file.name}`;
       
-      console.log('📤 [StructuredUpload] Upload details:');
-      console.log('  - File:', file.name);
-      console.log('  - Product:', productName);
-      console.log('  - Part:', partName);
-      console.log('  - Path:', structuredPath);
+      console.log('📤 [StructuredUpload] Upload path:', structuredPath);
+
+      // Check if design-files bucket exists, if not we need to create it
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const designFilesBucket = buckets?.find(bucket => bucket.name === 'design-files');
+      
+      if (!designFilesBucket) {
+        console.log('🪣 [StructuredUpload] Creating design-files bucket...');
+        const { error: bucketError } = await supabase.storage.createBucket('design-files', {
+          public: true,
+          allowedMimeTypes: ['application/octet-stream', 'text/plain', 'application/json'],
+        });
+        
+        if (bucketError) {
+          console.error('❌ [StructuredUpload] Bucket creation failed:', bucketError);
+          throw new Error(`Bucket-Erstellung fehlgeschlagen: ${bucketError.message}`);
+        }
+      }
 
       const { data, error } = await supabase.storage
         .from('design-files')
@@ -59,6 +84,8 @@ export const useStructuredFileUpload = () => {
         console.error('❌ [StructuredUpload] Upload error:', error);
         throw new Error(`Upload-Fehler: ${error.message}`);
       }
+
+      console.log('✅ [StructuredUpload] File uploaded successfully to:', data.path);
 
       const uploadedFile: StructuredUploadedFile = {
         id: `${partId}-${Date.now()}-${Math.random()}`,
@@ -73,20 +100,20 @@ export const useStructuredFileUpload = () => {
         partName: partName
       };
 
-      console.log('✅ [StructuredUpload] File uploaded successfully:', uploadedFile);
+      console.log('✅ [StructuredUpload] Upload completed:', uploadedFile);
 
       toast({
         title: "Datei hochgeladen",
-        description: `${file.name} wurde für ${partName} gespeichert.`,
+        description: `${file.name} wurde erfolgreich gespeichert.`,
       });
 
       return uploadedFile;
 
     } catch (error: any) {
-      console.error('❌ [StructuredUpload] Error:', error);
+      console.error('❌ [StructuredUpload] Upload failed:', error);
       toast({
         title: "Upload fehlgeschlagen",
-        description: error.message,
+        description: error.message || "Ein unbekannter Fehler ist aufgetreten",
         variant: "destructive",
       });
       throw error;

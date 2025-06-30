@@ -136,56 +136,51 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
     
-    console.log('🚀 [AddDesignForm] Starting structured product save process...');
+    console.log('🚀 [AddDesignForm] Starting product save process...');
     console.log('📋 [AddDesignForm] Form data:', data);
     console.log('🔧 [AddDesignForm] Design parts:', designParts.designParts);
+    console.log('📁 [AddDesignForm] Selected files at submit:', selectedFiles);
     
     setSaving(true);
-    setProgress(0);
-    setCurrentStep('Validating...');
+    setProgress(10);
+    setCurrentStep('Validierung läuft...');
     
     try {
-      // Step 1: Basic validation
+      // Step 1: Validate form data
       if (!data.name.trim()) {
-        toast({
-          title: "Validation Error",
-          description: "Design name is required",
-          variant: "destructive",
-        });
-        setSaving(false);
-        return;
+        throw new Error('Produktname ist erforderlich');
       }
 
-      // Step 2: Get files directly from the hook at submit time
-      console.log('📁 [AddDesignForm] Checking selected files at submit time...');
-      const currentSelectedFiles = selectedFiles; // Get fresh reference
-      console.log('📁 [AddDesignForm] Selected files count:', currentSelectedFiles.length);
-      console.log('📁 [AddDesignForm] Selected files details:', currentSelectedFiles.map(f => ({
-        name: f.file.name,
-        partId: f.partId,
-        category: f.fileCategory
-      })));
-
-      if (currentSelectedFiles.length === 0) {
-        console.log('❌ [AddDesignForm] No files found in selection');
-        toast({
-          title: "Keine Dateien ausgewählt",
-          description: "Bitte wählen Sie mindestens eine Datei aus, bevor Sie das Produkt speichern",
-          variant: "destructive",
-        });
-        setSaving(false);
-        return;
+      if (!data.eanNumber.trim()) {
+        throw new Error('EAN-Nummer ist erforderlich');
       }
 
       setProgress(20);
-      setCurrentStep('Uploading files and saving product...');
+      setCurrentStep('Dateien werden überprüft...');
 
-      // Step 3: Save product with structured file upload
+      // Step 2: Validate file selection
+      if (selectedFiles.length === 0) {
+        throw new Error('Bitte wählen Sie mindestens eine Datei aus');
+      }
+
+      // Check if all parts have at least one file
+      const partsWithoutFiles = designParts.designParts.filter(part => 
+        !selectedFiles.some(file => file.partId === part.id)
+      );
+
+      if (partsWithoutFiles.length > 0) {
+        throw new Error(`Folgende Parts haben keine Dateien: ${partsWithoutFiles.map(p => p.name).join(', ')}`);
+      }
+
+      setProgress(40);
+      setCurrentStep('Produkt wird erstellt...');
+
+      // Step 3: Prepare parts data
       const mappedDesignParts = designParts.designParts.map(part => ({
         id: part.id,
         name: part.name,
         type: part.partType || 'static' as 'static' | 'personalizable',
-        software: part.cadSoftware,
+        software: part.cadSoftware || '',
         specifications: '',
         cadSoftware: part.cadSoftware,
         slicer: part.slicer,
@@ -196,47 +191,63 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       }));
 
       setProgress(60);
+      setCurrentStep('Dateien werden hochgeladen...');
 
-      // Prepare preview image
+      // Step 4: Prepare preview image
       let previewImageFile = null;
       if (multiImageUpload.images.length > 0) {
         previewImageFile = multiImageUpload.images[0].file;
       }
 
-      console.log('📦 [AddDesignForm] Saving with structured file paths...');
-      console.log('📁 [AddDesignForm] Files to upload:', currentSelectedFiles.length);
-      console.log('📁 [AddDesignForm] Files details:', currentSelectedFiles.map(f => `${f.file.name} (${f.fileCategory}) for part ${f.partId}`));
+      console.log('📦 [AddDesignForm] Starting save with:');
+      console.log('  - Product data:', data);
+      console.log('  - Parts:', mappedDesignParts.length);
+      console.log('  - Files:', selectedFiles.length);
+      console.log('  - Preview image:', !!previewImageFile);
 
+      setProgress(80);
+      setCurrentStep('Daten werden gespeichert...');
+
+      // Step 5: Save everything
       await saveDesignAsProductWithFiles(
         data,
         mappedDesignParts,
-        currentSelectedFiles,
+        selectedFiles,
         previewImageFile || undefined,
         multiImageUpload.images
       );
 
       setProgress(100);
-      setCurrentStep('Complete!');
+      setCurrentStep('Erfolgreich gespeichert!');
 
       toast({
         title: "Produkt gespeichert",
-        description: "Das Produkt wurde erfolgreich mit allen Dateien gespeichert",
+        description: `Das Produkt "${data.name}" wurde erfolgreich mit ${selectedFiles.length} Datei(en) erstellt.`,
       });
 
-      // Close the dialog immediately after successful save
-      onSave();
+      // Close dialog after successful save
+      setTimeout(() => {
+        onSave();
+      }, 1000);
       
     } catch (error) {
-      console.error('❌ [AddDesignForm] Error creating product with structured files:', error);
+      console.error('❌ [AddDesignForm] Save failed:', error);
+      
+      let errorMessage = "Es gab einen Fehler beim Speichern des Produkts.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Fehler beim Speichern",
-        description: error instanceof Error ? error.message : "Es gab einen Fehler beim Speichern des Produkts. Bitte versuchen Sie es erneut.",
+        description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setSaving(false);
+      
       setProgress(0);
       setCurrentStep('');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -297,7 +308,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   </div>
                   <Progress value={progress} className="w-full" />
                   <p className="text-xs text-muted-foreground">
-                    Produkt wird mit strukturierten Dateipfaden gespeichert... Bitte warten.
+                    Das Produkt wird mit allen Dateien gespeichert...
                   </p>
                 </div>
               </CardContent>
@@ -326,15 +337,26 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                 <p className="text-red-600 text-xs">Bitte wählen Sie Dateien über das File Management aus</p>
               </div>
             )}
+            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+              <p><strong>📊 Parts Overview:</strong></p>
+              {designParts.designParts.map(part => {
+                const partFileCount = selectedFiles.filter(f => f.partId === part.id).length;
+                return (
+                  <p key={part.id} className={`${partFileCount > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    - {part.name} ({part.partType}): {partFileCount} Datei(en)
+                  </p>
+                );
+              })}
+            </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
-              Cancel
+              Abbrechen
             </Button>
             <Button type="submit" disabled={saving || selectedFiles.length === 0}>
-              {saving ? 'Saving...' : 'Save Product'}
+              {saving ? 'Speichert...' : 'Produkt speichern'}
             </Button>
           </div>
         </form>
