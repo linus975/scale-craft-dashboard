@@ -10,28 +10,33 @@ import { Separator } from '@/components/ui/separator';
 import { Save, Loader2, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDesignToProduct } from '@/hooks/useDesignToProduct';
-import { useUserStorageUpload } from '@/hooks/useUserStorageUpload';
-import { useStorageManager } from '@/hooks/useStorageManager';
+import { useDirectFileUpload } from '@/hooks/useDirectFileUpload';
+import { useFileSelection } from '@/hooks/useFileSelection';
 import { supabase } from '@/integrations/supabase/client';
-import MultiPartFileManager from './design-edit/MultiPartFileManager';
-import StorageDebugMonitor from '../StorageDebugMonitor';
-import { UploadedFile } from '@/types/fileUpload';
+import PartTypeFileUpload from './design-edit/PartTypeFileUpload';
 
 interface StaticDesignFormProps {
   onCancel: () => void;
   onSave: (designData: any) => void;
 }
 
+interface DesignPart {
+  id: string;
+  name: string;
+  type: 'static' | 'personalizable';
+}
+
 const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave }) => {
   const { saveDesignAsProduct } = useDesignToProduct();
-  const { uploading, uploadToTemporary, moveToFinalLocation } = useUserStorageUpload();
-  const { ensureUserFolders } = useStorageManager();
+  const { uploading, uploadFiles } = useDirectFileUpload();
+  const { selectedFiles, addFiles, removeFile, getFilesForPart } = useFileSelection();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedPartId, setSelectedPartId] = useState('main');
-  const [userInitialized, setUserInitialized] = useState(false);
+  const [designParts, setDesignParts] = useState<DesignPart[]>([
+    { id: 'main', name: 'Main', type: 'static' }
+  ]);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -47,60 +52,10 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     slicer: ''
   });
 
-  // Initialize user and ensure folder structure
-  useEffect(() => {
-    const initializeUser = async () => {
-      try {
-        console.log('🔧 [StaticDesignForm] Initializing user and folder structure...');
-        
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) {
-          console.error('❌ [StaticDesignForm] User authentication failed:', userError);
-          toast({
-            title: "Authentifizierung fehlgeschlagen",
-            description: "Bitte melden Sie sich erneut an.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        console.log('👤 [StaticDesignForm] User authenticated:', user.id);
-        
-        // Ensure user folder structure exists
-        const foldersCreated = await ensureUserFolders();
-        if (foldersCreated) {
-          console.log('✅ [StaticDesignForm] User folders initialized successfully');
-          setUserInitialized(true);
-        } else {
-          console.warn('⚠️ [StaticDesignForm] Could not initialize user folders');
-        }
-      } catch (error) {
-        console.error('❌ [StaticDesignForm] Error during initialization:', error);
-        toast({
-          title: "Initialisierung fehlgeschlagen",
-          description: "Fehler beim Vorbereiten der Ordnerstruktur.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    initializeUser();
-  }, [ensureUserFolders, toast]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     console.log('🚀 [StaticDesignForm] Form submission started...');
-    
-    if (!userInitialized) {
-      console.error('❌ [StaticDesignForm] User not initialized');
-      toast({
-        title: "System nicht bereit",
-        description: "Bitte warten Sie, bis das System initialisiert ist.",
-        variant: "destructive",
-      });
-      return;
-    }
     
     // Enhanced validation with logging
     if (!formData.name || !formData.trackingNumber || !formData.category) {
@@ -119,10 +74,36 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     }
 
     console.log('📋 [StaticDesignForm] Form data:', formData);
-    console.log('📁 [StaticDesignForm] Uploaded files:', uploadedFiles.length);
+    console.log('📁 [StaticDesignForm] Selected files:', selectedFiles.length);
 
     setLoading(true);
     try {
+      // Step 1: Upload all selected files
+      const uploadedFilesList = [];
+      
+      if (selectedFiles.length > 0) {
+        console.log('📤 [StaticDesignForm] Starting file uploads...');
+        
+        // Group files by part
+        const filesByPart = selectedFiles.reduce((acc, selectedFile) => {
+          if (!acc[selectedFile.partId]) {
+            acc[selectedFile.partId] = [];
+          }
+          acc[selectedFile.partId].push(selectedFile.file);
+          return acc;
+        }, {} as Record<string, File[]>);
+
+        // Upload files for each part
+        for (const [partId, files] of Object.entries(filesByPart)) {
+          console.log(`📤 [StaticDesignForm] Uploading ${files.length} files for part: ${partId}`);
+          const uploadedForPart = await uploadFiles(files, partId);
+          uploadedFilesList.push(...uploadedForPart);
+        }
+        
+        console.log('✅ [StaticDesignForm] All files uploaded:', uploadedFilesList.length);
+      }
+
+      // Step 2: Create product with design parts
       const designFormData = {
         name: formData.name,
         description: formData.description,
@@ -137,54 +118,29 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
         slicer: formData.slicer
       };
 
-      console.log('📦 [StaticDesignForm] Design form data prepared:', designFormData);
-
-      const designParts = [{
-        id: 'main',
-        name: 'Main',
-        type: 'static' as const,
+      const designPartsForSaving = designParts.map(part => ({
+        id: part.id,
+        name: part.name,
+        type: part.type,
         software: formData.cadSoftware,
         specifications: ''
-      }];
-
-      console.log('🔧 [StaticDesignForm] Design parts prepared:', designParts);
+      }));
 
       console.log('💾 [StaticDesignForm] Calling saveDesignAsProduct...');
       const product = await saveDesignAsProduct(
         designFormData,
-        designParts,
-        uploadedFiles,
+        designPartsForSaving,
+        uploadedFilesList,
         previewImage || undefined,
         []
       );
 
       console.log('✅ [StaticDesignForm] Product created successfully:', product);
-
-      // Move files from temp to final location
-      if (uploadedFiles.length > 0) {
-        console.log('🔄 [StaticDesignForm] Moving files to final location...');
-        console.log('📁 [StaticDesignForm] Files to move:', uploadedFiles.map(f => ({ name: f.name, path: f.path, partId: f.partId })));
-        
-        await moveToFinalLocation(uploadedFiles, product.product_id);
-        console.log('✅ [StaticDesignForm] Files moved successfully');
-      } else {
-        console.log('ℹ️ [StaticDesignForm] No files to move');
-      }
-
       console.log('🎉 [StaticDesignForm] All operations completed successfully');
       onSave(formData);
       
     } catch (error) {
       console.error('❌ [StaticDesignForm] Complete error:', error);
-      
-      // Enhanced error reporting
-      if (error instanceof Error) {
-        console.error('❌ [StaticDesignForm] Error details:', {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        });
-      }
       
       toast({
         title: "Speichern fehlgeschlagen",
@@ -194,93 +150,6 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, partName?: string) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    if (!userInitialized) {
-      console.error('❌ [StaticDesignForm] Cannot upload - user not initialized');
-      toast({
-        title: "Upload nicht möglich",
-        description: "Bitte warten Sie, bis das System bereit ist.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const partId = partName || selectedPartId;
-    
-    console.log('📤 [StaticDesignForm] File upload initiated:');
-    console.log('  - Files count:', files.length);
-    console.log('  - Part ID:', partId);
-    console.log('  - Part name:', partName);
-    console.log('  - User initialized:', userInitialized);
-
-    try {
-      for (const file of Array.from(files)) {
-        console.log('📤 [StaticDesignForm] Uploading file:', file.name, 'for part:', partId);
-        
-        const uploadedFile = await uploadToTemporary(file, partId);
-        
-        // Erweitere das uploadedFile mit Formulardaten
-        const enrichedFile: UploadedFile = {
-          ...uploadedFile,
-          originalName: file.name, // Stelle sicher, dass originalName gesetzt ist
-          productName: formData.name,
-          material: formData.material,
-          color: formData.color,
-          machine: formData.machine,
-          nozzleDiameter: formData.nozzleDiameter,
-          cadSoftware: formData.cadSoftware,
-          slicer: formData.slicer
-        };
-        
-        console.log('✅ [StaticDesignForm] File uploaded and enriched:', enrichedFile);
-        
-        setUploadedFiles(prev => {
-          const updated = [...prev, enrichedFile];
-          console.log('📋 [StaticDesignForm] Updated files list:', updated.length, 'files');
-          return updated;
-        });
-      }
-    } catch (error) {
-      console.error('❌ [StaticDesignForm] Upload error:', error);
-      
-      if (error instanceof Error && error.message.includes('policy')) {
-        toast({
-          title: "Berechtigung verweigert",
-          description: "Keine Berechtigung zum Hochladen. Bitte wenden Sie sich an den Administrator.",
-          variant: "destructive",
-        });
-      }
-    }
-    
-    event.target.value = '';
-  };
-
-  const handleFileRemove = (file: UploadedFile) => {
-    console.log('🗑️ [StaticDesignForm] Removing file:', file.name);
-    
-    setUploadedFiles(prev => {
-      const updated = prev.filter(f => f.id !== file.id);
-      console.log('📋 [StaticDesignForm] Files after removal:', updated.length);
-      return updated;
-    });
-    
-    toast({
-      title: "Datei entfernt",
-      description: `${file.name} wurde entfernt.`,
-    });
-  };
-
-  const handleFileDownload = (file: UploadedFile) => {
-    console.log('📥 [StaticDesignForm] Download requested for:', file.name);
-    toast({
-      title: "Download",
-      description: `Download für ${file.name} wird vorbereitet.`,
-    });
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -294,26 +163,32 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     setPreviewImage(file);
   };
 
+  const addNewPart = () => {
+    const newPartId = `part-${Date.now()}`;
+    const newPart: DesignPart = {
+      id: newPartId,
+      name: `Part ${designParts.length + 1}`,
+      type: 'static'
+    };
+    setDesignParts(prev => [...prev, newPart]);
+    setSelectedPartId(newPartId);
+  };
+
+  const updatePartType = (partId: string, type: 'static' | 'personalizable') => {
+    setDesignParts(prev => prev.map(part => 
+      part.id === partId ? { ...part, type } : part
+    ));
+  };
+
+  const currentPart = designParts.find(p => p.id === selectedPartId) || designParts[0];
+
   return (
     <div className="max-w-4xl mx-auto space-y-4">
-      <StorageDebugMonitor />
-      
-      {!userInitialized && (
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm text-yellow-800">System wird initialisiert...</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
       <Card>
         <CardHeader>
-          <CardTitle>Statisches Produkt hinzufügen</CardTitle>
+          <CardTitle>Produkt hinzufügen</CardTitle>
           <CardDescription>
-            Erstellen Sie ein neues statisches Produkt. Dateien werden zunächst temporär gespeichert und beim Speichern final abgelegt.
+            Erstellen Sie ein neues Produkt. Dateien werden beim Speichern hochgeladen.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -379,7 +254,6 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
                   type="button"
                   variant="outline"
                   onClick={() => document.getElementById('previewImage')?.click()}
-                  disabled={!userInitialized}
                 >
                   Bild auswählen
                 </Button>
@@ -411,51 +285,63 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
               </div>
             </div>
 
-            {/* Additional Product Details */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="color">Farbe (optional)</Label>
-                <Input
-                  id="color"
-                  placeholder="z.B. Rot, Blau, Schwarz"
-                  value={formData.color}
-                  onChange={(e) => handleInputChange('color', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="material">Material (optional)</Label>
-                <Input
-                  id="material"
-                  placeholder="z.B. PLA, ABS, PETG"
-                  value={formData.material}
-                  onChange={(e) => handleInputChange('material', e.target.value)}
-                />
-              </div>
-            </div>
-
             <Separator />
 
-            {/* Multi-Part File Management */}
-            <div className="space-y-2">
-              <Label>Dateien (optional)</Label>
-              <p className="text-sm text-gray-600">
-                {userInitialized 
-                  ? "Dateien werden temporär gespeichert und beim Speichern final abgelegt" 
-                  : "Warten auf Systeminitialisierung..."
-                }
-              </p>
-              <MultiPartFileManager
-                uploadedFiles={uploadedFiles}
-                loadingFiles={false}
-                uploading={uploading}
-                onFileUpload={handleFileUpload}
-                onFileRemove={handleFileRemove}
-                onFileDownload={handleFileDownload}
-                selectedPartId={selectedPartId}
-                onPartSelect={setSelectedPartId}
-              />
+            {/* Part Management */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label>Parts verwalten</Label>
+                <Button type="button" variant="outline" onClick={addNewPart}>
+                  + Neues Part hinzufügen
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Part auswählen</Label>
+                  <Select value={selectedPartId} onValueChange={setSelectedPartId}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {designParts.map(part => (
+                        <SelectItem key={part.id} value={part.id}>
+                          {part.name} ({part.type === 'static' ? 'Statisch' : 'Personalisierbar'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Part-Typ</Label>
+                  <Select 
+                    value={currentPart?.type} 
+                    onValueChange={(value: 'static' | 'personalizable') => updatePartType(selectedPartId, value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="static">Statisch</SelectItem>
+                      <SelectItem value="personalizable">Personalisierbar</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
+
+            {/* File Upload for Selected Part */}
+            {currentPart && (
+              <PartTypeFileUpload
+                partId={currentPart.id}
+                partName={currentPart.name}
+                partType={currentPart.type}
+                selectedFiles={getFilesForPart(currentPart.id)}
+                onFileSelect={addFiles}
+                onFileRemove={removeFile}
+              />
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
@@ -465,12 +351,12 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
               <Button 
                 type="submit" 
                 className="flex-1 bg-blue-600 hover:bg-blue-700" 
-                disabled={loading || uploading || !userInitialized}
+                disabled={loading || uploading}
               >
                 {loading || uploading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {uploading ? 'Datei hochladen...' : 'Speichern...'}
+                    {uploading ? 'Dateien hochladen...' : 'Speichern...'}
                   </>
                 ) : (
                   <>
