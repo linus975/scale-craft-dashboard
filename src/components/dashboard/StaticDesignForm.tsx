@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,7 @@ import { Save, Loader2, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDesignToProduct } from '@/hooks/useDesignToProduct';
 import { useUserStorageUpload } from '@/hooks/useUserStorageUpload';
+import { useStorageManager } from '@/hooks/useStorageManager';
 import { supabase } from '@/integrations/supabase/client';
 import MultiPartFileManager from './design-edit/MultiPartFileManager';
 import StorageDebugMonitor from '../StorageDebugMonitor';
@@ -24,11 +25,13 @@ interface StaticDesignFormProps {
 const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave }) => {
   const { saveDesignAsProduct } = useDesignToProduct();
   const { uploading, uploadToTemporary, moveToFinalLocation } = useUserStorageUpload();
+  const { ensureUserFolders } = useStorageManager();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedPartId, setSelectedPartId] = useState('main');
+  const [userInitialized, setUserInitialized] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -44,10 +47,60 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     slicer: ''
   });
 
+  // Initialize user and ensure folder structure
+  useEffect(() => {
+    const initializeUser = async () => {
+      try {
+        console.log('🔧 [StaticDesignForm] Initializing user and folder structure...');
+        
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+          console.error('❌ [StaticDesignForm] User authentication failed:', userError);
+          toast({
+            title: "Authentifizierung fehlgeschlagen",
+            description: "Bitte melden Sie sich erneut an.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        console.log('👤 [StaticDesignForm] User authenticated:', user.id);
+        
+        // Ensure user folder structure exists
+        const foldersCreated = await ensureUserFolders();
+        if (foldersCreated) {
+          console.log('✅ [StaticDesignForm] User folders initialized successfully');
+          setUserInitialized(true);
+        } else {
+          console.warn('⚠️ [StaticDesignForm] Could not initialize user folders');
+        }
+      } catch (error) {
+        console.error('❌ [StaticDesignForm] Error during initialization:', error);
+        toast({
+          title: "Initialisierung fehlgeschlagen",
+          description: "Fehler beim Vorbereiten der Ordnerstruktur.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    initializeUser();
+  }, [ensureUserFolders, toast]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     console.log('🚀 [StaticDesignForm] Form submission started...');
+    
+    if (!userInitialized) {
+      console.error('❌ [StaticDesignForm] User not initialized');
+      toast({
+        title: "System nicht bereit",
+        description: "Bitte warten Sie, bis das System initialisiert ist.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Enhanced validation with logging
     if (!formData.name || !formData.trackingNumber || !formData.category) {
@@ -65,19 +118,6 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
       return;
     }
 
-    // Check user authentication
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      console.error('❌ [StaticDesignForm] User authentication failed:', userError);
-      toast({
-        title: "Authentifizierung fehlgeschlagen",
-        description: "Bitte melden Sie sich erneut an.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log('👤 [StaticDesignForm] Authenticated user:', user.id);
     console.log('📋 [StaticDesignForm] Form data:', formData);
     console.log('📁 [StaticDesignForm] Uploaded files:', uploadedFiles.length);
 
@@ -160,12 +200,23 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
     const files = event.target.files;
     if (!files) return;
 
+    if (!userInitialized) {
+      console.error('❌ [StaticDesignForm] Cannot upload - user not initialized');
+      toast({
+        title: "Upload nicht möglich",
+        description: "Bitte warten Sie, bis das System bereit ist.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const partId = partName || selectedPartId;
     
     console.log('📤 [StaticDesignForm] File upload initiated:');
     console.log('  - Files count:', files.length);
     console.log('  - Part ID:', partId);
     console.log('  - Part name:', partName);
+    console.log('  - User initialized:', userInitialized);
 
     try {
       for (const file of Array.from(files)) {
@@ -196,6 +247,14 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
       }
     } catch (error) {
       console.error('❌ [StaticDesignForm] Upload error:', error);
+      
+      if (error instanceof Error && error.message.includes('policy')) {
+        toast({
+          title: "Berechtigung verweigert",
+          description: "Keine Berechtigung zum Hochladen. Bitte wenden Sie sich an den Administrator.",
+          variant: "destructive",
+        });
+      }
     }
     
     event.target.value = '';
@@ -238,6 +297,17 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       <StorageDebugMonitor />
+      
+      {!userInitialized && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm text-yellow-800">System wird initialisiert...</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <Card>
         <CardHeader>
@@ -309,6 +379,7 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
                   type="button"
                   variant="outline"
                   onClick={() => document.getElementById('previewImage')?.click()}
+                  disabled={!userInitialized}
                 >
                   Bild auswählen
                 </Button>
@@ -368,7 +439,12 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
             {/* Multi-Part File Management */}
             <div className="space-y-2">
               <Label>Dateien (optional)</Label>
-              <p className="text-sm text-gray-600">Dateien werden temporär gespeichert und beim Speichern final abgelegt</p>
+              <p className="text-sm text-gray-600">
+                {userInitialized 
+                  ? "Dateien werden temporär gespeichert und beim Speichern final abgelegt" 
+                  : "Warten auf Systeminitialisierung..."
+                }
+              </p>
               <MultiPartFileManager
                 uploadedFiles={uploadedFiles}
                 loadingFiles={false}
@@ -386,7 +462,11 @@ const StaticDesignForm: React.FC<StaticDesignFormProps> = ({ onCancel, onSave })
               <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
                 Abbrechen
               </Button>
-              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || uploading}>
+              <Button 
+                type="submit" 
+                className="flex-1 bg-blue-600 hover:bg-blue-700" 
+                disabled={loading || uploading || !userInitialized}
+              >
                 {loading || uploading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
