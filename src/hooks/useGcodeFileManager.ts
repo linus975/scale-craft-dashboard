@@ -52,7 +52,7 @@ export const useGcodeFileManager = () => {
 
     try {
       console.log(`⚙️ Uploading G-Code for part ${partId}:`, gcodeFile.name);
-      const result = await uploadFile(gcodeFile, 'temp-product', partId);
+      const result = await uploadFile(gcodeFile, 'temp-product', partId, 'GCODE');
       console.log('✅ G-Code uploaded:', result.path);
       
       return { path: result.path, content: null };

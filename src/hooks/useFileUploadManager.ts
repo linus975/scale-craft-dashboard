@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSimpleUpload } from '@/hooks/useSimpleUpload';
@@ -45,9 +44,10 @@ export const useFileUploadManager = () => {
         const folderPath = `parts/${partId}/${fileTypeFolder}`;
         
         try {
-          const uploadResult = await uploadFile(file, 'temp-product', partId);
-          const fileExtension = file.name.split('.').pop()?.toLowerCase();
+          // Get file category for the upload
           const fileCategory = getFileCategory(file.name);
+          const uploadResult = await uploadFile(file, 'temp-product', partId, fileCategory);
+          const fileExtension = file.name.split('.').pop()?.toLowerCase();
           
           const newFile: UploadedFile = {
             id: `${partId}-${Date.now()}-${Math.random()}`,
