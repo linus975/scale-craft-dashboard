@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -241,6 +240,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     }
   };
 
+  // Get current form values for debug display
+  const currentFormData = form.getValues();
+
   return (
     <div className="space-y-6">
       <Form {...form}>
@@ -306,7 +308,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
             <p><strong>🔍 LIVE DEBUG INFO:</strong></p>
             <p><strong>Aktuelle Dateien in Selection:</strong> {selectedFiles.length}</p>
-            <p><strong>Formularbereich bereit:</strong> {data.name ? 'Ja' : 'Nein'}</p>
+            <p><strong>Formularbereich bereit:</strong> {currentFormData.name ? 'Ja' : 'Nein'}</p>
             <p><strong>Speicher-Status:</strong> {saving ? 'Läuft...' : 'Bereit'}</p>
             {selectedFiles.length > 0 && (
               <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
