@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -14,8 +13,10 @@ import { useCategoryManager } from '@/hooks/useCategoryManager';
 import { useDesignParts } from '@/hooks/useDesignParts';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
 import { useFileSelection } from '@/hooks/useFileSelection';
+import { useTempFileUpload } from '@/hooks/useTempFileUpload';
 import { useSimpleUpload } from '@/hooks/useSimpleUpload';
 import { useProducts } from '@/hooks/useProducts';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AddDesignFormProps {
   onCancel: () => void;
@@ -54,23 +55,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { toast } = useToast();
   const { uploadMultipleFiles, uploading: uploadingFiles } = useSimpleUpload();
   const { createProduct, createPart, createProductImage } = useProducts();
-  const { selectedFiles } = useFileSelection();
+  const { selectedFiles, clearAllFiles } = useFileSelection();
+  const { tempFiles, cleanupTempFiles, moveToFinal } = useTempFileUpload();
   
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
-  const [fileManagementData, setFileManagementData] = useState<FileManagementData>({
-    selectedPart: 'main',
-    partType: 'static',
-    cadSoftware: '',
-    slicerSoftware: '',
-    partColor: '',
-    machineType: '',
-    sketchName: '',
-    replacementType: 'text',
-    nozzleDiameter: '',
-    filamentType: ''
-  });
 
   const form = useForm<DesignFormData>({
     defaultValues: {
@@ -95,12 +85,36 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const designParts = useDesignParts();
   const multiImageUpload = useMultiImageUpload();
 
-  // Clean up image previews on unmount
+  const [fileManagementData, setFileManagementData] = useState<FileManagementData>({
+    selectedPart: 'main',
+    partType: 'static',
+    cadSoftware: '',
+    slicerSoftware: '',
+    partColor: '',
+    machineType: '',
+    sketchName: '',
+    replacementType: 'text',
+    nozzleDiameter: '',
+    filamentType: ''
+  });
+
+  // Clean up temp files and image previews on unmount or cancel
   useEffect(() => {
     return () => {
+      console.log('🧹 [AddDesignForm] Component unmounting, cleaning up temp files and images');
+      cleanupTempFiles();
       multiImageUpload.cleanupPreviews();
     };
   }, []);
+
+  // Handler for cancel - cleanup temp files
+  const handleCancel = async () => {
+    console.log('❌ [AddDesignForm] Form cancelled, cleaning up temp files');
+    await cleanupTempFiles();
+    await clearAllFiles();
+    multiImageUpload.cleanupPreviews();
+    onCancel();
+  };
 
   // Handler for when a new part is added - automatically select it
   const handleAddPart = (name: string) => {
@@ -139,10 +153,11 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: DesignFormData) => {
     if (saving || uploadingFiles) return;
     
-    console.log('🚀 [AddDesignForm] Starting save process with NEW UPLOAD SYSTEM...');
+    console.log('🚀 [AddDesignForm] Starting save process with TEMP UPLOAD SYSTEM...');
     console.log('📋 [AddDesignForm] Form data:', data);
     console.log('🔧 [AddDesignForm] Design parts:', designParts.designParts);
     console.log('📁 [AddDesignForm] Selected files at submit:', selectedFiles);
+    console.log('📦 [AddDesignForm] Temp files available:', tempFiles);
     
     setSaving(true);
     setProgress(10);
@@ -164,6 +179,12 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       // Step 2: Validate file selection
       if (selectedFiles.length === 0) {
         throw new Error('Bitte wählen Sie mindestens eine Datei aus');
+      }
+
+      // Check if all selected files are uploaded to temp
+      const notUploadedFiles = selectedFiles.filter(f => !f.isUploaded || !f.tempPath);
+      if (notUploadedFiles.length > 0) {
+        throw new Error(`Folgende Dateien sind noch nicht hochgeladen: ${notUploadedFiles.map(f => f.file.name).join(', ')}`);
       }
 
       // Check if all parts have at least one file
@@ -192,61 +213,58 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       console.log('✅ [AddDesignForm] Product created with ID:', product.product_id);
 
       setProgress(40);
-      setCurrentStep('Dateien werden hochgeladen...');
+      setCurrentStep('Dateien werden zu finalen Ordnern verschoben...');
 
-      // Step 4: Prepare files for upload
-      const filesToUpload = selectedFiles.map(selectedFile => {
-        const partData = designParts.designParts.find(p => p.id === selectedFile.partId);
-        return {
-          file: selectedFile.file,
-          partName: partData?.name || selectedFile.partId,
-          category: selectedFile.fileCategory
-        };
-      });
-
-      console.log('📤 [AddDesignForm] Uploading files:', filesToUpload.length);
-      const uploadedFiles = await uploadMultipleFiles(filesToUpload, data.name);
-      console.log('✅ [AddDesignForm] All files uploaded successfully');
-
-      setProgress(60);
-      setCurrentStep('Parts werden erstellt...');
-
-      // Step 5: Process each part and create database records
+      // Step 4: Process each part and move temp files to final locations
       for (const partData of designParts.designParts) {
         console.log(`🔧 [AddDesignForm] Processing part: ${partData.name} (ID: ${partData.id})`);
         
-        // Get uploaded files for this specific part
-        const partFiles = uploadedFiles.filter(f => {
-          const originalFile = selectedFiles.find(sf => sf.file.name === f.name && sf.partId === partData.id);
-          return !!originalFile;
-        });
-        
-        console.log(`📁 [AddDesignForm] Found ${partFiles.length} uploaded files for part ${partData.name}`);
+        // Get temp files for this specific part
+        const partTempFiles = selectedFiles.filter(f => f.partId === partData.id && f.isUploaded && f.tempPath);
+        console.log(`📁 [AddDesignForm] Found ${partTempFiles.length} temp files for part ${partData.name}`);
 
-        // Initialize file paths from uploaded files
+        // Initialize file paths
         let gcodeFilePath = null;
         let cadFilePath = null;
         let iniFilePath = null;
 
-        // Map uploaded files to correct paths
-        for (const uploadedFile of partFiles) {
-          switch (uploadedFile.category) {
-            case 'GCODE':
-              gcodeFilePath = uploadedFile.path;
-              console.log(`✅ [AddDesignForm] G-Code path set: ${gcodeFilePath}`);
-              break;
-            case 'CAD':
-              cadFilePath = uploadedFile.path;
-              console.log(`✅ [AddDesignForm] CAD path set: ${cadFilePath}`);
-              break;
-            case 'INI':
-              iniFilePath = uploadedFile.path;
-              console.log(`✅ [AddDesignForm] INI path set: ${iniFilePath}`);
-              break;
+        // Move temp files to final locations
+        for (const selectedFile of partTempFiles) {
+          const tempFile = tempFiles.find(tf => tf.tempPath === selectedFile.tempPath);
+          if (tempFile) {
+            // Create final path structure
+            const { data: { user } } = await supabase.auth.getUser();
+            const finalPath = `${user.id}/products/${data.name.replace(/[^a-zA-Z0-9_-]/g, '_')}/${partData.name.replace(/[^a-zA-Z0-9_-]/g, '_')}/${selectedFile.file.name}`;
+            
+            console.log(`📦 [AddDesignForm] Moving ${selectedFile.file.name} from temp to final location`);
+            const movedPath = await moveToFinal(tempFile, finalPath);
+            
+            if (movedPath) {
+              // Set file path based on category
+              switch (selectedFile.fileCategory) {
+                case 'GCODE':
+                  gcodeFilePath = finalPath;
+                  console.log(`✅ [AddDesignForm] G-Code moved to: ${gcodeFilePath}`);
+                  break;
+                case 'CAD':
+                  cadFilePath = finalPath;
+                  console.log(`✅ [AddDesignForm] CAD moved to: ${cadFilePath}`);
+                  break;
+                case 'INI':
+                  iniFilePath = finalPath;
+                  console.log(`✅ [AddDesignForm] INI moved to: ${iniFilePath}`);
+                  break;
+              }
+            } else {
+              console.error(`❌ [AddDesignForm] Failed to move file: ${selectedFile.file.name}`);
+            }
           }
         }
 
-        // Create part record with uploaded file paths
+        setProgress(60);
+        setCurrentStep('Parts werden erstellt...');
+
+        // Create part record with final file paths
         const partToCreate = {
           product_id: product.product_id,
           part_name: partData.name,
@@ -257,13 +275,13 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           filament_type: partData.filamentType || null,
           color: partData.color || null,
           printer_model: partData.machine || null,
-          // File paths from uploaded files
+          // File paths from moved files
           gcode_path: gcodeFilePath,
           f3d_file_path: cadFilePath,
           ini_file_path: iniFilePath
         };
 
-        console.log('💾 [AddDesignForm] Creating part with uploaded file paths:', {
+        console.log('💾 [AddDesignForm] Creating part with final file paths:', {
           part_name: partToCreate.part_name,
           gcode_path: partToCreate.gcode_path,
           f3d_file_path: partToCreate.f3d_file_path,
@@ -277,7 +295,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(80);
       setCurrentStep('Bilder werden verarbeitet...');
 
-      // Step 6: Handle preview image upload
+      // Step 5: Handle preview image upload (using normal upload, not temp)
       if (multiImageUpload.images.length > 0) {
         console.log('🖼️ [AddDesignForm] Processing preview image');
         try {
@@ -295,7 +313,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           console.log('✅ [AddDesignForm] Preview image saved');
         } catch (imageError) {
           console.warn('⚠️ [AddDesignForm] Preview image upload failed:', imageError);
-          // Don't fail the entire process for image upload issues
         }
       }
 
@@ -317,19 +334,21 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           console.log(`✅ [AddDesignForm] Additional image ${i} saved`);
         } catch (imageError) {
           console.warn(`⚠️ [AddDesignForm] Additional image ${i} upload failed:`, imageError);
-          // Don't fail the entire process for image upload issues
         }
       }
 
       setProgress(100);
       setCurrentStep('Erfolgreich gespeichert!');
 
-      console.log('✅ [AddDesignForm] ALL operations completed successfully');
+      console.log('✅ [AddDesignForm] ALL operations completed successfully with temp file system');
       
       toast({
         title: "Produkt erfolgreich erstellt",
         description: `Das Produkt "${data.name}" wurde mit ${selectedFiles.length} Datei(en) erfolgreich gespeichert.`,
       });
+
+      // Cleanup any remaining temp files
+      await cleanupTempFiles();
 
       // Close dialog after successful save
       setTimeout(() => {
@@ -389,7 +408,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             getValues={form.getValues}
           />
 
-          {/* File Management Section with new upload system */}
+          {/* File Management Section with temp upload system */}
           <FileManagementSection
             data={fileManagementData}
             onChange={handleFileManagementDataChange}
@@ -422,19 +441,21 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             </Card>
           )}
 
-          {/* Debug Info */}
+          {/* Debug Info with temp file status */}
           <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-            <p><strong>🔍 NEW UPLOAD SYSTEM DEBUG INFO:</strong></p>
+            <p><strong>🔍 TEMP UPLOAD SYSTEM DEBUG INFO:</strong></p>
             <p><strong>Aktuelle Dateien in Selection:</strong> {selectedFiles.length}</p>
+            <p><strong>Temp Dateien hochgeladen:</strong> {tempFiles.length}</p>
             <p><strong>Formularbereich bereit:</strong> {currentFormData.name ? 'Ja' : 'Nein'}</p>
             <p><strong>Speicher-Status:</strong> {saving ? 'Läuft...' : 'Bereit'}</p>
             <p><strong>Upload-Status:</strong> {uploadingFiles ? 'Läuft...' : 'Bereit'}</p>
             {selectedFiles.length > 0 && (
               <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                <p><strong>✅ Dateien bereit für Upload:</strong></p>
+                <p><strong>✅ Dateien bereit (temp uploaded):</strong></p>
                 {selectedFiles.map((file, index) => (
                   <p key={file.id} className="text-green-700">
-                    {index + 1}. {file.file.name} (Part: {file.partId}, Typ: {file.fileCategory})
+                    {index + 1}. {file.file.name} (Part: {file.partId}, Typ: {file.fileCategory}) 
+                    - Temp: {file.isUploaded ? '✅' : '❌'}
                   </p>
                 ))}
               </div>
@@ -449,9 +470,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               <p><strong>📊 Parts Overview:</strong></p>
               {designParts.designParts.map(part => {
                 const partFileCount = selectedFiles.filter(f => f.partId === part.id).length;
+                const uploadedCount = selectedFiles.filter(f => f.partId === part.id && f.isUploaded).length;
                 return (
                   <p key={part.id} className={`${partFileCount > 0 ? 'text-green-700' : 'text-red-700'}`}>
-                    - {part.name} ({part.partType}): {partFileCount} Datei(en)
+                    - {part.name} ({part.partType}): {partFileCount} Datei(en), {uploadedCount} temp uploaded
                   </p>
                 );
               })}
@@ -460,7 +482,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onCancel} disabled={saving || uploadingFiles}>
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={saving || uploadingFiles}>
               Abbrechen
             </Button>
             <Button type="submit" disabled={saving || uploadingFiles || selectedFiles.length === 0}>
