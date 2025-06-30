@@ -1,17 +1,21 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useTempFileUpload } from './useTempFileUpload';
 
 export interface SelectedFile {
   id: string;
   file: File;
   partId: string;
   fileCategory: 'CAD' | 'INI' | 'GCODE';
+  tempPath?: string; // Path in temp storage
+  isUploaded?: boolean; // Whether file is already uploaded to temp
 }
 
 export const useFileSelection = () => {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const { toast } = useToast();
+  const { uploadToTemp, removeTempFile, uploading, tempFiles } = useTempFileUpload();
 
   const addFiles = async (files: File[], partId: string, expectedType?: 'static' | 'personalizable') => {
     console.log('📁 [FileSelection] Adding files for part:', partId, 'type:', expectedType);
@@ -71,11 +75,22 @@ export const useFileSelection = () => {
           id: `${partId}-${Date.now()}-${Math.random()}`,
           file,
           partId,
-          fileCategory
+          fileCategory,
+          isUploaded: false
         };
 
-        validFiles.push(selectedFile);
-        console.log('✅ [FileSelection] File added to selection:', selectedFile.file.name);
+        // Upload to temp storage immediately
+        console.log('📤 [FileSelection] Uploading file to temp storage:', selectedFile.file.name);
+        const tempFile = await uploadToTemp(file, partId, fileCategory);
+        
+        if (tempFile) {
+          selectedFile.tempPath = tempFile.tempPath;
+          selectedFile.isUploaded = true;
+          validFiles.push(selectedFile);
+          console.log('✅ [FileSelection] File uploaded to temp and added to selection:', selectedFile.file.name);
+        } else {
+          console.error('❌ [FileSelection] Failed to upload file to temp storage:', selectedFile.file.name);
+        }
       }
     }
 
@@ -87,21 +102,31 @@ export const useFileSelection = () => {
         );
         const newSelection = [...filtered, ...validFiles];
         console.log('✅ [FileSelection] Updated selection. Total files:', newSelection.length);
-        console.log('✅ [FileSelection] Selection details:', newSelection.map(f => `${f.file.name} (${f.fileCategory})`));
+        console.log('✅ [FileSelection] Selection details:', newSelection.map(f => `${f.file.name} (${f.fileCategory}) - Temp: ${f.isUploaded ? 'Yes' : 'No'}`));
         return newSelection;
       });
 
-      console.log('✅ [FileSelection] Added files:', validFiles.map(f => f.file.name));
+      console.log('✅ [FileSelection] Added files with temp upload:', validFiles.map(f => f.file.name));
       
       toast({
-        title: "Dateien ausgewählt",
-        description: `${validFiles.length} Datei(en) wurden zur Auswahl hinzugefügt.`,
+        title: "Dateien temporär gespeichert",
+        description: `${validFiles.length} Datei(en) wurden temporär hochgeladen.`,
       });
     }
   };
 
   const removeFile = async (fileId: string) => {
     console.log('🗑️ [FileSelection] Removing file:', fileId);
+    
+    const fileToRemove = selectedFiles.find(f => f.id === fileId);
+    if (fileToRemove && fileToRemove.isUploaded && fileToRemove.tempPath) {
+      // Find the corresponding temp file and remove it
+      const tempFile = tempFiles.find(tf => tf.tempPath === fileToRemove.tempPath);
+      if (tempFile) {
+        console.log('🗑️ [FileSelection] Removing temp file from storage:', tempFile.id);
+        await removeTempFile(tempFile.id);
+      }
+    }
     
     setSelectedFiles(prev => {
       const newSelection = prev.filter(f => f.id !== fileId);
@@ -124,6 +149,17 @@ export const useFileSelection = () => {
 
   const clearAllFiles = async () => {
     console.log('🧹 [FileSelection] Clearing all files');
+    
+    // Remove all temp files
+    for (const file of selectedFiles) {
+      if (file.isUploaded && file.tempPath) {
+        const tempFile = tempFiles.find(tf => tf.tempPath === file.tempPath);
+        if (tempFile) {
+          await removeTempFile(tempFile.id);
+        }
+      }
+    }
+    
     setSelectedFiles([]);
   };
 
@@ -134,6 +170,6 @@ export const useFileSelection = () => {
     getFilesForPart,
     getAllFiles,
     clearAllFiles,
-    uploading: false
+    uploading
   };
 };

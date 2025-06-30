@@ -14,6 +14,7 @@ import { useCategoryManager } from '@/hooks/useCategoryManager';
 import { useDesignParts } from '@/hooks/useDesignParts';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
 import { useFileSelection } from '@/hooks/useFileSelection';
+import { useTempFileUpload } from '@/hooks/useTempFileUpload';
 import { useSimpleUpload } from '@/hooks/useSimpleUpload';
 import { useProducts } from '@/hooks/useProducts';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +57,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { uploadMultipleFiles, uploading: uploadingFiles } = useSimpleUpload();
   const { createProduct, createPart, createProductImage } = useProducts();
   const { selectedFiles, clearAllFiles } = useFileSelection();
+  const { tempFiles, cleanupTempFiles, moveToFinal } = useTempFileUpload();
   
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -97,17 +99,19 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     filamentType: ''
   });
 
-  // Clean up image previews on unmount or cancel
+  // Clean up temp files and image previews on unmount or cancel
   useEffect(() => {
     return () => {
-      console.log('🧹 [AddDesignForm] Component unmounting, cleaning up images');
+      console.log('🧹 [AddDesignForm] Component unmounting, cleaning up temp files and images');
+      cleanupTempFiles();
       multiImageUpload.cleanupPreviews();
     };
   }, []);
 
-  // Handler for cancel - cleanup files
+  // Handler for cancel - cleanup temp files
   const handleCancel = async () => {
-    console.log('❌ [AddDesignForm] Form cancelled, cleaning up files');
+    console.log('❌ [AddDesignForm] Form cancelled, cleaning up temp files');
+    await cleanupTempFiles();
     await clearAllFiles();
     multiImageUpload.cleanupPreviews();
     onCancel();
@@ -150,10 +154,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: DesignFormData) => {
     if (saving || uploadingFiles) return;
     
-    console.log('🚀 [AddDesignForm] Starting save process with direct upload...');
+    console.log('🚀 [AddDesignForm] Starting save process with temp upload system...');
     console.log('📋 [AddDesignForm] Form data:', data);
     console.log('🔧 [AddDesignForm] Design parts:', designParts.designParts);
-    console.log('📦 [AddDesignForm] Selected files:', selectedFiles);
+    console.log('📦 [AddDesignForm] Temp files available:', tempFiles);
     
     setSaving(true);
     setProgress(10);
@@ -186,86 +190,118 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       console.log('✅ [AddDesignForm] Product created with ID:', product.product_id);
 
       setProgress(40);
-      setCurrentStep('Dateien werden hochgeladen...');
+      setCurrentStep('Dateien werden zu finalen Ordnern verschoben...');
 
-      // Step 3: Process files directly for each part
-      for (const partData of designParts.designParts) {
-        console.log(`🔧 [AddDesignForm] Processing part: ${partData.name} (ID: ${partData.id})`);
-        
-        // Get files for this specific part
-        const partFiles = selectedFiles.filter(f => f.partId === partData.id);
-        console.log(`📁 [AddDesignForm] Found ${partFiles.length} files for part ${partData.name}`);
+      // Step 3: Process temp files if they exist
+      if (tempFiles.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Benutzer nicht angemeldet');
 
-        // Initialize file paths
-        let gcodeFilePath = null;
-        let cadFilePath = null;
-        let iniFilePath = null;
+        for (const partData of designParts.designParts) {
+          console.log(`🔧 [AddDesignForm] Processing part: ${partData.name} (ID: ${partData.id})`);
+          
+          // Get temp files for this specific part
+          const partTempFiles = tempFiles.filter(f => f.partId === partData.id);
+          console.log(`📁 [AddDesignForm] Found ${partTempFiles.length} temp files for part ${partData.name}`);
 
-        // Upload files directly to final location if they exist
-        if (partFiles.length > 0) {
-          const filesToUpload = partFiles.map(selectedFile => ({
-            file: selectedFile.file,
-            partName: partData.name,
-            category: selectedFile.fileCategory
-          }));
+          // Initialize file paths
+          let gcodeFilePath = null;
+          let cadFilePath = null;
+          let iniFilePath = null;
 
-          console.log(`📤 [AddDesignForm] Uploading ${filesToUpload.length} files directly to final location`);
-          const uploadedFiles = await uploadMultipleFiles(filesToUpload, data.name);
-
-          // Map uploaded files to correct paths
-          for (const uploadedFile of uploadedFiles) {
-            switch (uploadedFile.category) {
-              case 'GCODE':
-                gcodeFilePath = uploadedFile.path;
-                console.log(`✅ [AddDesignForm] G-Code uploaded to: ${gcodeFilePath}`);
-                break;
-              case 'CAD':
-                cadFilePath = uploadedFile.path;
-                console.log(`✅ [AddDesignForm] CAD uploaded to: ${cadFilePath}`);
-                break;
-              case 'INI':
-                iniFilePath = uploadedFile.path;
-                console.log(`✅ [AddDesignForm] INI uploaded to: ${iniFilePath}`);
-                break;
+          // Move temp files to final locations: userid/Products/productname/partname/filename
+          for (const tempFile of partTempFiles) {
+            try {
+              // Create final path: userid/Products/productname/partname/filename
+              const sanitizedProductName = data.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+              const sanitizedPartName = partData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+              const finalPath = `${user.id}/Products/${sanitizedProductName}/${sanitizedPartName}/${tempFile.name}`;
+              
+              console.log(`📦 [AddDesignForm] Moving ${tempFile.name} from temp to: ${finalPath}`);
+              const movedPath = await moveToFinal(tempFile, finalPath);
+              
+              if (movedPath) {
+                // Set file path based on category - use the actual returned path
+                switch (tempFile.category) {
+                  case 'GCODE':
+                    gcodeFilePath = movedPath;
+                    console.log(`✅ [AddDesignForm] G-Code moved to: ${gcodeFilePath}`);
+                    break;
+                  case 'CAD':
+                    cadFilePath = movedPath;
+                    console.log(`✅ [AddDesignForm] CAD moved to: ${cadFilePath}`);
+                    break;
+                  case 'INI':
+                    iniFilePath = movedPath;
+                    console.log(`✅ [AddDesignForm] INI moved to: ${iniFilePath}`);
+                    break;
+                }
+              } else {
+                console.error(`❌ [AddDesignForm] Failed to move file: ${tempFile.name}`);
+                throw new Error(`Fehler beim Verschieben der Datei: ${tempFile.name}`);
+              }
+            } catch (moveError) {
+              console.error(`❌ [AddDesignForm] Error moving file ${tempFile.name}:`, moveError);
+              throw new Error(`Fehler beim Verschieben der Datei ${tempFile.name}: ${moveError instanceof Error ? moveError.message : 'Unbekannter Fehler'}`);
             }
           }
+
+          setProgress(60);
+          setCurrentStep('Parts werden erstellt...');
+
+          // Create part record with final file paths
+          const partToCreate = {
+            product_id: product.product_id,
+            part_name: partData.name,
+            is_customizable: partData.partType === 'personalizable',
+            cad_software: partData.cadSoftware || null,
+            slicer_software: partData.slicer || null,
+            nozzle_diameter: partData.nozzleDiameter ? parseFloat(partData.nozzleDiameter) : null,
+            filament_type: partData.filamentType || null,
+            color: partData.color || null,
+            printer_model: partData.machine || null,
+            // File paths from moved files
+            gcode_path: gcodeFilePath,
+            f3d_file_path: cadFilePath,
+            ini_file_path: iniFilePath
+          };
+
+          console.log('💾 [AddDesignForm] Creating part with final file paths:', {
+            part_name: partToCreate.part_name,
+            gcode_path: partToCreate.gcode_path,
+            f3d_file_path: partToCreate.f3d_file_path,
+            ini_file_path: partToCreate.ini_file_path
+          });
+
+          const createdPart = await createPart(partToCreate);
+          console.log('✅ [AddDesignForm] Part created successfully:', createdPart);
         }
+      } else {
+        // Create parts without files if no temp files exist
+        for (const partData of designParts.designParts) {
+          const partToCreate = {
+            product_id: product.product_id,
+            part_name: partData.name,
+            is_customizable: partData.partType === 'personalizable',
+            cad_software: partData.cadSoftware || null,
+            slicer_software: partData.slicer || null,
+            nozzle_diameter: partData.nozzleDiameter ? parseFloat(partData.nozzleDiameter) : null,
+            filament_type: partData.filamentType || null,
+            color: partData.color || null,
+            printer_model: partData.machine || null,
+            gcode_path: null,
+            f3d_file_path: null,
+            ini_file_path: null
+          };
 
-        setProgress(60);
-        setCurrentStep('Parts werden erstellt...');
-
-        // Create part record with file paths
-        const partToCreate = {
-          product_id: product.product_id,
-          part_name: partData.name,
-          is_customizable: partData.partType === 'personalizable',
-          cad_software: partData.cadSoftware || null,
-          slicer_software: partData.slicer || null,
-          nozzle_diameter: partData.nozzleDiameter ? parseFloat(partData.nozzleDiameter) : null,
-          filament_type: partData.filamentType || null,
-          color: partData.color || null,
-          printer_model: partData.machine || null,
-          // File paths from uploaded files
-          gcode_path: gcodeFilePath,
-          f3d_file_path: cadFilePath,
-          ini_file_path: iniFilePath
-        };
-
-        console.log('💾 [AddDesignForm] Creating part with file paths:', {
-          part_name: partToCreate.part_name,
-          gcode_path: partToCreate.gcode_path,
-          f3d_file_path: partToCreate.f3d_file_path,
-          ini_file_path: partToCreate.ini_file_path
-        });
-
-        const createdPart = await createPart(partToCreate);
-        console.log('✅ [AddDesignForm] Part created successfully:', createdPart);
+          await createPart(partToCreate);
+        }
       }
 
       setProgress(80);
       setCurrentStep('Bilder werden verarbeitet...');
 
-      // Step 4: Handle preview image upload
+      // Step 4: Handle preview image upload (using normal upload, not temp)
       if (multiImageUpload.images.length > 0) {
         console.log('🖼️ [AddDesignForm] Processing preview image');
         try {
@@ -312,13 +348,16 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
       console.log('✅ [AddDesignForm] ALL operations completed successfully');
       
-      const fileCount = selectedFiles.length;
+      const fileCount = tempFiles.length;
       toast({
         title: "Produkt erfolgreich erstellt",
         description: fileCount > 0 
           ? `Das Produkt "${data.name}" wurde mit ${fileCount} Datei(en) erfolgreich gespeichert.`
           : `Das Produkt "${data.name}" wurde erfolgreich gespeichert.`,
       });
+
+      // Cleanup any remaining temp files
+      await cleanupTempFiles();
 
       // Close dialog after successful save
       setTimeout(() => {
@@ -376,7 +415,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             getValues={form.getValues}
           />
 
-          {/* File Management Section with direct upload */}
+          {/* File Management Section with temp upload system */}
           <FileManagementSection
             data={fileManagementData}
             onChange={handleFileManagementDataChange}
