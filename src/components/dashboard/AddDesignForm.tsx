@@ -154,7 +154,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: DesignFormData) => {
     if (saving || uploadingFiles) return;
     
-    console.log('🚀 [AddDesignForm] Starting save process with TEMP UPLOAD SYSTEM...');
+    console.log('🚀 [AddDesignForm] Starting save process with temp upload system...');
     console.log('📋 [AddDesignForm] Form data:', data);
     console.log('🔧 [AddDesignForm] Design parts:', designParts.designParts);
     console.log('📁 [AddDesignForm] Selected files at submit:', selectedFiles);
@@ -177,15 +177,19 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(20);
       setCurrentStep('Dateien werden überprüft...');
 
-      // Step 2: Validate file selection with improved messages for temp system
+      // Step 2: Validate that we have selected files AND they are uploaded to temp
+      console.log('🔍 [AddDesignForm] Checking selected files:', selectedFiles.length);
       if (selectedFiles.length === 0) {
-        throw new Error('Bitte wählen Sie mindestens eine Datei über das Datei-Management aus. Dateien werden automatisch in den temporären Speicher hochgeladen.');
+        throw new Error('Bitte wählen Sie mindestens eine Datei über das Datei-Management aus.');
       }
 
-      // Check if all selected files are uploaded to temp
+      // Check if all selected files are uploaded to temp storage
       const notUploadedFiles = selectedFiles.filter(f => !f.isUploaded || !f.tempPath);
+      console.log('⚠️ [AddDesignForm] Files not uploaded to temp:', notUploadedFiles.length);
+      
       if (notUploadedFiles.length > 0) {
-        throw new Error(`Folgende Dateien wurden noch nicht in den temporären Speicher hochgeladen: ${notUploadedFiles.map(f => f.file.name).join(', ')}. Bitte warten Sie, bis der Upload abgeschlossen ist.`);
+        console.error('❌ [AddDesignForm] Some files not in temp storage:', notUploadedFiles.map(f => f.file.name));
+        throw new Error(`Folgende Dateien wurden noch nicht temporär hochgeladen: ${notUploadedFiles.map(f => f.file.name).join(', ')}. Bitte warten Sie einen Moment.`);
       }
 
       // Check if all parts have at least one file
@@ -194,7 +198,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       );
 
       if (partsWithoutFiles.length > 0) {
-        throw new Error(`Folgende Parts haben keine Dateien: ${partsWithoutFiles.map(p => p.name).join(', ')}. Bitte fügen Sie Dateien über das Datei-Management hinzu.`);
+        throw new Error(`Folgende Parts haben keine Dateien: ${partsWithoutFiles.map(p => p.name).join(', ')}. Bitte fügen Sie Dateien hinzu.`);
       }
 
       setProgress(30);
@@ -217,27 +221,31 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setCurrentStep('Dateien werden zu finalen Ordnern verschoben...');
 
       // Step 4: Process each part and move temp files to final locations
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Benutzer nicht angemeldet');
+
       for (const partData of designParts.designParts) {
         console.log(`🔧 [AddDesignForm] Processing part: ${partData.name} (ID: ${partData.id})`);
         
         // Get temp files for this specific part
-        const partTempFiles = selectedFiles.filter(f => f.partId === partData.id && f.isUploaded && f.tempPath);
-        console.log(`📁 [AddDesignForm] Found ${partTempFiles.length} temp files for part ${partData.name}`);
+        const partSelectedFiles = selectedFiles.filter(f => f.partId === partData.id && f.isUploaded && f.tempPath);
+        console.log(`📁 [AddDesignForm] Found ${partSelectedFiles.length} temp files for part ${partData.name}`);
 
         // Initialize file paths
         let gcodeFilePath = null;
         let cadFilePath = null;
         let iniFilePath = null;
 
-        // Move temp files to final locations
-        for (const selectedFile of partTempFiles) {
+        // Move temp files to final locations: userid/Products/productname/partname/filename
+        for (const selectedFile of partSelectedFiles) {
           const tempFile = tempFiles.find(tf => tf.tempPath === selectedFile.tempPath);
           if (tempFile) {
-            // Create final path structure
-            const { data: { user } } = await supabase.auth.getUser();
-            const finalPath = `${user.id}/products/${data.name.replace(/[^a-zA-Z0-9_-]/g, '_')}/${partData.name.replace(/[^a-zA-Z0-9_-]/g, '_')}/${selectedFile.file.name}`;
+            // Create final path: userid/Products/productname/partname/filename
+            const sanitizedProductName = data.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const sanitizedPartName = partData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const finalPath = `${user.id}/Products/${sanitizedProductName}/${sanitizedPartName}/${selectedFile.file.name}`;
             
-            console.log(`📦 [AddDesignForm] Moving ${selectedFile.file.name} from temp to final location`);
+            console.log(`📦 [AddDesignForm] Moving ${selectedFile.file.name} from temp to: ${finalPath}`);
             const movedPath = await moveToFinal(tempFile, finalPath);
             
             if (movedPath) {
@@ -258,6 +266,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
               }
             } else {
               console.error(`❌ [AddDesignForm] Failed to move file: ${selectedFile.file.name}`);
+              throw new Error(`Fehler beim Verschieben der Datei: ${selectedFile.file.name}`);
             }
           }
         }
@@ -341,7 +350,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(100);
       setCurrentStep('Erfolgreich gespeichert!');
 
-      console.log('✅ [AddDesignForm] ALL operations completed successfully with temp file system');
+      console.log('✅ [AddDesignForm] ALL operations completed successfully');
       
       toast({
         title: "Produkt erfolgreich erstellt",
