@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -106,12 +105,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   // Handler for when a new part is added - automatically select it
   const handleAddPart = (name: string) => {
     designParts.handleAddPart(name);
-    // Get the latest part from designParts after adding
-    const latestPart = designParts.designParts[designParts.designParts.length - 1];
-    if (latestPart) {
-      designParts.handlePartSelect(latestPart.id);
-      setFileManagementData(prev => ({ ...prev, selectedPart: latestPart.id }));
-    }
+    // The newest part will be automatically selected since handleAddPart already does this
   };
 
   // Handler for when preset values are added - automatically select them

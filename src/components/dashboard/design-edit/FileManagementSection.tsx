@@ -94,13 +94,27 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
     event.target.value = '';
   };
 
-  const getFileIcon = (category: string) => {
-    switch (category) {
-      case 'CAD': return <FileText className="h-4 w-4" />;
-      case 'INI': return <Settings className="h-4 w-4" />;
-      case 'GCODE': return <Code className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
+  // Handle preset value changes with auto-selection of newest
+  const handlePresetChange = (field: keyof FileManagementData, value: string, presetArray: string[]) => {
+    updateData(field, value);
+    
+    // If this is a newly added preset (last in array), auto-select it
+    if (presetArray.length > 0 && value === presetArray[presetArray.length - 1]) {
+      updateData(field, value);
     }
+  };
+
+  const handlePresetAdd = (type: 'colors' | 'machineTypes' | 'filamentTypes', value: string) => {
+    presetManager.addPreset(type, value);
+    
+    // Auto-select the newly added preset
+    const fieldMap = {
+      'colors': 'partColor' as keyof FileManagementData,
+      'machineTypes': 'machineType' as keyof FileManagementData,
+      'filamentTypes': 'filamentType' as keyof FileManagementData
+    };
+    
+    updateData(fieldMap[type], value);
   };
 
   const partFiles = getFilesForPart(activePart);
@@ -212,7 +226,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 presetType="color"
                 presets={presetManager.presets.colors}
                 currentValue={data.partColor}
-                onAddPreset={(value) => presetManager.addPreset('colors', value)}
+                onAddPreset={(value) => handlePresetAdd('colors', value)}
                 onEditPreset={(index, value) => presetManager.updatePreset('colors', index, value)}
                 onDeletePreset={(index) => presetManager.removePreset('colors', index)}
                 onValueChange={(value) => updateData('partColor', value)}
@@ -240,7 +254,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 presetType="machine"
                 presets={presetManager.presets.machineTypes}
                 currentValue={data.machineType}
-                onAddPreset={(value) => presetManager.addPreset('machineTypes', value)}
+                onAddPreset={(value) => handlePresetAdd('machineTypes', value)}
                 onEditPreset={(index, value) => presetManager.updatePreset('machineTypes', index, value)}
                 onDeletePreset={(index) => presetManager.removePreset('machineTypes', index)}
                 onValueChange={(value) => updateData('machineType', value)}
@@ -441,7 +455,7 @@ const FileManagementSection: React.FC<FileManagementSectionProps> = ({
                 presetType="filament"
                 presets={presetManager.presets.filamentTypes}
                 currentValue={data.filamentType}
-                onAddPreset={(value) => presetManager.addPreset('filamentTypes', value)}
+                onAddPreset={(value) => handlePresetAdd('filamentTypes', value)}
                 onEditPreset={(index, value) => presetManager.updatePreset('filamentTypes', index, value)}
                 onDeletePreset={(index) => presetManager.removePreset('filamentTypes', index)}
                 onValueChange={(value) => updateData('filamentType', value)}
