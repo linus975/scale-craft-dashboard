@@ -141,7 +141,7 @@ export const useFileSelection = () => {
     setSelectedFiles([]);
   };
 
-  // New function to move files from temp to final destination
+  // Move files from temp to final destination
   const moveFilesToFinal = async (productName: string) => {
     console.log('📦 [FileSelection] Moving files from temp to final destination');
     console.log('📦 [FileSelection] Product name:', productName);

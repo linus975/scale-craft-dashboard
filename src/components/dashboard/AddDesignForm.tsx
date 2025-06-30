@@ -104,9 +104,9 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     };
   }, []);
 
-  // Handler for cancel - cleanup
+  // Handler for cancel - cleanup temp files
   const handleCancel = async () => {
-    console.log('❌ [AddDesignForm] Form cancelled');
+    console.log('❌ [AddDesignForm] Form cancelled, cleaning up temp files');
     await clearAllFiles();
     multiImageUpload.cleanupPreviews();
     onCancel();

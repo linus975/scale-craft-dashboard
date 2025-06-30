@@ -121,11 +121,6 @@ export const useTempFileUpload = () => {
 
       console.log('✅ [TempUpload] Temp file uploaded:', tempFile.tempPath);
       
-      toast({
-        title: "Datei temporär hochgeladen",
-        description: `${file.name} wurde temporär gespeichert.`,
-      });
-
       return tempFile;
 
     } catch (error: any) {
@@ -160,6 +155,14 @@ export const useTempFileUpload = () => {
       console.log('📦 [TempUpload] From:', tempFile.tempPath);
       console.log('📦 [TempUpload] To:', finalPath);
       
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Benutzer nicht angemeldet');
+      }
+
+      // Create the full final path with user ID
+      const fullFinalPath = `${user.id}/${finalPath}`;
+      
       // Download the file from temp location
       const { data: fileData, error: downloadError } = await supabase.storage
         .from('design-files')
@@ -175,7 +178,7 @@ export const useTempFileUpload = () => {
       // Upload to final location
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('design-files')
-        .upload(finalPath, fileData, {
+        .upload(fullFinalPath, fileData, {
           cacheControl: '3600',
           upsert: true
         });
@@ -198,7 +201,7 @@ export const useTempFileUpload = () => {
         console.log('✅ [TempUpload] Temp file deleted successfully');
       }
 
-      console.log('✅ [TempUpload] File moved successfully to:', finalPath);
+      console.log('✅ [TempUpload] File moved successfully to:', fullFinalPath);
       return uploadData.path; // Return the actual path from Supabase
 
     } catch (error: any) {
