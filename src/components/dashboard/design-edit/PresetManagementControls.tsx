@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -34,6 +35,7 @@ const PresetManagementControls: React.FC<PresetManagementControlsProps> = ({
     if (newValue.trim()) {
       // Add the preset and automatically select it
       onAddPreset(newValue.trim());
+      onValueChange(newValue.trim());
       setNewValue('');
       setShowAddDialog(false);
     }
@@ -170,41 +172,6 @@ const PresetManagementControls: React.FC<PresetManagementControlsProps> = ({
       </Button>
     </div>
   );
-
-  function handleEdit(index: number, currentValue: string) {
-    setEditingIndex(index);
-    setEditValue(currentValue);
-    setShowEditDialog(true);
-  }
-
-  function handleSaveEdit() {
-    if (editingIndex !== null && editValue.trim()) {
-      const oldValue = presets[editingIndex];
-      onEditPreset(editingIndex, editValue.trim());
-      if (currentValue === oldValue) {
-        onValueChange(editValue.trim());
-      }
-      setEditingIndex(null);
-      setEditValue('');
-      setShowEditDialog(false);
-    }
-  }
-
-  function handleDelete(index: number) {
-    const deletedValue = presets[index];
-    onDeletePreset(index);
-    if (currentValue === deletedValue) {
-      onValueChange('');
-    }
-  }
-
-  function getTitle() {
-    switch (presetType) {
-      case 'color': return 'Color';
-      case 'machine': return 'Machine';
-      case 'filament': return 'Filament';
-    }
-  }
 };
 
 export default PresetManagementControls;
