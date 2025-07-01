@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCategoryManager } from '@/hooks/useCategoryManager';
 import { useDesignParts } from '@/hooks/useDesignParts';
 import { useMultiImageUpload } from '@/hooks/useMultiImageUpload';
-import { useFileSelection } from '@/hooks/useFileSelection';
+import { useOptimizedFileSelection } from '@/hooks/useOptimizedFileSelection';
 import { useSimpleUpload } from '@/hooks/useSimpleUpload';
 import { useProducts } from '@/hooks/useProducts';
 
@@ -54,7 +53,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const { toast } = useToast();
   const { uploadMultipleFiles } = useSimpleUpload();
   const { createProduct, createPart, createProductImage } = useProducts();
-  const { selectedFiles, clearAllFiles, moveFilesToFinal } = useFileSelection();
+  const { selectedFiles, clearAllFiles, moveFilesToFinal } = useOptimizedFileSelection();
   
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -97,13 +96,13 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
   useEffect(() => {
     return () => {
-      console.log('🧹 [AddDesignForm] Component unmounting, cleaning up');
+      console.log('⚡ [AddDesignForm] Fast cleanup on unmount');
       multiImageUpload.cleanupPreviews();
     };
   }, []);
 
   const handleCancel = async () => {
-    console.log('❌ [AddDesignForm] Form cancelled, cleaning up temp files');
+    console.log('⚡ [AddDesignForm] Fast cancel with cleanup');
     await clearAllFiles();
     multiImageUpload.cleanupPreviews();
     onCancel();
@@ -143,10 +142,10 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
   const onSubmit = async (data: DesignFormData) => {
     if (saving) return;
     
-    console.log('🚀 [AddDesignForm] Starting save process with temp files...');
+    console.log('⚡ [AddDesignForm] Fast save process starting');
     console.log('📋 [AddDesignForm] Form data:', data);
     console.log('🔧 [AddDesignForm] Design parts:', designParts.designParts);
-    console.log('📦 [AddDesignForm] Selected files (temp):', selectedFiles);
+    console.log('📦 [AddDesignForm] Selected files (optimized):', selectedFiles);
     
     setSaving(true);
     setProgress(10);
@@ -177,14 +176,14 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       console.log('✅ [AddDesignForm] Product created with ID:', product.product_id);
 
       setProgress(50);
-      setCurrentStep('Dateien werden von temp zu final verschoben...');
+      setCurrentStep('Dateien werden schnell von temp zu final verschoben...');
 
       let movedFiles = [];
       if (selectedFiles.length > 0) {
         try {
-          console.log('📦 [AddDesignForm] Moving files from temp to final destination');
+          console.log('⚡ [AddDesignForm] Fast moving files from temp to final');
           movedFiles = await moveFilesToFinal(data.name);
-          console.log('✅ [AddDesignForm] Files moved successfully:', movedFiles.length);
+          console.log('✅ [AddDesignForm] Files moved fast:', movedFiles.length);
         } catch (moveError) {
           console.error('❌ [AddDesignForm] Error moving files:', moveError);
           throw new Error(`Fehler beim Verschieben der Dateien: ${moveError instanceof Error ? moveError.message : 'Unbekannter Fehler'}`);
@@ -296,13 +295,13 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(100);
       setCurrentStep('Erfolgreich gespeichert!');
 
-      console.log('✅ [AddDesignForm] ALL operations completed successfully');
+      console.log('⚡ [AddDesignForm] ALL operations completed fast and successfully');
       
       const fileCount = selectedFiles.length;
       toast({
         title: "Produkt erfolgreich erstellt",
         description: fileCount > 0 
-          ? `Das Produkt "${data.name}" wurde mit ${fileCount} Datei(en) erfolgreich gespeichert.`
+          ? `Das Produkt "${data.name}" wurde mit ${fileCount} Datei(en) schnell gespeichert.`
           : `Das Produkt "${data.name}" wurde erfolgreich gespeichert.`,
       });
 
@@ -382,7 +381,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
                   </div>
                   <Progress value={progress} className="w-full" />
                   <p className="text-xs text-muted-foreground">
-                    Das Produkt wird mit allen Dateien gespeichert...
+                    Das Produkt wird mit optimierter Geschwindigkeit gespeichert...
                   </p>
                 </div>
               </CardContent>
