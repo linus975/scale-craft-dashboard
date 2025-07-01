@@ -8,20 +8,19 @@ export interface SelectedFile {
   file: File;
   partId: string;
   fileCategory: 'CAD' | 'INI' | 'GCODE';
-  tempPath?: string; // Path in temp storage
-  finalPath?: string; // Path in final storage
-  isUploaded?: boolean; // Whether file is uploaded to temp
-  isMovedToFinal?: boolean; // Whether file is moved to final location
+  tempPath?: string;
+  finalPath?: string;
+  isUploaded?: boolean;
+  isMovedToFinal?: boolean;
 }
 
 export const useFileSelection = () => {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const { toast } = useToast();
-  const { uploadToTemp, moveToFinal, cleanupTempFiles } = useTempFileUpload();
+  const { uploadToTemp, moveToFinal, cleanupTempFiles, removeTempFile } = useTempFileUpload();
 
   const addFiles = async (files: File[], partId: string, expectedType?: 'static' | 'personalizable') => {
     console.log('📁 [FileSelection] Adding files for part:', partId, 'type:', expectedType);
-    console.log('📁 [FileSelection] Files to add:', files.map(f => f.name));
     
     const validFiles: SelectedFile[] = [];
     
@@ -32,7 +31,6 @@ export const useFileSelection = () => {
 
       // Validate file types based on part type
       if (expectedType === 'static') {
-        // Static parts: only G-Code files
         if (extension === 'gcode' || extension === 'g') {
           fileCategory = 'GCODE';
           isValid = true;
@@ -44,7 +42,6 @@ export const useFileSelection = () => {
           });
         }
       } else if (expectedType === 'personalizable') {
-        // Personalizable parts: F3D and INI files
         if (extension === 'f3d') {
           fileCategory = 'CAD';
           isValid = true;
@@ -59,7 +56,7 @@ export const useFileSelection = () => {
           });
         }
       } else {
-        // Generic handling if no type specified
+        // Generic handling
         if (extension === 'f3d') {
           fileCategory = 'CAD';
         } else if (extension === 'ini') {
@@ -67,7 +64,7 @@ export const useFileSelection = () => {
         } else if (extension === 'gcode' || extension === 'g') {
           fileCategory = 'GCODE';
         } else {
-          fileCategory = 'CAD'; // Default fallback
+          fileCategory = 'CAD';
         }
         isValid = true;
       }
@@ -75,7 +72,6 @@ export const useFileSelection = () => {
       if (isValid) {
         console.log('📤 [FileSelection] Uploading file to temp storage:', file.name);
         
-        // Upload to temp storage immediately
         const tempFile = await uploadToTemp(file, partId, fileCategory);
         
         if (tempFile) {
@@ -101,9 +97,7 @@ export const useFileSelection = () => {
         const filtered = prev.filter(f => 
           !(f.partId === partId && validFiles.some(vf => vf.fileCategory === f.fileCategory))
         );
-        const newSelection = [...filtered, ...validFiles];
-        console.log('✅ [FileSelection] Updated selection. Total files:', newSelection.length);
-        return newSelection;
+        return [...filtered, ...validFiles];
       });
 
       toast({
@@ -116,23 +110,21 @@ export const useFileSelection = () => {
   const removeFile = async (fileId: string) => {
     console.log('🗑️ [FileSelection] Removing file:', fileId);
     
-    setSelectedFiles(prev => {
-      const newSelection = prev.filter(f => f.id !== fileId);
-      console.log('🗑️ [FileSelection] Remaining files:', newSelection.length);
-      return newSelection;
-    });
+    const fileToRemove = selectedFiles.find(f => f.id === fileId);
+    if (fileToRemove && fileToRemove.tempPath) {
+      // Remove from temp storage
+      await removeTempFile(fileId);
+    }
+    
+    setSelectedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
   const getFilesForPart = (partId: string): SelectedFile[] => {
-    const partFiles = selectedFiles.filter(f => f.partId === partId);
-    console.log('📂 [FileSelection] Files for part', partId, ':', partFiles.length);
-    return partFiles;
+    return selectedFiles.filter(f => f.partId === partId);
   };
 
   const getAllFiles = (): File[] => {
-    const allFiles = selectedFiles.map(f => f.file);
-    console.log('📂 [FileSelection] All selected files:', allFiles.length);
-    return allFiles;
+    return selectedFiles.map(f => f.file);
   };
 
   const clearAllFiles = async () => {
@@ -141,29 +133,22 @@ export const useFileSelection = () => {
     setSelectedFiles([]);
   };
 
-  // Move files from temp to final destination
   const moveFilesToFinal = async (productName: string) => {
     console.log('📦 [FileSelection] Moving files from temp to final destination');
-    console.log('📦 [FileSelection] Product name:', productName);
-    console.log('📦 [FileSelection] Files to move:', selectedFiles.length);
     
     const movedFiles = [];
     
     for (const selectedFile of selectedFiles) {
       if (!selectedFile.tempPath || selectedFile.isMovedToFinal) {
-        console.log('⏭️ [FileSelection] Skipping file (already moved or no temp path):', selectedFile.file.name);
         continue;
       }
       
       try {
-        // Create final path: {userid}/Products/{productName}/{partName}/{filename}
         const sanitizedProductName = productName.replace(/[^a-zA-Z0-9_-]/g, '_');
         const sanitizedPartName = selectedFile.partId.replace(/[^a-zA-Z0-9_-]/g, '_');
         const finalPath = `Products/${sanitizedProductName}/${sanitizedPartName}/${selectedFile.file.name}`;
         
         console.log('📦 [FileSelection] Moving file:', selectedFile.file.name);
-        console.log('📦 [FileSelection] From temp:', selectedFile.tempPath);
-        console.log('📦 [FileSelection] To final:', finalPath);
         
         const finalStoragePath = await moveToFinal(
           {
@@ -179,7 +164,6 @@ export const useFileSelection = () => {
         );
         
         if (finalStoragePath) {
-          // Update the selected file with final path
           selectedFile.finalPath = finalStoragePath;
           selectedFile.isMovedToFinal = true;
           
@@ -198,7 +182,6 @@ export const useFileSelection = () => {
       }
     }
 
-    // Update the state
     setSelectedFiles(prev => [...prev]);
     
     console.log('✅ [FileSelection] All files moved successfully:', movedFiles.length);

@@ -78,7 +78,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
 
   const trackingType = form.watch('trackingType');
 
-  // Use custom hooks
   const categoryManager = useCategoryManager(form);
   const designParts = useDesignParts();
   const multiImageUpload = useMultiImageUpload();
@@ -96,7 +95,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     filamentType: ''
   });
 
-  // Clean up on unmount or cancel
   useEffect(() => {
     return () => {
       console.log('🧹 [AddDesignForm] Component unmounting, cleaning up');
@@ -104,7 +102,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     };
   }, []);
 
-  // Handler for cancel - cleanup temp files
   const handleCancel = async () => {
     console.log('❌ [AddDesignForm] Form cancelled, cleaning up temp files');
     await clearAllFiles();
@@ -112,16 +109,13 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     onCancel();
   };
 
-  // Handler for when a new part is added - automatically select it
   const handleAddPart = (name: string) => {
     designParts.handleAddPart(name);
   };
 
-  // Handler for when preset values are added - automatically select them
   const handleFileManagementDataChange = (newData: FileManagementData) => {
     setFileManagementData(newData);
     
-    // Update the design parts with the current part's data
     const currentPart = designParts.designParts.find(part => part.id === designParts.activePart);
     if (currentPart) {
       designParts.setDesignParts(prev => prev.map(part => 
@@ -159,7 +153,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     setCurrentStep('Validierung läuft...');
     
     try {
-      // Step 1: Validate form data
       if (!data.name.trim()) {
         throw new Error('Produktname ist erforderlich');
       }
@@ -171,7 +164,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(30);
       setCurrentStep('Produkt wird erstellt...');
 
-      // Step 2: Create the product first
       const productData = {
         name: data.name,
         identifier_type: data.trackingType,
@@ -187,7 +179,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(50);
       setCurrentStep('Dateien werden von temp zu final verschoben...');
 
-      // Step 3: Move files from temp to final destination
       let movedFiles = [];
       if (selectedFiles.length > 0) {
         try {
@@ -203,20 +194,17 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(70);
       setCurrentStep('Parts werden erstellt...');
 
-      // Step 4: Process parts and create them with final file paths
+      // Process parts and create them with final file paths
       for (const partData of designParts.designParts) {
         console.log(`🔧 [AddDesignForm] Processing part: ${partData.name} (ID: ${partData.id})`);
         
-        // Get moved files for this specific part
         const partMovedFiles = movedFiles.filter(f => f.partName === partData.id);
         console.log(`📁 [AddDesignForm] Found ${partMovedFiles.length} moved files for part ${partData.name}`);
 
-        // Initialize file paths
         let gcodeFilePath = null;
         let cadFilePath = null;
         let iniFilePath = null;
 
-        // Set file paths based on category
         for (const movedFile of partMovedFiles) {
           switch (movedFile.category) {
             case 'GCODE':
@@ -234,7 +222,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           }
         }
 
-        // Create part record with final file paths
         const partToCreate = {
           product_id: product.product_id,
           part_name: partData.name,
@@ -245,7 +232,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           filament_type: partData.filamentType || null,
           color: partData.color || null,
           printer_model: partData.machine || null,
-          // File paths from moved files
           gcode_path: gcodeFilePath,
           f3d_file_path: cadFilePath,
           ini_file_path: iniFilePath
@@ -265,7 +251,7 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
       setProgress(90);
       setCurrentStep('Bilder werden verarbeitet...');
 
-      // Step 5: Handle preview image upload
+      // Handle preview image upload
       if (multiImageUpload.images.length > 0) {
         console.log('🖼️ [AddDesignForm] Processing preview image');
         try {
@@ -320,7 +306,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
           : `Das Produkt "${data.name}" wurde erfolgreich gespeichert.`,
       });
 
-      // Close dialog after successful save
       setTimeout(() => {
         onSave();
       }, 1000);
@@ -350,7 +335,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Design Information Section */}
           <DesignInformationSection
             control={form.control as any}
             trackingType={trackingType}
@@ -376,7 +360,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             getValues={form.getValues}
           />
 
-          {/* File Management Section with temp upload system */}
           <FileManagementSection
             data={fileManagementData}
             onChange={handleFileManagementDataChange}
@@ -389,7 +372,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             onPartTypeChange={designParts.handlePartTypeChange}
           />
 
-          {/* Progress Indicator when saving */}
           {saving && (
             <Card>
               <CardContent className="pt-6">
@@ -407,7 +389,6 @@ const AddDesignForm: React.FC<AddDesignFormProps> = ({ onCancel, onSave }) => {
             </Card>
           )}
 
-          {/* Action Buttons */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={handleCancel} disabled={saving}>
               Abbrechen

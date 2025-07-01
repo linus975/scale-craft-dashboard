@@ -19,7 +19,6 @@ export const useTempFileUpload = () => {
   const { toast } = useToast();
   const tempFileIds = useRef<Set<string>>(new Set());
 
-  // Cleanup function to remove temp files from storage
   const cleanupTempFiles = async (fileIds?: string[]) => {
     const idsToCleanup = fileIds || Array.from(tempFileIds.current);
     
@@ -51,17 +50,14 @@ export const useTempFileUpload = () => {
     }
     
     if (!fileIds) {
-      // Clean up all
       tempFileIds.current.clear();
       setTempFiles([]);
     } else {
-      // Clean up specific files
       fileIds.forEach(id => tempFileIds.current.delete(id));
       setTempFiles(prev => prev.filter(f => !fileIds.includes(f.id)));
     }
   };
 
-  // Auto-cleanup on component unmount
   useEffect(() => {
     return () => {
       if (tempFileIds.current.size > 0) {
@@ -86,7 +82,6 @@ export const useTempFileUpload = () => {
         throw new Error('Benutzer nicht angemeldet');
       }
 
-      // Create temp path with timestamp to avoid conflicts
       const timestamp = Date.now();
       const tempFileName = `${timestamp}-${file.name}`;
       const tempPath = `${user.id}/temp/${fileCategory}/${tempFileName}`;
@@ -115,7 +110,6 @@ export const useTempFileUpload = () => {
         uploadedAt: timestamp
       };
 
-      // Track temp file for cleanup
       tempFileIds.current.add(tempFile.id);
       setTempFiles(prev => [...prev, tempFile]);
 
@@ -138,7 +132,28 @@ export const useTempFileUpload = () => {
 
   const removeTempFile = async (fileId: string) => {
     console.log('🗑️ [TempUpload] Removing temp file:', fileId);
-    await cleanupTempFiles([fileId]);
+    
+    const tempFile = tempFiles.find(f => f.id === fileId);
+    if (tempFile) {
+      try {
+        console.log('🗑️ [TempUpload] Deleting from storage:', tempFile.tempPath);
+        const { error } = await supabase.storage
+          .from('design-files')
+          .remove([tempFile.tempPath]);
+        
+        if (error) {
+          console.warn('❌ [TempUpload] Failed to delete temp file:', tempFile.tempPath, error);
+        } else {
+          console.log('✅ [TempUpload] Successfully deleted temp file:', tempFile.tempPath);
+        }
+      } catch (error) {
+        console.warn('❌ [TempUpload] Delete error:', error);
+      }
+    }
+    
+    // Remove from tracking
+    tempFileIds.current.delete(fileId);
+    setTempFiles(prev => prev.filter(f => f.id !== fileId));
     
     toast({
       title: "Temporäre Datei entfernt",
@@ -160,7 +175,6 @@ export const useTempFileUpload = () => {
         throw new Error('Benutzer nicht angemeldet');
       }
 
-      // Create the full final path with user ID
       const fullFinalPath = `${user.id}/${finalPath}`;
       
       // Download the file from temp location
@@ -201,12 +215,16 @@ export const useTempFileUpload = () => {
         console.log('✅ [TempUpload] Temp file deleted successfully');
       }
 
+      // Remove from tracking
+      tempFileIds.current.delete(tempFile.id);
+      setTempFiles(prev => prev.filter(f => f.id !== tempFile.id));
+
       console.log('✅ [TempUpload] File moved successfully to:', fullFinalPath);
-      return uploadData.path; // Return the actual path from Supabase
+      return uploadData.path;
 
     } catch (error: any) {
       console.error('❌ [TempUpload] Move failed:', error);
-      throw error; // Re-throw the error so the calling function can handle it
+      throw error;
     }
   };
 
